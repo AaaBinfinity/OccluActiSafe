@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-26",
+  "scope": "concept_images_and_documentation_only",
+  "selected_images": [
+    {
+      "id": 1,
+      "path": "docs/figures/product_mockups_2026-10-26/images/01_simulation_overview.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "d016e4ff8ed9df0366606a7d756785cea1851a0bf9c85269b916ebe764189ac5",
+      "status": "AI-generated UI concept, not a running screenshot"
+    },
+    {
+      "id": 2,
+      "path": "docs/figures/product_mockups_2026-10-26/images/02_trajectory_decision.png",
+      "width": 1671,
+      "height": 941,
+      "sha256": "9938e6314ea1c0b55c323fd77e759321fff97c8f360edd3498ccd2c07f06b60f",
+      "status": "AI-generated UI concept, not a running screenshot"
+    },
+    {
+      "id": 3,
+      "path": "docs/figures/product_mockups_2026-10-26/images/03_experiment_evaluation.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "dd68fda53eb25d5943de85c8d6f2cea6f3acff0a79eaafcdc3cc4d87d9cfae69",
+      "status": "AI-generated UI concept, not a running screenshot"
+    }
+  ],
+  "local_links_checked": 38,
+  "broken_links": [],
+  "visual_review": [
+    "three selected images inspected",
+    "concept and illustrative-data labels present",
+    "candidate-action risk legend clarified",
+    "speed curve unit kept separate from brake command",
+    "paired replay restores target visibility in both panels"
+  ],
+  "not_verified": [
+    "pixel-perfect geometry and road compliance",
+    "live UI implementation and interaction",
+    "model metrics",
+    "CARLA closed loop",
+    "communications and controls"
+  ]
+}

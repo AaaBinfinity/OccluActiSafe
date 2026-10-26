@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-26",
+  "images": [
+    {
+      "id": 1,
+      "path": "docs/figures/product_mockups_2026-10-26/images/01_simulation_overview.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "d016e4ff8ed9df0366606a7d756785cea1851a0bf9c85269b916ebe764189ac5",
+      "status": "AI-generated UI concept, not a running screenshot"
+    },
+    {
+      "id": 2,
+      "path": "docs/figures/product_mockups_2026-10-26/images/02_trajectory_decision.png",
+      "width": 1671,
+      "height": 941,
+      "sha256": "9938e6314ea1c0b55c323fd77e759321fff97c8f360edd3498ccd2c07f06b60f",
+      "status": "AI-generated UI concept, not a running screenshot"
+    },
+    {
+      "id": 3,
+      "path": "docs/figures/product_mockups_2026-10-26/images/03_experiment_evaluation.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "dd68fda53eb25d5943de85c8d6f2cea6f3acff0a79eaafcdc3cc4d87d9cfae69",
+      "status": "AI-generated UI concept, not a running screenshot"
+    }
+  ],
+  "generation_mode": "built_in_image_gen",
+  "review_scope": "visual concept review only; no UI code or simulation executed"
+}
