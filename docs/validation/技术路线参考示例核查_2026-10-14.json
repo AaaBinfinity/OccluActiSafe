@@ -1,0 +1,30 @@
+{
+  "scope": "document reference snippets and analytic examples only",
+  "python_blocks_syntax_checked": 12,
+  "executed": [
+    "static SAT reference",
+    "mode-risk reference",
+    "heap channel reference",
+    "quintic boundary arithmetic",
+    "S-curve analytic arithmetic",
+    "MPC interval-velocity counterexample"
+  ],
+  "formal_test_cases_specified": 53,
+  "not_executed": [
+    "YOLO/ByteTrack",
+    "Kalman/OpenCV/SciPy implementations",
+    "PyTorch model/loss/training",
+    "CasADi/IPOPT",
+    "CARLA",
+    "full system"
+  ],
+  "status": "reference_checks_passed",
+  "date": "2026-10-14",
+  "route_version": "V1.1",
+  "main_version": "V0.9",
+  "route_sha256": "31e6c11d7246db5f266d2c1d2bc1a747a75c7925dfa45030e8a44e177295d945",
+  "executed_reference_snippet_sha256": {
+    "geometry": "47a21ce1b38e1242fae76f03295709cd2f2d5a93c159d83b0d496accf4dacc47",
+    "channel": "04f012e2913e7451e938315f1df3acfe21e46ca1c9ec894046ccdd8f005b297e"
+  }
+}
