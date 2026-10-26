@@ -222,3 +222,14 @@ __marimo__/
 # macOS 本地缓存
 .DS_Store
 ._*
+
+# 私有环境配置（保留可公开模板）
+.env.*
+!.env.example
+
+# 本地数据与实验大产物；小型示例另建明确目录
+/data/
+/artifacts/
+/runs/
+/outputs/
+/checkpoints/
