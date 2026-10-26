@@ -1,15 +1,27 @@
-"""Check this diagram delivery, not the thesis algorithms or simulation."""
+"""Statically inspect existing diagram exports without rendering or visual review."""
+import argparse
 import json
 import re
 import struct
+from datetime import datetime, timezone
 from pathlib import Path
 from html.parser import HTMLParser
 from xml.etree import ElementTree as ET
 
 root = Path(__file__).resolve().parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--output", type=Path, help="将静态检查结果另存为新 JSON 文件；默认只输出到终端")
+args = parser.parse_args()
+if args.output and args.output.resolve() == (root/"qa_report.json").resolve():
+    parser.error("不能覆盖历史 qa_report.json；请使用新的报告文件名")
+if args.output and args.output.exists():
+    parser.error("输出文件已存在；请使用新的报告文件名")
 spec = json.loads((root/"source/graphs.json").read_text())
 manifest = json.loads((root/"manifest.json").read_text())
+assert spec["graphs"], "No source graphs"
+assert len(spec["graphs"]) == len(manifest["figures"]), "Source/manifest figure count differs"
 for g, m in zip(spec["graphs"], manifest["figures"]):
+    assert g["id"] == m["id"], "Source/manifest figure order differs"
     ids = {n["id"] for n in g["nodes"]}
     assert len(ids) == len(g["nodes"])
     assert all(e[0] in ids and e[1] in ids for e in g["edges"])
@@ -58,16 +70,27 @@ for link in p.links:
 for link in re.findall(r"\]\(([^)]+)\)", (root/"毕业设计流程图集.md").read_text()):
     assert (root/link).is_file(), link
 qa = {
-    "date": "2026-10-26", "figures": 6, "dot_renderings_passed": 6,
-    "svg_png_exports_checked": 12, "node_overlap_count": 0,
+    "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+    "status": "passed",
+    "scope": "static checks of existing source and exports only",
+    "figures": len(spec["graphs"]),
+    "svg_png_exports_checked": 2 * len(spec["graphs"]),
     "source_node_and_edge_consistency": True,
     "training_truth_boundary_checked": True,
-    "visual_review": {g["id"]: "checked" for g in spec["graphs"]},
     "html_local_links": "passed",
-    "html_browser_execution": "not performed; static gallery only",
-    "mermaid_status": "generated from same graph; no Mermaid engine render claimed",
-    "model_or_simulation_tests": "not run for this diagram delivery"
+    "new_rendering_performed": False,
+    "visual_review_performed": False,
+    "browser_execution_performed": False,
+    "model_or_simulation_tests_performed": False,
+    "historical_metadata": {
+        "manifest_date": manifest.get("date"),
+        "manifest_reported_node_overlap_count": sum(m["node_overlaps"] for m in manifest["figures"]),
+        "note": "Overlap values are read from the archived manifest, not remeasured in this check."
+    }
 }
-(root/"qa_report.json").write_text(json.dumps(qa, ensure_ascii=False, indent=2)+"\n")
-print(json.dumps({"status": "passed", "figures": 6, "exports": 12,
-                  "gallery_links": len(p.links)}, ensure_ascii=False))
+report = json.dumps(qa, ensure_ascii=False, indent=2)+"\n"
+if args.output:
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with args.output.open("x", encoding="utf-8") as output:
+        output.write(report)
+print(report, end="")

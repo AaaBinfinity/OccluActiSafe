@@ -233,3 +233,7 @@ __marimo__/
 /runs/
 /outputs/
 /checkpoints/
+
+# 图形工具与后续前端的本地依赖
+node_modules/
+npm-debug.log*

@@ -1,9 +1,21 @@
 /* Publication figures: explicit orthogonal layout, black/white, pt geometry.
    No inference, training or simulation is performed by this script. */
 const fs=require('fs'), path=require('path'), crypto=require('crypto');
-const deps=process.env.FLOWCHART_NODE_MODULES ||
-  '/Users/binfinity/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
-const sharp=require(path.join(deps,'sharp'));
+// Resolve installed packages normally; an explicit directory can override them.
+function loadDependency(name) {
+  const override = process.env.FLOWCHART_NODE_MODULES;
+  try {
+    const request = override ? require.resolve(name, { paths: [path.resolve(override)] }) : name;
+    return require(request);
+  } catch (error) {
+    if (error.code !== 'MODULE_NOT_FOUND' && error.code !== 'ERR_MODULE_NOT_FOUND') throw error;
+    console.error('无法加载流程图依赖 ' + name + '。请在仓库根目录运行：\n' +
+      'npm install --no-save --package-lock=false sharp\n' +
+      '也可将 FLOWCHART_NODE_MODULES 设为已有 node_modules 目录的绝对路径。');
+    process.exit(1);
+  }
+}
+const sharp = loadDependency('sharp');
 const ROOT=__dirname;
 const spec=JSON.parse(fs.readFileSync(path.join(ROOT,'source/figures.json'),'utf8'));
 const FONT=10.5, LINE=0.75, LEADING=14;
@@ -204,9 +216,6 @@ async function main(){
     '- 参数、试验状态与模型定义以技术路线正文为准；本图集表示拟实施设计，不增加训练或仿真结果。\n'+
     '- 再生成：运行render.cjs。source/figures.json保存节点位置及连线，可通过FLOWCHART_NODE_MODULES指定sharp依赖目录。\n';
   fs.writeFileSync(path.join(ROOT,'论文流程图集.md'),md);
-  fs.writeFileSync(path.join(ROOT,'README.md'),'# 论文流程图（黑白版）\n\n'+
-    'index.html为预览入口；images/中为SVG、600 dpi PNG及预览图；论文流程图.drawio可编辑全部6张图；'+
-    'source/figures.json与render.cjs可重新生成。正文图题与说明不嵌入图片。\n\n'+
-    '尺寸单位为pt，图宽420 pt（148.17 mm）、字号10.5 pt、线宽0.75 pt。黑线、白底、无装饰标题与脚注。\n');
+  // README.md is maintained separately to preserve setup and QA instructions.
 }
 main().catch(err=>{console.error(err);process.exitCode=1;});

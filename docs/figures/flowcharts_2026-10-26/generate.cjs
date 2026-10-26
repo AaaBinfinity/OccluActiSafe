@@ -2,10 +2,22 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const modules = process.env.FLOWCHART_NODE_MODULES ||
-  '/Users/binfinity/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
-const { instance } = require(path.join(modules, '@viz-js/viz/dist/viz.cjs'));
-const sharp = require(path.join(modules, 'sharp'));
+// Resolve installed packages normally; an explicit directory can override them.
+function loadDependency(name) {
+  const override = process.env.FLOWCHART_NODE_MODULES;
+  try {
+    const request = override ? require.resolve(name, { paths: [path.resolve(override)] }) : name;
+    return require(request);
+  } catch (error) {
+    if (error.code !== 'MODULE_NOT_FOUND' && error.code !== 'ERR_MODULE_NOT_FOUND') throw error;
+    console.error('无法加载流程图依赖 ' + name + '。请在仓库根目录运行：\n' +
+      'npm install --no-save --package-lock=false @viz-js/viz sharp\n' +
+      '也可将 FLOWCHART_NODE_MODULES 设为已有 node_modules 目录的绝对路径。');
+    process.exit(1);
+  }
+}
+const { instance } = loadDependency('@viz-js/viz');
+const sharp = loadDependency('sharp');
 const root = __dirname;
 const spec = JSON.parse(fs.readFileSync(path.join(root, 'source/graphs.json'), 'utf8'));
 const palette = {
@@ -244,10 +256,7 @@ async function main(){
     '本次仅检查图形源码、布局和导出，不重新运行 53 个算法/系统测试，也不产生预测或碰撞率结果。\n';
   fs.writeFileSync(path.join(root,'毕业设计流程图集.md'),md);
   fs.writeFileSync(path.join(root,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
-  const readme='# 流程图导出文件\n\n日期：'+spec.date+'\n\n'+
-    '- index.html：离线预览与下载入口。\n- images/：6 张 SVG 与 6 张 PNG。\n- source/graphs.json：节点与关系的统一可编辑源。\n- source/*.mmd：Mermaid；source/*.dot：Graphviz。\n- generate.cjs：再生成脚本；依赖 @viz-js/viz 与 sharp。\n- manifest.json：导出尺寸、节点/边数与布局检查。\n\n'+
-    '这是既有毕业设计方案的可视化交付，不是已实现系统或已完成实验的证据。\n';
-  fs.writeFileSync(path.join(root,'README.md'),readme);
+  // README.md is maintained separately to preserve setup and QA instructions.
   console.log(JSON.stringify({figures:manifest.figures.length,status:'rendered',root}));
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
