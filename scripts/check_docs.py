@@ -203,8 +203,12 @@ class Check:
                         self.digest(path, path.parent / "images" / f"{figure_id}.svg", figure["svg_sha256"])
                     if not any(key in figure for key in ("source_sha256", "svg_sha256")):
                         raise ValueError(f"{figure_id} 缺少受支持的哈希字段")
-                    self.png(path, path.parent / "images" / f"{figure_id}.png",
-                             figure["png_width"], figure["png_height"])
+                    png_fields = ("png_width", "png_height")
+                    if any(key in figure for key in png_fields):
+                        if not all(key in figure for key in png_fields):
+                            raise ValueError(f"{figure_id} 的PNG尺寸字段不完整")
+                        self.png(path, path.parent / "images" / f"{figure_id}.png",
+                                 figure["png_width"], figure["png_height"])
             else:
                 raise ValueError("不支持的清单结构；需要 images 或 figures")
         except (KeyError, TypeError, ValueError, OSError) as exc:
@@ -215,7 +219,6 @@ class Check:
             current = Path(directory)
             subdirs[:] = sorted(name for name in subdirs if name not in CACHE_DIR_NAMES
                                 and not (current == self.root and name in LOCAL_OUTPUT_DIR_NAMES)
-                                and current / name != self.root / "docs" / "history"
                                 and not (current / name).is_symlink())
             for name in sorted(names):
                 path = current / name
@@ -240,9 +243,9 @@ class Check:
         return {"checked_at_utc": datetime.now(timezone.utc).isoformat(),
                 "status": "passed" if not self.errors else "failed",
                 "counts": self.counts, "errors": self.errors,
-                "scope": "静态检查当前仓库 MD/HTML 相对链接和 HTML 锚点、JSON 语法、四类既有图集清单的哈希与 PNG 文件头尺寸。",
+                "scope": "静态检查当前仓库 MD/HTML 相对链接和 HTML 锚点、JSON 语法、图集清单的哈希及仍保留的 PNG 文件头尺寸。",
                 "limits": ["不联网；远程 URL 仅计数，未验证可访问性或内容。",
-                           "跳过 docs/history、符号链接目录，以及任意层级依赖/缓存目录：" + "、".join(sorted(CACHE_DIR_NAMES)) + "。",
+                           "跳过符号链接目录，以及任意层级依赖/缓存目录：" + "、".join(sorted(CACHE_DIR_NAMES)) + "。",
                            "跳过仓库根本地产物目录：" + "、".join(sorted(LOCAL_OUTPUT_DIR_NAMES)) + "。",
                            "Markdown 提取器覆盖当前仓库使用的链接形式，不是完整 CommonMark 解析器。",
                            "不验证 Markdown 标题锚点、其他格式文件锚点、绝对路径或带协议的非 HTTP URL。",

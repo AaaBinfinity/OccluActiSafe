@@ -140,30 +140,9 @@ function drawioPage(g,index){
   all.push('</root></mxGraphModel></diagram>');
   return all.join('\n');
 }
-function htmlGallery(manifest){
-  const cards=spec.figures.map((g,i)=>{
-    const m=manifest.figures[i];
-    return '<section id="'+g.id+'"><figure><div class="canvas"><img src="images/'+g.id+'.svg" '+
-      'alt="'+esc(g.title)+'" style="width:'+Math.min(720,Math.round(g.width*4/3))+'px"></div>'+
-      '<figcaption>图 '+(i+1)+'　'+esc(g.title)+'</figcaption></figure>'+
-      '<p>'+esc(g.caption)+'</p><p class="links"><a href="images/'+g.id+'.svg" download>SVG</a>　'+
-      '<a href="images/'+g.id+'.png" download>PNG（600 dpi）</a>　<a href="source/'+g.id+
-      '.drawio" download>draw.io 源文件</a></p><p class="meta">图宽 '+m.width_mm+
-      ' mm；宋体 / Times New Roman，10.5 pt；线宽 0.75 pt。</p></section>';
-  }).join('\n');
-  return '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
-    '<title>论文黑白流程图</title><style>body{margin:0;background:#fff;color:#000;font:15px/1.8 "Songti SC",SimSun,serif}'+
-    'main{max-width:920px;margin:32px auto;padding:0 18px}h1{font-size:23px;font-weight:normal;text-align:center}'+
-    'nav{margin:20px 0;border-top:1px solid #000;border-bottom:1px solid #000;padding:8px 0}nav a{margin-right:18px;white-space:nowrap}'+
-    'a{color:#000;text-underline-offset:3px}section{margin:48px 0 72px}figure{margin:0}.canvas{overflow-x:auto}.canvas img{display:block;height:auto;margin:auto;max-width:none}'+
-    'figcaption{text-align:center;margin:10px 0 20px}p{margin:10px 0}.links{text-align:center}.meta{font-size:13px;text-align:center}'+
-    '@media print{main{margin:0;padding:0;max-width:none}h1,nav,.links,.meta{display:none}section{break-before:page;margin:0}.canvas{overflow:visible}.canvas img{max-width:100%}}'+
-    '</style></head><body><main><h1>论文黑白流程图</h1><p>图题与说明位于图外。下载图片仅含流程图本体，可直接插入论文；编号按论文所在章节调整。</p>'+
-    '<nav>'+spec.figures.map((g,i)=>'<a href="#'+g.id+'">'+(i+1)+' '+esc(g.title)+'</a>').join('')+'</nav>'+cards+'</main></body></html>';
-}
 async function main(){
   fs.mkdirSync(path.join(ROOT,'images'),{recursive:true});
-  const manifest={date:spec.date,version:spec.version,style:spec.style,figures:[]};
+  const manifest={date:spec.date,version:spec.version,retained_formats:['svg'],figures:[]};
   const pages=[];
   for(const [i,g]of spec.figures.entries()){
     validateLayout(g);
@@ -180,42 +159,13 @@ async function main(){
     }
     const svg=drawSvg(g);
     fs.writeFileSync(path.join(ROOT,'images',g.id+'.svg'),svg);
-    // Use px dimensions for raster input to avoid physical-unit density being
-    // applied twice by this librsvg build; the saved vector retains mm units.
-    const rasterSvg=svg.replace('width="'+mm(g.width)+'mm" height="'+mm(g.height)+'mm"',
-      'width="'+g.width+'px" height="'+g.height+'px"');
-    const png=await sharp(Buffer.from(rasterSvg),{density:600}).flatten({background:'#ffffff'})
-      .withMetadata({density:600}).png().toFile(path.join(ROOT,'images',g.id+'.png'));
-    await sharp(Buffer.from(rasterSvg),{density:150}).png().toFile(path.join(ROOT,'images',g.id+'_preview.png'));
-    const page=drawioPage(g,i+1);pages.push(page);
-    fs.writeFileSync(path.join(ROOT,'source',g.id+'.drawio'),
-      '<mxfile host="app.diagrams.net">'+page+'</mxfile>');
-    manifest.figures.push({id:g.id,title:g.title,nodes:g.nodes.length,edges:g.edges.length,
-      width_pt:g.width,height_pt:g.height,width_mm:+mm(g.width),height_mm:+mm(g.height),
-      png_width:png.width,png_height:png.height,dpi:600,node_overlaps:0,
-      edge_through_node_count:0,orthogonal_edges:true,text_fit:true,
+    pages.push(drawioPage(g,i+1));
+    manifest.figures.push({id:g.id,title:g.title,
       svg_sha256:crypto.createHash('sha256').update(svg).digest('hex')});
-    console.log(g.id+' '+png.width+'x'+png.height+' @600dpi');
+    console.log(g.id+' SVG');
   }
   fs.writeFileSync(path.join(ROOT,'论文流程图.drawio'),'<mxfile host="app.diagrams.net">'+pages.join('\n')+'</mxfile>');
   fs.writeFileSync(path.join(ROOT,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
-  fs.writeFileSync(path.join(ROOT,'index.html'),htmlGallery(manifest));
-  let md='# 论文用黑白流程图集\n\n版本：V2.0  \n更新日期：2026年10月26日\n\n'+
-    '本版按论文插图重绘：黑白、统一0.75 pt线宽、10.5 pt宋体与Times New Roman、正交连线。'+
-    '图片内只保留流程本体；图题、参数说明和研究状态在正文中交代。各图实际宽148.17 mm，插入论文时按该宽度使用。\n\n'+
-    '[离线预览与下载](index.html) · [全部可编辑图（draw.io）](论文流程图.drawio)\n\n';
-  for(const [i,g]of spec.figures.entries()){
-    md+='## 图 '+(i+1)+' '+g.title+'\n\n!['+g.title+'](images/'+g.id+'_preview.png)\n\n'+
-      '图 '+(i+1)+'　'+g.title+'\n\n'+g.caption+'\n\n'+
-      '[SVG 矢量图](images/'+g.id+'.svg) · [PNG 600 dpi](images/'+g.id+'.png) · '+
-      '[draw.io 源文件](source/'+g.id+'.drawio)\n\n';
-  }
-  md+='## 插入论文与修改\n\n'+
-    '- 优先使用SVG，以148.17 mm宽度插入；图内字体等效10.5 pt。图题由论文模板在图外排版。\n'+
-    '- 不支持SVG的编辑器使用600 dpi PNG。每张图可在draw.io/diagrams.net中继续修改节点、文字和连线。\n'+
-    '- 参数、试验状态与模型定义以技术路线正文为准；本图集表示拟实施设计，不增加训练或仿真结果。\n'+
-    '- 再生成：运行render.cjs。source/figures.json保存节点位置及连线，可通过FLOWCHART_NODE_MODULES指定sharp依赖目录。\n';
-  fs.writeFileSync(path.join(ROOT,'论文流程图集.md'),md);
-  // README.md is maintained separately to preserve setup and QA instructions.
+  // 图集正文独立维护，不再生成PNG、预览、HTML或逐图draw.io副本。
 }
 main().catch(err=>{console.error(err);process.exitCode=1;});
