@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-26",
+  "scope": "documentation_only",
+  "checks": {
+    "coordinate_payload_bytes": 38400,
+    "coordinate_only_mbit_s_at_10hz": 3.072,
+    "absolute_horizon_examples": "passed_arithmetic_check",
+    "local_links_checked": 18,
+    "broken_local_links": [],
+    "markdown_fences_balanced": true,
+    "document_versions_consistent": true
+  },
+  "sources_reviewed": [
+    "https://5gaa.org/c-v2x-explained/",
+    "https://docs.python.org/3/library/socket.html",
+    "https://www.rfc-editor.org/rfc/rfc8085.html"
+  ],
+  "not_executed": [
+    "UDP socket send/receive",
+    "RSU/OBU PC5",
+    "CARLA",
+    "model training",
+    "protocol and end-to-end test specifications"
+  ]
+}
