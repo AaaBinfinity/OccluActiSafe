@@ -1,0 +1,52 @@
+digraph "02_cooperative_perception" {
+graph [rankdir="TB",bgcolor="white",pad="0.26",nodesep="0.36",ranksep="0.46",splines="spline",fontname="PingFang SC",fontsize="13",outputorder="edgesfirst",newrank="true"];
+node [fontname="PingFang SC",fontsize="13",fontcolor="#22354F"];
+edge [fontname="PingFang SC",fontsize="10.5",color="#62758C",fontcolor="#485D75",penwidth="1.1",arrowsize="0.65"];
+subgraph cluster_vehicle {
+graph [label="车载感知",style="rounded,filled",fillcolor="#F3F7FC",color="#D5DFEA",penwidth="1",margin="18",fontname="PingFang SC",fontcolor="#36516F",fontsize="15"];
+v_sensor [label="车载 RGB + 本车定位\n保留采集帧号与时间",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="2.7933",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+v_track [label="YOLO11m → ByteTrack\n每个相机独立跟踪状态",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.5000",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+v_ground [label="射线与道路平面求交\n使用采集时刻相机位姿",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.3056",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+v_filter [label="CV Kalman 米制状态\n位置 / 速度 / 有效掩码",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.4167",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+}
+subgraph cluster_road {
+graph [label="路侧边缘感知",style="rounded,filled",fillcolor="#F0F8F4",color="#D5DFEA",penwidth="1",margin="18",fontname="PingFang SC",fontcolor="#36516F",fontsize="15"];
+r_sensor [label="固定路侧 RGB\n覆盖主车遮挡冲突区域",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="2.8111",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+r_track [label="YOLO11m → ByteTrack\n车辆检测与持续跟踪",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.5000",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+r_ground [label="DLT + RANSAC 单应性\n像素接地点 → 地面坐标",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.4861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+r_filter [label="CV Kalman 米制状态\n保留误差与最近观测时间",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.4722",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+}
+upload [label="V2I 上传消息队列\n延迟 / 丢包 / 乱序",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.0556",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+associate [label="共同状态时刻对齐与车路关联\nMahalanobis 门控 + 最小代价分配",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.4028",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+history [label="保留双来源历史与质量\n原始时间戳 / age / 掩码",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.5556",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+predict [label="路侧 RC-STGT 预测\n完整未来轨迹模式与权重",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.4861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+down [label="I2V 下发预测消息\n保留原 anchor_time 与有效期",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.9722",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+valid [label="时效 / 坐标 / 覆盖\n检查通过？",shape="diamond",style="filled",fillcolor="#FFF3DC",color="#A36C1A",width="3.2750",height="0.9444",margin="0.14,0.08",penwidth="1.2"];
+fuse [label="车端结合最新本地观测\n复核候选动作风险",shape="box",style="rounded,filled",fillcolor="#FFF3DC",color="#A36C1A",width="2.2917",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+fallback [label="本地预测与有限风险记忆\n谨慎减速 / 本地 AEB",shape="box",style="rounded,filled",fillcolor="#FDEEEA",color="#A35540",width="2.4861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+next [label="进入车端规划与控制\n不直接执行路侧控制命令",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.4861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+{rank=same;v_sensor;r_sensor;}
+{rank=same;v_track;r_track;}
+{rank=same;v_ground;r_ground;}
+{rank=same;v_filter;r_filter;}
+{rank=same;fuse;fallback;}
+v_sensor -> v_track;
+v_track -> v_ground;
+v_ground -> v_filter;
+r_sensor -> r_track;
+r_track -> r_ground;
+r_ground -> r_filter;
+v_filter -> upload;
+upload -> associate [label="已到达上传"];
+r_filter -> associate;
+associate -> history;
+history -> predict;
+predict -> down;
+down -> valid;
+valid -> fuse [label="是"];
+valid -> fallback [label="否",color="#AB573F",fontcolor="#9C4F3A"];
+v_filter -> fuse [label="最新本地观测",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+v_filter -> fallback [label="独立本地输入",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+fuse -> next;
+fallback -> next;
+}

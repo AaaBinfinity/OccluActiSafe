@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="843" height="1025" viewBox="0 0 843 1025" role="img" aria-labelledby="title desc">
+<title id="title">图 6 实现测试与研究验证流程</title>
+<desc id="desc">公开日志用于轨迹预测与声明的风险代理，控制收益由仿真配对实验验证。指标、失败运行和统计区间均保存，不能用单次视频代替证据。 拟议研究方案；流程图不表示模型、控制器或实验已经实现</desc>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<g font-family="PingFang SC, Microsoft YaHei, sans-serif">
+<text x="24" y="29" fill="#213651" font-size="20" font-weight="600">图 6  实现测试与研究验证流程</text>
+<text x="24" y="52" fill="#5A6E85" font-size="11.5">53 个测试规格是计划，不是已通过的系统结果</text>
+<line x1="24" y1="67" x2="819" y2="67" stroke="#D9E2EC"/>
+</g>
+<g transform="translate(12,78)">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(18.72 884.65)">
+<title>06_testing</title>
+<polygon fill="white" stroke="none" points="-18.72,18.72 -18.72,-884.65 800.54,-884.65 800.54,18.72 -18.72,18.72"/>
+<!-- protocol&#45;&gt;unit -->
+<g id="edge1" class="edge">
+<title>protocol&#45;&gt;unit</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M340.32,-762.65C340.32,-753.85 340.32,-744.88 340.32,-736.61"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="342.6,-736.77 340.32,-730.27 338.05,-736.77 342.6,-736.77"/>
+</g>
+<!-- unit&#45;&gt;integration -->
+<g id="edge2" class="edge">
+<title>unit&#45;&gt;integration</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M340.32,-672.02C340.32,-663.64 340.32,-654.3 340.32,-645.46"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="342.6,-645.7 340.32,-639.2 338.05,-645.7 342.6,-645.7"/>
+</g>
+<!-- integration&#45;&gt;passed -->
+<g id="edge3" class="edge">
+<title>integration&#45;&gt;passed</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M340.32,-580.75C340.32,-569.32 340.32,-555.79 340.32,-543.18"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="342.6,-543.22 340.32,-536.72 338.05,-543.22 342.6,-543.22"/>
+</g>
+<!-- passed&#45;&gt;repair -->
+<g id="edge4" class="edge">
+<title>passed&#45;&gt;repair</title>
+<path fill="none" stroke="#ab573f" stroke-width="1.1" d="M298.94,-480.92C264.02,-465.14 213.34,-442.25 172.44,-423.78"/>
+<polygon fill="#ab573f" stroke="#ab573f" stroke-width="1.1" points="173.56,-421.79 166.7,-421.19 171.69,-425.93 173.56,-421.79"/>
+<text xml:space="preserve" text-anchor="middle" x="233.33" y="-440.16" font-family="PingFang SC" font-size="10.50" fill="#9c4f3a">否</text>
+</g>
+<!-- passed&#45;&gt;open -->
+<g id="edge6" class="edge">
+<title>passed&#45;&gt;open</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M340.32,-466.17C340.32,-454.26 340.32,-440.81 340.32,-428.72"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="342.6,-428.77 340.32,-422.27 338.05,-428.77 342.6,-428.77"/>
+<text xml:space="preserve" text-anchor="middle" x="344.26" y="-440.16" font-family="PingFang SC" font-size="10.50" fill="#485d75">是</text>
+</g>
+<!-- passed&#45;&gt;closed -->
+<g id="edge7" class="edge">
+<title>passed&#45;&gt;closed</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M386.43,-482.72C429.89,-466.8 496,-442.58 548.59,-423.31"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="549.36,-425.45 554.68,-421.08 547.79,-421.18 549.36,-425.45"/>
+<text xml:space="preserve" text-anchor="middle" x="507.18" y="-440.16" font-family="PingFang SC" font-size="10.50" fill="#485d75">是</text>
+</g>
+<!-- repair&#45;&gt;unit -->
+<g id="edge5" class="edge">
+<title>repair:w&#45;&gt;unit:w</title>
+<path fill="none" stroke="#71859e" stroke-width="1.1" stroke-dasharray="5,2" d="M7.82,-392.01C-4.63,-392.01 0.03,-411.19 8.82,-420.01 42.61,-453.92 401.43,-407.75 439.32,-437.01 510.48,-491.96 526.43,-568.61 468.32,-637.21 436.87,-674.34 408.48,-648.21 360.32,-655.21 329.96,-659.62 244.04,-649.58 223.32,-672.21 217.41,-678.66 213.16,-689.88 215.49,-695.98"/>
+<polygon fill="#71859e" stroke="#71859e" stroke-width="1.1" points="214.18,-697.84 220.9,-699.33 216.58,-693.98 214.18,-697.84"/>
+<text xml:space="preserve" text-anchor="middle" x="519.46" y="-554.75" font-family="PingFang SC" font-size="10.50" fill="#485d75">回归检查</text>
+</g>
+<!-- open&#45;&gt;ablation -->
+<g id="edge8" class="edge">
+<title>open&#45;&gt;ablation</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M355.59,-363.82C360.49,-355.1 365.98,-345.33 371.12,-336.18"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="372.95,-337.57 374.15,-330.78 368.99,-335.34 372.95,-337.57"/>
+</g>
+<!-- closed&#45;&gt;robust -->
+<g id="edge9" class="edge">
+<title>closed&#45;&gt;robust</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M628.57,-363.82C627.72,-355.44 626.78,-346.1 625.89,-337.26"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="628.17,-337.23 625.25,-330.99 623.64,-337.69 628.17,-337.23"/>
+</g>
+<!-- ablation&#45;&gt;metrics -->
+<g id="edge10" class="edge">
+<title>ablation&#45;&gt;metrics</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M424.53,-272.58C436.03,-263.36 448.97,-252.98 460.9,-243.42"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="462.09,-245.38 465.73,-239.54 459.24,-241.83 462.09,-245.38"/>
+</g>
+<!-- robust&#45;&gt;metrics -->
+<g id="edge11" class="edge">
+<title>robust&#45;&gt;metrics</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M585.03,-272.58C572.38,-263.27 558.13,-252.79 545.03,-243.15"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="546.62,-241.5 540.04,-239.48 543.93,-245.17 546.62,-241.5"/>
+</g>
+<!-- metrics&#45;&gt;statistics -->
+<g id="edge12" class="edge">
+<title>metrics&#45;&gt;statistics</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M501.32,-181.82C501.32,-173.44 501.32,-164.1 501.32,-155.26"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="503.6,-155.49 501.32,-148.99 499.05,-155.49 503.6,-155.49"/>
+</g>
+<!-- statistics&#45;&gt;deliver -->
+<g id="edge13" class="edge">
+<title>statistics&#45;&gt;deliver</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M501.32,-90.82C501.32,-82.44 501.32,-73.09 501.32,-64.26"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="503.6,-64.49 501.32,-57.99 499.05,-64.49 503.6,-64.49"/>
+</g>
+<!-- protocol -->
+<g id="node1" class="node">
+<title>protocol</title>
+<polygon fill="#edf7f2" stroke="#38775e" stroke-width="1.2" points="518.82,-865.93 234.87,-865.93 161.82,-763.21 445.77,-763.21 518.82,-865.93"/>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-818.47" font-family="PingFang SC" font-size="13.00" fill="#22354f">冻结数据与测试协议</text>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-802.87" font-family="PingFang SC" font-size="13.00" fill="#22354f">事件定义 / 分组 split / 因果边界</text>
+</g>
+<!-- unit -->
+<g id="node2" class="node">
+<title>unit</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M445.32,-728.21C445.32,-728.21 235.32,-728.21 235.32,-728.21 229.32,-728.21 223.32,-722.21 223.32,-716.21 223.32,-716.21 223.32,-684.21 223.32,-684.21 223.32,-678.21 229.32,-672.21 235.32,-672.21 235.32,-672.21 445.32,-672.21 445.32,-672.21 451.32,-672.21 457.32,-678.21 457.32,-684.21 457.32,-684.21 457.32,-716.21 457.32,-716.21 457.32,-722.21 451.32,-728.21 445.32,-728.21"/>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-704.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">模块正确性测试</text>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-688.51" font-family="PingFang SC" font-size="13.00" fill="#22354f">坐标 / 掩码 / 几何 / 时间 / 梯度</text>
+</g>
+<!-- integration -->
+<g id="node3" class="node">
+<title>integration</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M443.32,-637.21C443.32,-637.21 237.32,-637.21 237.32,-637.21 231.32,-637.21 225.32,-631.21 225.32,-625.21 225.32,-625.21 225.32,-593.2 225.32,-593.2 225.32,-587.2 231.32,-581.2 237.32,-581.2 237.32,-581.2 443.32,-581.2 443.32,-581.2 449.32,-581.2 455.32,-587.2 455.32,-593.2 455.32,-593.2 455.32,-625.21 455.32,-625.21 455.32,-631.21 449.32,-637.21 443.32,-637.21"/>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-613.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">接口与故障注入测试</text>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-597.51" font-family="PingFang SC" font-size="13.00" fill="#22354f">乱序 / 丢包 / 旧预测 / 求解失败</text>
+</g>
+<!-- passed -->
+<g id="node4" class="node">
+<title>passed</title>
+<polygon fill="#fff3dc" stroke="#a36c1a" stroke-width="1.2" points="340.32,-534.6 245.82,-500.61 340.32,-466.61 434.82,-500.61 340.32,-534.6"/>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-504.51" font-family="PingFang SC" font-size="13.00" fill="#22354f">基础正确性与</text>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-488.91" font-family="PingFang SC" font-size="13.00" fill="#22354f">夹具验收通过？</text>
+</g>
+<!-- repair -->
+<g id="node5" class="node">
+<title>repair</title>
+<path fill="#fdeeea" stroke="#a35540" stroke-width="1.2" d="M187.82,-420.01C187.82,-420.01 20.82,-420.01 20.82,-420.01 14.82,-420.01 8.82,-414.01 8.82,-408.01 8.82,-408.01 8.82,-376.01 8.82,-376.01 8.82,-370.01 14.82,-364.01 20.82,-364.01 20.82,-364.01 187.82,-364.01 187.82,-364.01 193.82,-364.01 199.82,-370.01 199.82,-376.01 199.82,-376.01 199.82,-408.01 199.82,-408.01 199.82,-414.01 193.82,-420.01 187.82,-420.01"/>
+<text xml:space="preserve" text-anchor="middle" x="104.32" y="-395.91" font-family="PingFang SC" font-size="13.00" fill="#22354f">定位失败并修复</text>
+<text xml:space="preserve" text-anchor="middle" x="104.32" y="-380.31" font-family="PingFang SC" font-size="13.00" fill="#22354f">保留输入、日志与复现用例</text>
+</g>
+<!-- open -->
+<g id="node6" class="node">
+<title>open</title>
+<path fill="#f1eff9" stroke="#76628d" stroke-width="1.2" d="M442.32,-420.01C442.32,-420.01 238.32,-420.01 238.32,-420.01 232.32,-420.01 226.32,-414.01 226.32,-408.01 226.32,-408.01 226.32,-376.01 226.32,-376.01 226.32,-370.01 232.32,-364.01 238.32,-364.01 238.32,-364.01 442.32,-364.01 442.32,-364.01 448.32,-364.01 454.32,-370.01 454.32,-376.01 454.32,-376.01 454.32,-408.01 454.32,-408.01 454.32,-414.01 448.32,-420.01 442.32,-420.01"/>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-395.91" font-family="PingFang SC" font-size="13.00" fill="#22354f">真实数据开放环评测</text>
+<text xml:space="preserve" text-anchor="middle" x="340.32" y="-380.31" font-family="PingFang SC" font-size="13.00" fill="#22354f">CV / GRU / HiVT / RC&#45;STGT</text>
+</g>
+<!-- closed -->
+<g id="node7" class="node">
+<title>closed</title>
+<path fill="#f1eff9" stroke="#76628d" stroke-width="1.2" d="M769.82,-420.01C769.82,-420.01 492.82,-420.01 492.82,-420.01 486.82,-420.01 480.82,-414.01 480.82,-408.01 480.82,-408.01 480.82,-376.01 480.82,-376.01 480.82,-370.01 486.82,-364.01 492.82,-364.01 492.82,-364.01 769.82,-364.01 769.82,-364.01 775.82,-364.01 781.82,-370.01 781.82,-376.01 781.82,-376.01 781.82,-408.01 781.82,-408.01 781.82,-414.01 775.82,-420.01 769.82,-420.01"/>
+<text xml:space="preserve" text-anchor="middle" x="631.32" y="-395.91" font-family="PingFang SC" font-size="13.00" fill="#22354f">CARLA 同场景配对闭环</text>
+<text xml:space="preserve" text-anchor="middle" x="631.32" y="-380.31" font-family="PingFang SC" font-size="13.00" fill="#22354f">无干预 / TTC&#45;AEB / 预测AEB / AEB+AES</text>
+</g>
+<!-- ablation -->
+<g id="node8" class="node">
+<title>ablation</title>
+<path fill="#f1eff9" stroke="#76628d" stroke-width="1.2" d="M467.82,-329.01C467.82,-329.01 312.82,-329.01 312.82,-329.01 306.82,-329.01 300.82,-323.01 300.82,-317.01 300.82,-317.01 300.82,-285 300.82,-285 300.82,-279 306.82,-273 312.82,-273 312.82,-273 467.82,-273 467.82,-273 473.82,-273 479.82,-279 479.82,-285 479.82,-285 479.82,-317.01 479.82,-317.01 479.82,-323.01 473.82,-329.01 467.82,-329.01"/>
+<text xml:space="preserve" text-anchor="middle" x="390.32" y="-304.91" font-family="PingFang SC" font-size="13.00" fill="#22354f">模型消融与风险比较</text>
+<text xml:space="preserve" text-anchor="middle" x="390.32" y="-289.31" font-family="PingFang SC" font-size="13.00" fill="#22354f">相同输入与公平训练协议</text>
+</g>
+<!-- robust -->
+<g id="node9" class="node">
+<title>robust</title>
+<path fill="#f1eff9" stroke="#76628d" stroke-width="1.2" d="M718.82,-329.01C718.82,-329.01 525.82,-329.01 525.82,-329.01 519.82,-329.01 513.82,-323.01 513.82,-317.01 513.82,-317.01 513.82,-285 513.82,-285 513.82,-279 519.82,-273 525.82,-273 525.82,-273 718.82,-273 718.82,-273 724.82,-273 730.82,-279 730.82,-285 730.82,-285 730.82,-317.01 730.82,-317.01 730.82,-323.01 724.82,-329.01 718.82,-329.01"/>
+<text xml:space="preserve" text-anchor="middle" x="622.32" y="-304.91" font-family="PingFang SC" font-size="13.00" fill="#22354f">鲁棒性 / 泛化 / 协同扩展</text>
+<text xml:space="preserve" text-anchor="middle" x="622.32" y="-289.31" font-family="PingFang SC" font-size="13.00" fill="#22354f">未见路口 · 遮挡 · 延迟 · 失联</text>
+</g>
+<!-- metrics -->
+<g id="node10" class="node">
+<title>metrics</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M597.82,-238C597.82,-238 404.82,-238 404.82,-238 398.82,-238 392.82,-232 392.82,-226 392.82,-226 392.82,-194 392.82,-194 392.82,-188 398.82,-182 404.82,-182 404.82,-182 597.82,-182 597.82,-182 603.82,-182 609.82,-188 609.82,-194 609.82,-194 609.82,-226 609.82,-226 609.82,-232 603.82,-238 597.82,-238"/>
+<text xml:space="preserve" text-anchor="middle" x="501.32" y="-213.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">预测、预警与闭环指标分开</text>
+<text xml:space="preserve" text-anchor="middle" x="501.32" y="-198.3" font-family="PingFang SC" font-size="13.00" fill="#22354f">碰撞 / 越界 / 效率 / 实际耗时</text>
+</g>
+<!-- statistics -->
+<g id="node11" class="node">
+<title>statistics</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M609.82,-147C609.82,-147 392.82,-147 392.82,-147 386.82,-147 380.82,-141 380.82,-135 380.82,-135 380.82,-103 380.82,-103 380.82,-97 386.82,-91 392.82,-91 392.82,-91 609.82,-91 609.82,-91 615.82,-91 621.82,-97 621.82,-103 621.82,-103 621.82,-135 621.82,-135 621.82,-141 615.82,-147 609.82,-147"/>
+<text xml:space="preserve" text-anchor="middle" x="501.32" y="-122.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">场景级配对统计</text>
+<text xml:space="preserve" text-anchor="middle" x="501.32" y="-107.3" font-family="PingFang SC" font-size="13.00" fill="#22354f">至少 3 训练种子 · bootstrap 区间</text>
+</g>
+<!-- deliver -->
+<g id="node12" class="node">
+<title>deliver</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M610.82,-56C610.82,-56 391.82,-56 391.82,-56 385.82,-56 379.82,-50 379.82,-44 379.82,-44 379.82,-12 379.82,-12 379.82,-6 385.82,0 391.82,0 391.82,0 610.82,0 610.82,0 616.82,0 622.82,-6 622.82,-12 622.82,-12 622.82,-44 622.82,-44 622.82,-50 616.82,-56 610.82,-56"/>
+<text xml:space="preserve" text-anchor="middle" x="501.32" y="-31.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">原始结果 → 图表 → 论文结论</text>
+<text xml:space="preserve" text-anchor="middle" x="501.32" y="-16.3" font-family="PingFang SC" font-size="13.00" fill="#22354f">可追溯配置 / 权重 / 场景 / run_id</text>
+</g>
+</g>
+</g>
+<g font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="10" fill="#657A90">
+<text x="24" y="1011">拟议方案示意 · 技术路线 V1.1 · 2026-10-26</text>
+</g></svg>

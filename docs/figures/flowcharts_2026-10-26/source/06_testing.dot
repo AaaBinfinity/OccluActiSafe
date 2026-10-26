@@ -1,0 +1,32 @@
+digraph "06_testing" {
+graph [rankdir="TB",bgcolor="white",pad="0.26",nodesep="0.36",ranksep="0.46",splines="spline",fontname="PingFang SC",fontsize="13",outputorder="edgesfirst",newrank="true"];
+node [fontname="PingFang SC",fontsize="13",fontcolor="#22354F"];
+edge [fontname="PingFang SC",fontsize="10.5",color="#62758C",fontcolor="#485D75",penwidth="1.1",arrowsize="0.65"];
+protocol [label="冻结数据与测试协议\n事件定义 / 分组 split / 因果边界",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="3.9844",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+unit [label="模块正确性测试\n坐标 / 掩码 / 几何 / 时间 / 梯度",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.2500",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+integration [label="接口与故障注入测试\n乱序 / 丢包 / 旧预测 / 求解失败",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.1944",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+passed [label="基础正确性与\n夹具验收通过？",shape="diamond",style="filled",fillcolor="#FFF3DC",color="#A36C1A",width="2.6250",height="0.9444",margin="0.14,0.08",penwidth="1.2"];
+repair [label="定位失败并修复\n保留输入、日志与复现用例",shape="box",style="rounded,filled",fillcolor="#FDEEEA",color="#A35540",width="2.6528",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+open [label="真实数据开放环评测\nCV / GRU / HiVT / RC-STGT",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="3.1667",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+closed [label="CARLA 同场景配对闭环\n无干预 / TTC-AEB / 预测AEB / AEB+AES",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="4.1806",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+ablation [label="模型消融与风险比较\n相同输入与公平训练协议",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="2.4861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+robust [label="鲁棒性 / 泛化 / 协同扩展\n未见路口 · 遮挡 · 延迟 · 失联",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="3.0139",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+metrics [label="预测、预警与闭环指标分开\n碰撞 / 越界 / 效率 / 实际耗时",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.0139",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+statistics [label="场景级配对统计\n至少 3 训练种子 · bootstrap 区间",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.3472",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+deliver [label="原始结果 → 图表 → 论文结论\n可追溯配置 / 权重 / 场景 / run_id",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="3.3750",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+{rank=same;open;closed;}
+{rank=same;ablation;robust;}
+protocol -> unit;
+unit -> integration;
+integration -> passed;
+passed -> repair [label="否",color="#AB573F",fontcolor="#9C4F3A"];
+repair -> unit [label="回归检查",style="dashed",constraint="false",color="#71859E",tailport="w",headport="w",weight="0.1"];
+passed -> open [label="是"];
+passed -> closed [label="是"];
+open -> ablation;
+closed -> robust;
+ablation -> metrics;
+robust -> metrics;
+metrics -> statistics;
+statistics -> deliver;
+}

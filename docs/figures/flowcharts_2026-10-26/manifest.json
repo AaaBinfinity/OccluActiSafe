@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-26",
+  "source_versions": {
+    "main": "V0.9",
+    "technical_route": "V1.1"
+  },
+  "status": "拟议研究方案；流程图不表示模型、控制器或实验已经实现",
+  "renderer": "@viz-js/viz 3.25.0, Graphviz dot, sharp PNG",
+  "figures": [
+    {
+      "id": "01_overall",
+      "title": "总体技术路线",
+      "nodes": 14,
+      "edges": 15,
+      "width": 764,
+      "height": 1254,
+      "png_width": 1910,
+      "png_height": 3135,
+      "nodes_checked": 14,
+      "node_overlaps": 0,
+      "source_sha256": "ac445c303d89c8ec30e94a44501f5a20886f110098d82ad6098a416ec0891e98"
+    },
+    {
+      "id": "02_cooperative_perception",
+      "title": "车路感知与通信流程",
+      "nodes": 17,
+      "edges": 19,
+      "width": 691,
+      "height": 1371,
+      "png_width": 1728,
+      "png_height": 3428,
+      "nodes_checked": 17,
+      "node_overlaps": 0,
+      "source_sha256": "56ba9ad236ee308afab936c637a5f1bca737868e561c6a8128f804e86beb3d47"
+    },
+    {
+      "id": "03_transformer",
+      "title": "RC-STGT 多模态预测结构",
+      "nodes": 13,
+      "edges": 13,
+      "width": 811,
+      "height": 1048,
+      "png_width": 2028,
+      "png_height": 2620,
+      "nodes_checked": 13,
+      "node_overlaps": 0,
+      "source_sha256": "dfaa49e24207e6f5acc6179732f221b32fae39006b972f896c5030d12a917a8b"
+    },
+    {
+      "id": "04_risk_decision",
+      "title": "碰撞风险与主动避撞决策",
+      "nodes": 15,
+      "edges": 18,
+      "width": 761,
+      "height": 1329,
+      "png_width": 1903,
+      "png_height": 3323,
+      "nodes_checked": 15,
+      "node_overlaps": 0,
+      "source_sha256": "d8dbc4a317c771089c9c212faf3051fb3323a34d77997e75803429daaa4886be"
+    },
+    {
+      "id": "05_mpc",
+      "title": "MPC 跟踪与失效回退闭环",
+      "nodes": 12,
+      "edges": 14,
+      "width": 707,
+      "height": 1345,
+      "png_width": 1768,
+      "png_height": 3363,
+      "nodes_checked": 12,
+      "node_overlaps": 0,
+      "source_sha256": "66ab3fcd98438c611341fb91795974556a05cfa12c0ce4a86349352949a40052"
+    },
+    {
+      "id": "06_testing",
+      "title": "实现测试与研究验证流程",
+      "nodes": 12,
+      "edges": 13,
+      "width": 843,
+      "height": 1025,
+      "png_width": 2108,
+      "png_height": 2563,
+      "nodes_checked": 12,
+      "node_overlaps": 0,
+      "source_sha256": "1680ebcf9dac60dde11dbad32c67cd9add2576458e8eaad06cea7b6d6c017686"
+    }
+  ]
+}

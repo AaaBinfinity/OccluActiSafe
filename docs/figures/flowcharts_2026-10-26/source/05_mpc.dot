@@ -1,0 +1,31 @@
+digraph "05_mpc" {
+graph [rankdir="TB",bgcolor="white",pad="0.26",nodesep="0.36",ranksep="0.46",splines="spline",fontname="PingFang SC",fontsize="13",outputorder="edgesfirst",newrank="true"];
+node [fontname="PingFang SC",fontsize="13",fontcolor="#22354F"];
+edge [fontname="PingFang SC",fontsize="10.5",color="#62758C",fontcolor="#485D75",penwidth="1.1",arrowsize="0.65"];
+state [label="本车当前状态与参考候选\n只使用已可用信息",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="3.0422",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+delay [label="补偿执行 / 排队延迟\n状态传播到 plan_start_time",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.8333",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+problem [label="构建六状态非线性 MPC\nRK4 · 0.1 s × 30 步 · 3 s",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.7361",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+hard [label="跟踪代价与约束\n车体道路 · 加速度 · jerk · 转角 · 附着",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.7500",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+solve [label="CasADi / IPOPT 优化\n常驻 worker + 外层截止",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.4722",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+ok [label="及时返回有效解\n且数值有限？",shape="diamond",style="filled",fillcolor="#FFF3DC",color="#A36C1A",width="2.7750",height="0.9444",margin="0.14,0.08",penwidth="1.2"];
+verify [label="求解后区间与风险复核\n含 0.05 s 执行子步",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.3056",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+safe [label="轨迹与约束\n复核通过？",shape="diamond",style="filled",fillcolor="#FFF3DC",color="#A36C1A",width="2.1250",height="0.9444",margin="0.14,0.08",penwidth="1.2"];
+recover [label="重新核查旧计划 / 回退候选\n稳定转向减速或受限回正",shape="box",style="rounded,filled",fillcolor="#FDEEEA",color="#A35540",width="2.7222",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+first [label="仅执行下一 0.05 s 控制段\n加速度 / 转角 → 前馈 PID 与映射",shape="box",style="rounded,filled",fillcolor="#EAF3F5",color="#397381",width="3.2917",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+carla [label="提交 throttle / brake / steer\nCARLA 更新状态与观测",shape="box",style="rounded,filled",fillcolor="#EAF3F5",color="#397381",width="2.9583",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+log [label="记录控制、残差、耗时与失败\n实际响应另行评测",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="2.8472",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+state -> delay;
+delay -> problem;
+problem -> hard;
+hard -> solve;
+solve -> ok;
+ok -> verify [label="是"];
+ok -> recover [label="否 / 超时",color="#AB573F",fontcolor="#9C4F3A"];
+verify -> safe;
+safe -> first [label="是"];
+safe -> recover [label="否",color="#AB573F",fontcolor="#9C4F3A"];
+recover -> first [label="已复核的可执行回退"];
+first -> carla;
+carla -> state [label="下一周期",style="dashed",constraint="false",color="#71859E",tailport="e",headport="e",weight="0.1"];
+carla -> log [label="独立记录",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+}

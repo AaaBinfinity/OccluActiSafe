@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-26",
+  "figures": 6,
+  "dot_renderings_passed": 6,
+  "svg_png_exports_checked": 12,
+  "node_overlap_count": 0,
+  "source_node_and_edge_consistency": true,
+  "training_truth_boundary_checked": true,
+  "visual_review": {
+    "01_overall": "checked",
+    "02_cooperative_perception": "checked",
+    "03_transformer": "checked",
+    "04_risk_decision": "checked",
+    "05_mpc": "checked",
+    "06_testing": "checked"
+  },
+  "html_local_links": "passed",
+  "html_browser_execution": "not performed; static gallery only",
+  "mermaid_status": "generated from same graph; no Mermaid engine render claimed",
+  "model_or_simulation_tests": "not run for this diagram delivery"
+}

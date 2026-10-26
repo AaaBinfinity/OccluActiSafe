@@ -1,0 +1,205 @@
+{
+  "project": "基于 Transformer 的超视野车路协同主动避撞方案研究",
+  "date": "2026-10-26",
+  "source_versions": {"main": "V0.9", "technical_route": "V1.1"},
+  "status": "拟议研究方案；流程图不表示模型、控制器或实验已经实现",
+  "graphs": [
+    {
+      "id": "01_overall",
+      "title": "总体技术路线",
+      "subtitle": "公开轨迹验证 + CARLA 视频闭环",
+      "caption": "真实轨迹与仿真视频分别提供证据。在线避撞只使用已可用观测；仿真真值进入训练标签与独立评测。",
+      "sources": ["技术路线 1、4、15、16 节", "研究方案 3、9、11 节"],
+      "direction": "TB",
+      "nodes": [
+        {"id":"real","label":"公开真实轨迹\nV2X-Seq TFD","kind":"input"},
+        {"id":"sim","label":"CARLA 场景与双视角视频\n遮挡 / 冲突 / 通信扰动","kind":"input"},
+        {"id":"data","label":"数据治理与样本构建\n坐标统一 · 因果窗口 · 分组划分"},
+        {"id":"learn","label":"预测模型训练与对比\nCV / GRU / HiVT / RC-STGT","kind":"model"},
+        {"id":"freeze","label":"验证集校准与参数冻结\n模型 · 风险口径 · 触发阈值","kind":"model"},
+        {"id":"observe","label":"在线车路感知与消息对齐\n仅使用当时已到达的信息","kind":"input"},
+        {"id":"forecast","label":"路侧多模态轨迹预测\n仿真起步预测 4 s","kind":"model"},
+        {"id":"risk","label":"车端候选生成与风险评估\n统一时域 · 车体几何 · 道路约束","kind":"risk"},
+        {"id":"action","label":"选择本车动作\n参考行驶 / AEB / AES / 组合","kind":"risk"},
+        {"id":"control","label":"MPC 与执行器控制\n车端最终复核及失效回退","kind":"control"},
+        {"id":"step","label":"CARLA 执行下一周期\n更新本车状态与传感器观测","kind":"control"},
+        {"id":"truth","label":"评测专用真值与事件\n禁止直接进入在线控制","kind":"evaluation"},
+        {"id":"evaluate","label":"开放环 / 闭环 / 消融 / 鲁棒性\n配对统计与失败案例分析","kind":"evaluation"},
+        {"id":"deliver","label":"论文 · 系统演示 · 复现材料\n原始日志支撑研究结论","kind":"output"}
+      ],
+      "edges": [
+        ["real","data"],["sim","data"],["data","learn"],["learn","freeze"],
+        ["freeze","forecast","冻结权重","aux"],
+        ["observe","forecast"],["forecast","risk"],["risk","action"],["action","control"],["control","step"],
+        ["step","observe","滚动更新","feedback"],
+        ["freeze","evaluate","真实轨迹预测","aux"],
+        ["step","evaluate","闭环记录","aux"],["truth","evaluate","仅评测","aux"],["evaluate","deliver"]
+      ],
+      "ranks":[["real","sim"],["freeze","observe"],["step","truth"]]
+    },
+    {
+      "id": "02_cooperative_perception",
+      "title": "车路感知与通信流程",
+      "subtitle": "路侧形成超视野信息，车端保留决策权",
+      "caption": "V2I 上传与 I2V 下发分别模拟时延。目标暂时失联时保留有限风险记忆；本地回退无法凭空恢复从未观测到的盲区目标。",
+      "sources": ["技术路线 2、6、7、21.2–21.5 节"],
+      "direction": "TB",
+      "groups":[
+        {"id":"vehicle","label":"车载感知","fill":"#F3F7FC"},
+        {"id":"road","label":"路侧边缘感知","fill":"#F0F8F4"}
+      ],
+      "nodes": [
+        {"id":"v_sensor","label":"车载 RGB + 本车定位\n保留采集帧号与时间","kind":"input","group":"vehicle"},
+        {"id":"v_track","label":"YOLO11m → ByteTrack\n每个相机独立跟踪状态","group":"vehicle"},
+        {"id":"v_ground","label":"射线与道路平面求交\n使用采集时刻相机位姿","group":"vehicle"},
+        {"id":"v_filter","label":"CV Kalman 米制状态\n位置 / 速度 / 有效掩码","group":"vehicle"},
+        {"id":"r_sensor","label":"固定路侧 RGB\n覆盖主车遮挡冲突区域","kind":"input","group":"road"},
+        {"id":"r_track","label":"YOLO11m → ByteTrack\n车辆检测与持续跟踪","group":"road"},
+        {"id":"r_ground","label":"DLT + RANSAC 单应性\n像素接地点 → 地面坐标","group":"road"},
+        {"id":"r_filter","label":"CV Kalman 米制状态\n保留误差与最近观测时间","group":"road"},
+        {"id":"upload","label":"V2I 上传消息队列\n延迟 / 丢包 / 乱序"},
+        {"id":"associate","label":"共同状态时刻对齐与车路关联\nMahalanobis 门控 + 最小代价分配"},
+        {"id":"history","label":"保留双来源历史与质量\n原始时间戳 / age / 掩码"},
+        {"id":"predict","label":"路侧 RC-STGT 预测\n完整未来轨迹模式与权重","kind":"model"},
+        {"id":"down","label":"I2V 下发预测消息\n保留原 anchor_time 与有效期"},
+        {"id":"valid","label":"时效 / 坐标 / 覆盖\n检查通过？","kind":"decision"},
+        {"id":"fuse","label":"车端结合最新本地观测\n复核候选动作风险","kind":"risk"},
+        {"id":"fallback","label":"本地预测与有限风险记忆\n谨慎减速 / 本地 AEB","kind":"fallback"},
+        {"id":"next","label":"进入车端规划与控制\n不直接执行路侧控制命令","kind":"output"}
+      ],
+      "edges": [
+        ["v_sensor","v_track"],["v_track","v_ground"],["v_ground","v_filter"],
+        ["r_sensor","r_track"],["r_track","r_ground"],["r_ground","r_filter"],
+        ["v_filter","upload"],["upload","associate","已到达上传"],
+        ["r_filter","associate"],["associate","history"],["history","predict"],["predict","down"],["down","valid"],
+        ["valid","fuse","是"],["valid","fallback","否","alert"],
+        ["v_filter","fuse","最新本地观测","aux"],["v_filter","fallback","独立本地输入","aux"],
+        ["fuse","next"],["fallback","next"]
+      ],
+      "ranks":[["v_sensor","r_sensor"],["v_track","r_track"],["v_ground","r_ground"],["v_filter","r_filter"],["fuse","fallback"]]
+    },
+    {
+      "id": "03_transformer",
+      "title": "RC-STGT 多模态预测结构",
+      "subtitle": "拟研究模型：可靠性感知车路协同时空图 Transformer",
+      "caption": "形状以仿真起步配置表示，N 为可变车辆数。RC-STGT 为本项目工作名；HiVT 保留为独立基线。未来真值只监督训练损失。",
+      "sources": ["技术路线 8、9、21.6 节"],
+      "direction": "TB",
+      "nodes": [
+        {"id":"x","label":"双来源历史 X\n[B, N, 20, 2, 12]","kind":"input"},
+        {"id":"mask","label":"特征 / 观测 / 来源掩码\nage · 定位质量 · sample_dt","kind":"input"},
+        {"id":"encode","label":"特征清理与来源编码\nMLP + source embedding"},
+        {"id":"gate","label":"可靠性门控融合\nMaskedSoftmax · 无效来源权重为 0","kind":"model"},
+        {"id":"temporal","label":"时间 Transformer × 2\n[B·N, 20, 128] · 8 头","kind":"model"},
+        {"id":"spatial","label":"车辆空间图注意力 × 2\n邻近 / 冲突关系 · 8 头","kind":"model"},
+        {"id":"map","label":"车道折线与当前信号\n点级 MLP · masked pooling","kind":"input"},
+        {"id":"map_attn","label":"地图 Cross-Attention\n空地图使用 no_map token","kind":"model"},
+        {"id":"modes","label":"K = 6 个模式 embedding\n逐车解码完整未来","kind":"model"},
+        {"id":"traj","label":"未来轨迹均值\n[B, N, 6, 40, 2]","kind":"output"},
+        {"id":"prob","label":"模式 logits → Softmax\n[B, N, 6]","kind":"output"},
+        {"id":"loss","label":"训练损失：赢家回归 + 模式分类\n未来有效掩码 · AdamW","kind":"evaluation"},
+        {"id":"gt","label":"未来真值轨迹\n仅训练 / 评测使用","kind":"evaluation"}
+      ],
+      "edges":[
+        ["x","encode"],["mask","encode"],["encode","gate"],["gate","temporal"],["temporal","spatial"],
+        ["spatial","map_attn"],["map","map_attn"],["map_attn","modes"],
+        ["modes","traj"],["map_attn","prob","模式权重分支"],
+        ["traj","loss","训练时","aux"],["prob","loss","训练时","aux"],["gt","loss","监督标签","aux"]
+      ],
+      "ranks":[["x","mask"],["spatial","map"],["traj","prob"],["gt","loss"]]
+    },
+    {
+      "id": "04_risk_decision",
+      "title": "碰撞风险与主动避撞决策",
+      "subtitle": "先检查信息与动作可行性，再选择制动或转向",
+      "caption": "不同动作使用同一有效时域。离散车对风险按模式权重求和，多车 max/sum 为评分；不能把它们当作已校准的真实联合概率。",
+      "sources": ["技术路线 7、10、11、21.7–21.8 节"],
+      "direction": "TB",
+      "nodes":[
+        {"id":"input","label":"当前本车状态 + 本地观测\n路侧预测与原始绝对时间","kind":"input"},
+        {"id":"time","label":"检查控制前缀与消息时效\n对齐到共同计划起点"},
+        {"id":"coverage","label":"预测有效且信息\n覆盖完整规划？","kind":"decision"},
+        {"id":"degraded","label":"降级：本地预测 / 风险记忆\n谨慎减速与本地紧急监控","kind":"fallback"},
+        {"id":"candidate","label":"生成本车候选轨迹\n参考行驶 / 制动 / 左右避让 / 组合"},
+        {"id":"constraints","label":"过滤不可行动作\n道路 · 侧后车 · 转角 · jerk · 附着"},
+        {"id":"collision","label":"SAT 车体碰撞 + 区间细分\n逐目标 · 逐模式 · 完整轨迹事件","kind":"risk"},
+        {"id":"score","label":"模式加权得到车对风险\n比较 max / sum 评分与严重度","kind":"risk"},
+        {"id":"feasible","label":"存在低风险的\n可执行候选？","kind":"decision"},
+        {"id":"select","label":"选择风险较低动作\n相近时兼顾舒适与效率","kind":"risk"},
+        {"id":"mitigate","label":"未找到安全候选\n执行可行减损并记录失败","kind":"fallback"},
+        {"id":"normal","label":"参考行驶 / 提前减速","kind":"control"},
+        {"id":"aeb","label":"AEB：制动","kind":"control"},
+        {"id":"aes","label":"AES：转向或制动转向\n侧向通道必须可观察且可行","kind":"control"},
+        {"id":"execute","label":"车端控制与滚动复核\n路侧结果作为辅助信息","kind":"output"}
+      ],
+      "edges":[
+        ["input","time"],["time","coverage"],["coverage","candidate","是"],["coverage","degraded","否","alert"],
+        ["candidate","constraints"],["constraints","collision"],["collision","score"],["score","feasible"],
+        ["feasible","select","是"],["feasible","mitigate","否","alert"],
+        ["select","normal","选中动作"],["select","aeb","选中动作"],["select","aes","选中动作"],
+        ["normal","execute"],["aeb","execute"],["aes","execute"],["mitigate","execute"],["degraded","execute"]
+      ],
+      "ranks":[["normal","aeb","aes"]]
+    },
+    {
+      "id":"05_mpc",
+      "title":"MPC 跟踪与失效回退闭环",
+      "subtitle":"10 Hz 优化 · 20 Hz 执行与本地安全复核",
+      "caption":"六状态为 [x,y,ψ,v,a,δ]，控制为 [jerk,转角速率]。外层截止、节点间约束和求解后风险复核均需实现；MPC 本身不保证必然避撞。",
+      "sources":["技术路线 12、21.9、22.4 节"],
+      "direction":"TB",
+      "nodes":[
+        {"id":"state","label":"本车当前状态与参考候选\n只使用已可用信息","kind":"input"},
+        {"id":"delay","label":"补偿执行 / 排队延迟\n状态传播到 plan_start_time"},
+        {"id":"problem","label":"构建六状态非线性 MPC\nRK4 · 0.1 s × 30 步 · 3 s","kind":"model"},
+        {"id":"hard","label":"跟踪代价与约束\n车体道路 · 加速度 · jerk · 转角 · 附着"},
+        {"id":"solve","label":"CasADi / IPOPT 优化\n常驻 worker + 外层截止","kind":"model"},
+        {"id":"ok","label":"及时返回有效解\n且数值有限？","kind":"decision"},
+        {"id":"verify","label":"求解后区间与风险复核\n含 0.05 s 执行子步"},
+        {"id":"safe","label":"轨迹与约束\n复核通过？","kind":"decision"},
+        {"id":"recover","label":"重新核查旧计划 / 回退候选\n稳定转向减速或受限回正","kind":"fallback"},
+        {"id":"first","label":"仅执行下一 0.05 s 控制段\n加速度 / 转角 → 前馈 PID 与映射","kind":"control"},
+        {"id":"carla","label":"提交 throttle / brake / steer\nCARLA 更新状态与观测","kind":"control"},
+        {"id":"log","label":"记录控制、残差、耗时与失败\n实际响应另行评测","kind":"evaluation"}
+      ],
+      "edges":[
+        ["state","delay"],["delay","problem"],["problem","hard"],["hard","solve"],["solve","ok"],
+        ["ok","verify","是"],["ok","recover","否 / 超时","alert"],
+        ["verify","safe"],["safe","first","是"],["safe","recover","否","alert"],
+        ["recover","first","已复核的可执行回退"],["first","carla"],
+        ["carla","state","下一周期","feedback"],["carla","log","独立记录","aux"]
+      ]
+    },
+    {
+      "id":"06_testing",
+      "feedback_side":"w",
+      "title":"实现测试与研究验证流程",
+      "subtitle":"53 个测试规格是计划，不是已通过的系统结果",
+      "caption":"公开日志用于轨迹预测与声明的风险代理，控制收益由仿真配对实验验证。指标、失败运行和统计区间均保存，不能用单次视频代替证据。",
+      "sources":["技术路线 4、15、16、22、23 节"],
+      "direction":"TB",
+      "nodes":[
+        {"id":"protocol","label":"冻结数据与测试协议\n事件定义 / 分组 split / 因果边界","kind":"input"},
+        {"id":"unit","label":"模块正确性测试\n坐标 / 掩码 / 几何 / 时间 / 梯度"},
+        {"id":"integration","label":"接口与故障注入测试\n乱序 / 丢包 / 旧预测 / 求解失败"},
+        {"id":"passed","label":"基础正确性与\n夹具验收通过？","kind":"decision"},
+        {"id":"repair","label":"定位失败并修复\n保留输入、日志与复现用例","kind":"fallback"},
+        {"id":"open","label":"真实数据开放环评测\nCV / GRU / HiVT / RC-STGT","kind":"evaluation"},
+        {"id":"closed","label":"CARLA 同场景配对闭环\n无干预 / TTC-AEB / 预测AEB / AEB+AES","kind":"evaluation"},
+        {"id":"ablation","label":"模型消融与风险比较\n相同输入与公平训练协议","kind":"evaluation"},
+        {"id":"robust","label":"鲁棒性 / 泛化 / 协同扩展\n未见路口 · 遮挡 · 延迟 · 失联","kind":"evaluation"},
+        {"id":"metrics","label":"预测、预警与闭环指标分开\n碰撞 / 越界 / 效率 / 实际耗时"},
+        {"id":"statistics","label":"场景级配对统计\n至少 3 训练种子 · bootstrap 区间"},
+        {"id":"deliver","label":"原始结果 → 图表 → 论文结论\n可追溯配置 / 权重 / 场景 / run_id","kind":"output"}
+      ],
+      "edges":[
+        ["protocol","unit"],["unit","integration"],["integration","passed"],
+        ["passed","repair","否","alert"],["repair","unit","回归检查","feedback"],
+        ["passed","open","是"],["passed","closed","是"],
+        ["open","ablation"],["closed","robust"],["ablation","metrics"],["robust","metrics"],
+        ["metrics","statistics"],["statistics","deliver"]
+      ],
+      "ranks":[["open","closed"],["ablation","robust"]]
+    }
+  ]
+}

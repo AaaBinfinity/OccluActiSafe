@@ -1,0 +1,37 @@
+digraph "01_overall" {
+graph [rankdir="TB",bgcolor="white",pad="0.26",nodesep="0.36",ranksep="0.46",splines="spline",fontname="PingFang SC",fontsize="13",outputorder="edgesfirst",newrank="true"];
+node [fontname="PingFang SC",fontsize="13",fontcolor="#22354F"];
+edge [fontname="PingFang SC",fontsize="10.5",color="#62758C",fontcolor="#485D75",penwidth="1.1",arrowsize="0.65"];
+real [label="公开真实轨迹\nV2X-Seq TFD",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="2.0644",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+sim [label="CARLA 场景与双视角视频\n遮挡 / 冲突 / 通信扰动",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="3.2378",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+data [label="数据治理与样本构建\n坐标统一 · 因果窗口 · 分组划分",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.1389",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+learn [label="预测模型训练与对比\nCV / GRU / HiVT / RC-STGT",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="3.1667",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+freeze [label="验证集校准与参数冻结\n模型 · 风险口径 · 触发阈值",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.7778",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+observe [label="在线车路感知与消息对齐\n仅使用当时已到达的信息",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="3.0422",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+forecast [label="路侧多模态轨迹预测\n仿真起步预测 4 s",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.1111",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+risk [label="车端候选生成与风险评估\n统一时域 · 车体几何 · 道路约束",shape="box",style="rounded,filled",fillcolor="#FFF3DC",color="#A36C1A",width="3.1389",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+action [label="选择本车动作\n参考行驶 / AEB / AES / 组合",shape="box",style="rounded,filled",fillcolor="#FFF3DC",color="#A36C1A",width="3.0417",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+control [label="MPC 与执行器控制\n车端最终复核及失效回退",shape="box",style="rounded,filled",fillcolor="#EAF3F5",color="#397381",width="2.4861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+step [label="CARLA 执行下一周期\n更新本车状态与传感器观测",shape="box",style="rounded,filled",fillcolor="#EAF3F5",color="#397381",width="2.6528",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+truth [label="评测专用真值与事件\n禁止直接进入在线控制",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="2.2917",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+evaluate [label="开放环 / 闭环 / 消融 / 鲁棒性\n配对统计与失败案例分析",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="3.0139",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+deliver [label="论文 · 系统演示 · 复现材料\n原始日志支撑研究结论",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.7778",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+{rank=same;real;sim;}
+{rank=same;freeze;observe;}
+{rank=same;step;truth;}
+real -> data;
+sim -> data;
+data -> learn;
+learn -> freeze;
+freeze -> forecast [label="冻结权重",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+observe -> forecast;
+forecast -> risk;
+risk -> action;
+action -> control;
+control -> step;
+step -> observe [label="滚动更新",style="dashed",constraint="false",color="#71859E",tailport="e",headport="e",weight="0.1"];
+freeze -> evaluate [label="真实轨迹预测",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+step -> evaluate [label="闭环记录",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+truth -> evaluate [label="仅评测",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+evaluate -> deliver;
+}

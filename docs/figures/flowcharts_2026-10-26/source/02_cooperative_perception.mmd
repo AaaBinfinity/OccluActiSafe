@@ -1,0 +1,57 @@
+flowchart TD
+  subgraph vehicle["车载感知"]
+  v_sensor[/"车载 RGB + 本车定位<br/>保留采集帧号与时间"/]
+  v_track["YOLO11m → ByteTrack<br/>每个相机独立跟踪状态"]
+  v_ground["射线与道路平面求交<br/>使用采集时刻相机位姿"]
+  v_filter["CV Kalman 米制状态<br/>位置 / 速度 / 有效掩码"]
+  end
+  subgraph road["路侧边缘感知"]
+  r_sensor[/"固定路侧 RGB<br/>覆盖主车遮挡冲突区域"/]
+  r_track["YOLO11m → ByteTrack<br/>车辆检测与持续跟踪"]
+  r_ground["DLT + RANSAC 单应性<br/>像素接地点 → 地面坐标"]
+  r_filter["CV Kalman 米制状态<br/>保留误差与最近观测时间"]
+  end
+  upload["V2I 上传消息队列<br/>延迟 / 丢包 / 乱序"]
+  associate["共同状态时刻对齐与车路关联<br/>Mahalanobis 门控 + 最小代价分配"]
+  history["保留双来源历史与质量<br/>原始时间戳 / age / 掩码"]
+  predict["路侧 RC-STGT 预测<br/>完整未来轨迹模式与权重"]
+  down["I2V 下发预测消息<br/>保留原 anchor_time 与有效期"]
+  valid{"时效 / 坐标 / 覆盖<br/>检查通过？"}
+  fuse["车端结合最新本地观测<br/>复核候选动作风险"]
+  fallback["本地预测与有限风险记忆<br/>谨慎减速 / 本地 AEB"]
+  next(["进入车端规划与控制<br/>不直接执行路侧控制命令"])
+  v_sensor --> v_track
+  v_track --> v_ground
+  v_ground --> v_filter
+  r_sensor --> r_track
+  r_track --> r_ground
+  r_ground --> r_filter
+  v_filter --> upload
+  upload -->|已到达上传| associate
+  r_filter --> associate
+  associate --> history
+  history --> predict
+  predict --> down
+  down --> valid
+  valid -->|是| fuse
+  valid -->|否| fallback
+  v_filter -.->|最新本地观测| fuse
+  v_filter -.->|独立本地输入| fallback
+  fuse --> next
+  fallback --> next
+  classDef process fill:#F4F7FB,stroke:#71859E,color:#22354F,stroke-width:1.2px
+  class v_track,v_ground,v_filter,r_track,r_ground,r_filter,upload,associate,history,down process
+  classDef input fill:#EDF7F2,stroke:#38775E,color:#22354F,stroke-width:1.2px
+  class v_sensor,r_sensor input
+  classDef model fill:#EAF1FC,stroke:#3B66A2,color:#22354F,stroke-width:1.2px
+  class predict model
+  classDef risk fill:#FFF3DC,stroke:#A36C1A,color:#22354F,stroke-width:1.2px
+  class fuse risk
+  classDef decision fill:#FFF3DC,stroke:#A36C1A,color:#22354F,stroke-width:1.2px
+  class valid decision
+  classDef control fill:#EAF3F5,stroke:#397381,color:#22354F,stroke-width:1.2px
+  classDef fallback fill:#FDEEEA,stroke:#A35540,color:#22354F,stroke-width:1.2px
+  class fallback fallback
+  classDef evaluation fill:#F1EFF9,stroke:#76628D,color:#22354F,stroke-width:1.2px
+  classDef output fill:#EAF1FC,stroke:#3B66A2,color:#22354F,stroke-width:1.2px
+  class next output

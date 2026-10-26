@@ -1,0 +1,46 @@
+flowchart TD
+  real[/"公开真实轨迹<br/>V2X-Seq TFD"/]
+  sim[/"CARLA 场景与双视角视频<br/>遮挡 / 冲突 / 通信扰动"/]
+  data["数据治理与样本构建<br/>坐标统一 · 因果窗口 · 分组划分"]
+  learn["预测模型训练与对比<br/>CV / GRU / HiVT / RC-STGT"]
+  freeze["验证集校准与参数冻结<br/>模型 · 风险口径 · 触发阈值"]
+  observe[/"在线车路感知与消息对齐<br/>仅使用当时已到达的信息"/]
+  forecast["路侧多模态轨迹预测<br/>仿真起步预测 4 s"]
+  risk["车端候选生成与风险评估<br/>统一时域 · 车体几何 · 道路约束"]
+  action["选择本车动作<br/>参考行驶 / AEB / AES / 组合"]
+  control["MPC 与执行器控制<br/>车端最终复核及失效回退"]
+  step["CARLA 执行下一周期<br/>更新本车状态与传感器观测"]
+  truth["评测专用真值与事件<br/>禁止直接进入在线控制"]
+  evaluate["开放环 / 闭环 / 消融 / 鲁棒性<br/>配对统计与失败案例分析"]
+  deliver(["论文 · 系统演示 · 复现材料<br/>原始日志支撑研究结论"])
+  real --> data
+  sim --> data
+  data --> learn
+  learn --> freeze
+  freeze -.->|冻结权重| forecast
+  observe --> forecast
+  forecast --> risk
+  risk --> action
+  action --> control
+  control --> step
+  step -.->|滚动更新| observe
+  freeze -.->|真实轨迹预测| evaluate
+  step -.->|闭环记录| evaluate
+  truth -.->|仅评测| evaluate
+  evaluate --> deliver
+  classDef process fill:#F4F7FB,stroke:#71859E,color:#22354F,stroke-width:1.2px
+  class data process
+  classDef input fill:#EDF7F2,stroke:#38775E,color:#22354F,stroke-width:1.2px
+  class real,sim,observe input
+  classDef model fill:#EAF1FC,stroke:#3B66A2,color:#22354F,stroke-width:1.2px
+  class learn,freeze,forecast model
+  classDef risk fill:#FFF3DC,stroke:#A36C1A,color:#22354F,stroke-width:1.2px
+  class risk,action risk
+  classDef decision fill:#FFF3DC,stroke:#A36C1A,color:#22354F,stroke-width:1.2px
+  classDef control fill:#EAF3F5,stroke:#397381,color:#22354F,stroke-width:1.2px
+  class control,step control
+  classDef fallback fill:#FDEEEA,stroke:#A35540,color:#22354F,stroke-width:1.2px
+  classDef evaluation fill:#F1EFF9,stroke:#76628D,color:#22354F,stroke-width:1.2px
+  class truth,evaluate evaluation
+  classDef output fill:#EAF1FC,stroke:#3B66A2,color:#22354F,stroke-width:1.2px
+  class deliver output

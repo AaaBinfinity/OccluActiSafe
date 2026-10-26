@@ -1,0 +1,39 @@
+digraph "04_risk_decision" {
+graph [rankdir="TB",bgcolor="white",pad="0.26",nodesep="0.36",ranksep="0.46",splines="spline",fontname="PingFang SC",fontsize="13",outputorder="edgesfirst",newrank="true"];
+node [fontname="PingFang SC",fontsize="13",fontcolor="#22354F"];
+edge [fontname="PingFang SC",fontsize="10.5",color="#62758C",fontcolor="#485D75",penwidth="1.1",arrowsize="0.65"];
+input [label="当前本车状态 + 本地观测\n路侧预测与原始绝对时间",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="3.0956",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+time [label="检查控制前缀与消息时效\n对齐到共同计划起点",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.4861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+coverage [label="预测有效且信息\n覆盖完整规划？",shape="diamond",style="filled",fillcolor="#FFF3DC",color="#A36C1A",width="2.7750",height="0.9444",margin="0.14,0.08",penwidth="1.2"];
+degraded [label="降级：本地预测 / 风险记忆\n谨慎减速与本地紧急监控",shape="box",style="rounded,filled",fillcolor="#FDEEEA",color="#A35540",width="2.7083",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+candidate [label="生成本车候选轨迹\n参考行驶 / 制动 / 左右避让 / 组合",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.3750",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+constraints [label="过滤不可行动作\n道路 · 侧后车 · 转角 · jerk · 附着",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="3.3889",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+collision [label="SAT 车体碰撞 + 区间细分\n逐目标 · 逐模式 · 完整轨迹事件",shape="box",style="rounded,filled",fillcolor="#FFF3DC",color="#A36C1A",width="3.1389",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+score [label="模式加权得到车对风险\n比较 max / sum 评分与严重度",shape="box",style="rounded,filled",fillcolor="#FFF3DC",color="#A36C1A",width="3.0278",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+feasible [label="存在低风险的\n可执行候选？",shape="diamond",style="filled",fillcolor="#FFF3DC",color="#A36C1A",width="2.4250",height="0.9444",margin="0.14,0.08",penwidth="1.2"];
+select [label="选择风险较低动作\n相近时兼顾舒适与效率",shape="box",style="rounded,filled",fillcolor="#FFF3DC",color="#A36C1A",width="2.3056",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+mitigate [label="未找到安全候选\n执行可行减损并记录失败",shape="box",style="rounded,filled",fillcolor="#FDEEEA",color="#A35540",width="2.4861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+normal [label="参考行驶 / 提前减速",shape="box",style="rounded,filled",fillcolor="#EAF3F5",color="#397381",width="2.1806",height="0.5417",margin="0.20,0.14",penwidth="1.2"];
+aeb [label="AEB：制动",shape="box",style="rounded,filled",fillcolor="#EAF3F5",color="#397381",width="1.8056",height="0.5417",margin="0.20,0.14",penwidth="1.2"];
+aes [label="AES：转向或制动转向\n侧向通道必须可观察且可行",shape="box",style="rounded,filled",fillcolor="#EAF3F5",color="#397381",width="2.6667",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+execute [label="车端控制与滚动复核\n路侧结果作为辅助信息",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.3056",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+{rank=same;normal;aeb;aes;}
+input -> time;
+time -> coverage;
+coverage -> candidate [label="是"];
+coverage -> degraded [label="否",color="#AB573F",fontcolor="#9C4F3A"];
+candidate -> constraints;
+constraints -> collision;
+collision -> score;
+score -> feasible;
+feasible -> select [label="是"];
+feasible -> mitigate [label="否",color="#AB573F",fontcolor="#9C4F3A"];
+select -> normal [label="选中动作"];
+select -> aeb [label="选中动作"];
+select -> aes [label="选中动作"];
+normal -> execute;
+aeb -> execute;
+aes -> execute;
+mitigate -> execute;
+degraded -> execute;
+}

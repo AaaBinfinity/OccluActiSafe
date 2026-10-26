@@ -1,0 +1,266 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="691" height="1371" viewBox="0 0 691 1371" role="img" aria-labelledby="title desc">
+<title id="title">图 2 车路感知与通信流程</title>
+<desc id="desc">V2I 上传与 I2V 下发分别模拟时延。目标暂时失联时保留有限风险记忆；本地回退无法凭空恢复从未观测到的盲区目标。 拟议研究方案；流程图不表示模型、控制器或实验已经实现</desc>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<g font-family="PingFang SC, Microsoft YaHei, sans-serif">
+<text x="24" y="29" fill="#213651" font-size="20" font-weight="600">图 2  车路感知与通信流程</text>
+<text x="24" y="52" fill="#5A6E85" font-size="11.5">路侧形成超视野信息，车端保留决策权</text>
+<line x1="24" y1="67" x2="667" y2="67" stroke="#D9E2EC"/>
+</g>
+<g transform="translate(12,78)">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(18.72 1230.25)">
+<title>02_cooperative_perception</title>
+<polygon fill="white" stroke="none" points="-18.72,18.72 -18.72,-1230.25 648.72,-1230.25 648.72,18.72 -18.72,18.72"/>
+<g id="clust1" class="cluster">
+<title>cluster_vehicle</title>
+<path fill="#f3f7fc" stroke="#d5dfea" d="M326,-765.81C326,-765.81 610,-765.81 610,-765.81 616,-765.81 622,-771.81 622,-777.81 622,-777.81 622,-1191.53 622,-1191.53 622,-1197.53 616,-1203.53 610,-1203.53 610,-1203.53 326,-1203.53 326,-1203.53 320,-1203.53 314,-1197.53 314,-1191.53 314,-1191.53 314,-777.81 314,-777.81 314,-771.81 320,-765.81 326,-765.81"/>
+<text xml:space="preserve" text-anchor="middle" x="468" y="-1186.03" font-family="PingFang SC" font-size="15.00" fill="#36516f">车载感知</text>
+</g>
+<g id="clust2" class="cluster">
+<title>cluster_road</title>
+<path fill="#f0f8f4" stroke="#d5dfea" d="M20,-765.81C20,-765.81 294,-765.81 294,-765.81 300,-765.81 306,-771.81 306,-777.81 306,-777.81 306,-1191.53 306,-1191.53 306,-1197.53 300,-1203.53 294,-1203.53 294,-1203.53 20,-1203.53 20,-1203.53 14,-1203.53 8,-1197.53 8,-1191.53 8,-1191.53 8,-777.81 8,-777.81 8,-771.81 14,-765.81 20,-765.81"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1186.03" font-family="PingFang SC" font-size="15.00" fill="#36516f">路侧边缘感知</text>
+</g>
+<!-- v_sensor&#45;&gt;v_track -->
+<g id="edge1" class="edge">
+<title>v_sensor&#45;&gt;v_track</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M467.55,-1056.25C467.47,-1047.46 467.39,-1038.49 467.32,-1030.21"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="469.59,-1030.35 467.26,-1023.87 465.04,-1030.39 469.59,-1030.35"/>
+</g>
+<!-- v_track&#45;&gt;v_ground -->
+<g id="edge2" class="edge">
+<title>v_track&#45;&gt;v_ground</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M466.69,-965.62C466.6,-957.25 466.5,-947.9 466.4,-939.07"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="468.67,-939.28 466.33,-932.8 464.12,-939.33 468.67,-939.28"/>
+</g>
+<!-- v_ground&#45;&gt;v_filter -->
+<g id="edge3" class="edge">
+<title>v_ground&#45;&gt;v_filter</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M465.08,-874.62C464.8,-866.25 464.49,-856.9 464.19,-848.07"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="466.47,-848.22 463.98,-841.8 461.92,-848.37 466.47,-848.22"/>
+</g>
+<!-- v_filter&#45;&gt;upload -->
+<g id="edge7" class="edge">
+<title>v_filter&#45;&gt;upload</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M459.63,-783.25C458.28,-772.3 456.73,-759.57 455.31,-747.98"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="457.6,-747.99 454.55,-741.81 453.08,-748.54 457.6,-747.99"/>
+</g>
+<!-- v_filter&#45;&gt;fuse -->
+<g id="edge16" class="edge">
+<title>v_filter&#45;&gt;fuse</title>
+<path fill="none" stroke="#8b879e" stroke-width="1.1" stroke-dasharray="5,2" d="M375.55,-787.33C317.15,-768.98 251,-741.8 251,-712.81 251,-712.81 251,-712.81 251,-226.6 251,-196.82 271.72,-170.96 293.17,-152.17"/>
+<polygon fill="#8b879e" stroke="#8b879e" stroke-width="1.1" points="294.4,-153.65 297.36,-148.62 291.92,-150.71 294.4,-153.65"/>
+<text xml:space="preserve" text-anchor="middle" x="274.62" y="-463.75" font-family="PingFang SC" font-size="10.50" fill="#716b85">最新本地观测</text>
+</g>
+<!-- v_filter&#45;&gt;fallback -->
+<g id="edge17" class="edge">
+<title>v_filter&#45;&gt;fallback</title>
+<path fill="none" stroke="#8b879e" stroke-width="1.1" stroke-dasharray="5,2" d="M526,-783.33C552.37,-767.23 577,-743.87 577,-712.81 577,-712.81 577,-712.81 577,-226.6 577,-201.17 567.09,-174.3 557.26,-153.89"/>
+<polygon fill="#8b879e" stroke="#8b879e" stroke-width="1.1" points="559,-153.06 554.83,-148.99 555.55,-154.78 559,-153.06"/>
+<text xml:space="preserve" text-anchor="middle" x="600.62" y="-463.75" font-family="PingFang SC" font-size="10.50" fill="#716b85">独立本地输入</text>
+</g>
+<!-- r_sensor&#45;&gt;r_track -->
+<g id="edge4" class="edge">
+<title>r_sensor&#45;&gt;r_track</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M166.97,-1056.25C168.69,-1047.46 170.45,-1038.49 172.07,-1030.21"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="174.3,-1030.66 173.32,-1023.84 169.83,-1029.78 174.3,-1030.66"/>
+</g>
+<!-- r_track&#45;&gt;r_ground -->
+<g id="edge5" class="edge">
+<title>r_track&#45;&gt;r_ground</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M181.75,-965.62C182.6,-957.25 183.54,-947.9 184.43,-939.07"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="186.68,-939.49 185.07,-932.79 182.15,-939.03 186.68,-939.49"/>
+</g>
+<!-- r_ground&#45;&gt;r_filter -->
+<g id="edge6" class="edge">
+<title>r_ground&#45;&gt;r_filter</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M190.75,-874.62C191.6,-866.25 192.54,-856.9 193.43,-848.07"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="195.68,-848.49 194.07,-841.79 191.15,-848.03 195.68,-848.49"/>
+</g>
+<!-- r_filter&#45;&gt;associate -->
+<g id="edge9" class="edge">
+<title>r_filter&#45;&gt;associate</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M211.77,-783.47C217.23,-774.52 223.84,-764.83 231,-756.81 271.23,-711.73 326.32,-669.65 365.52,-642.24"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="366.75,-644.15 370.79,-638.58 364.15,-640.42 366.75,-644.15"/>
+</g>
+<!-- upload&#45;&gt;associate -->
+<g id="edge8" class="edge">
+<title>upload&#45;&gt;associate</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M440.89,-683.32C436.57,-671.56 431.47,-657.7 426.88,-645.22"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="429.05,-644.54 424.67,-639.22 424.78,-646.11 429.05,-644.54"/>
+<text xml:space="preserve" text-anchor="middle" x="454.4" y="-657.36" font-family="PingFang SC" font-size="10.50" fill="#485d75">已到达上传</text>
+</g>
+<!-- associate&#45;&gt;history -->
+<g id="edge10" class="edge">
+<title>associate&#45;&gt;history</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M414,-581.02C414,-572.64 414,-563.3 414,-554.46"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="416.28,-554.7 414,-548.2 411.73,-554.7 416.28,-554.7"/>
+</g>
+<!-- history&#45;&gt;predict -->
+<g id="edge11" class="edge">
+<title>history&#45;&gt;predict</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M414,-489.71C414,-478.07 414,-464.36 414,-451.97"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="416.28,-452.22 414,-445.72 411.73,-452.22 416.28,-452.22"/>
+</g>
+<!-- predict&#45;&gt;down -->
+<g id="edge12" class="edge">
+<title>predict&#45;&gt;down</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M414,-387.42C414,-379.04 414,-369.69 414,-360.86"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="416.28,-361.09 414,-354.59 411.73,-361.09 416.28,-361.09"/>
+</g>
+<!-- down&#45;&gt;valid -->
+<g id="edge13" class="edge">
+<title>down&#45;&gt;valid</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M414,-296.12C414,-287.98 414,-278.88 414,-270.07"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="416.28,-270.25 414,-263.75 411.73,-270.25 416.28,-270.25"/>
+</g>
+<!-- valid&#45;&gt;fuse -->
+<g id="edge14" class="edge">
+<title>valid&#45;&gt;fuse</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M394.56,-198.59C385.05,-184.9 373.53,-168.31 363.53,-153.9"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="365.58,-152.86 360.01,-148.82 361.84,-155.46 365.58,-152.86"/>
+<text xml:space="preserve" text-anchor="middle" x="383.16" y="-167.15" font-family="PingFang SC" font-size="10.50" fill="#485d75">是</text>
+</g>
+<!-- valid&#45;&gt;fallback -->
+<g id="edge15" class="edge">
+<title>valid&#45;&gt;fallback</title>
+<path fill="none" stroke="#ab573f" stroke-width="1.1" d="M443.07,-201.61C460.05,-187.01 481.67,-168.43 499.99,-152.68"/>
+<polygon fill="#ab573f" stroke="#ab573f" stroke-width="1.1" points="501.35,-154.51 504.8,-148.54 498.39,-151.06 501.35,-154.51"/>
+<text xml:space="preserve" text-anchor="middle" x="487.36" y="-167.15" font-family="PingFang SC" font-size="10.50" fill="#9c4f3a">否</text>
+</g>
+<!-- fuse&#45;&gt;next -->
+<g id="edge18" class="edge">
+<title>fuse&#45;&gt;next</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M370.2,-90.57C380.17,-81.52 391.36,-71.36 401.73,-61.94"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="403.21,-63.67 406.5,-57.61 400.15,-60.3 403.21,-63.67"/>
+</g>
+<!-- fallback&#45;&gt;next -->
+<g id="edge19" class="edge">
+<title>fallback&#45;&gt;next</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M507.18,-90.57C496.92,-81.44 485.38,-71.17 474.71,-61.68"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="476.5,-60.22 470.13,-57.6 473.48,-63.62 476.5,-60.22"/>
+</g>
+<!-- v_sensor -->
+<g id="node1" class="node">
+<title>v_sensor</title>
+<polygon fill="#edf7f2" stroke="#38775e" stroke-width="1.2" points="603.93,-1159.53 387.7,-1159.53 332.07,-1056.81 548.3,-1056.81 603.93,-1159.53"/>
+<text xml:space="preserve" text-anchor="middle" x="468" y="-1112.07" font-family="PingFang SC" font-size="13.00" fill="#22354f">车载 RGB + 本车定位</text>
+<text xml:space="preserve" text-anchor="middle" x="468" y="-1096.47" font-family="PingFang SC" font-size="13.00" fill="#22354f">保留采集帧号与时间</text>
+</g>
+<!-- v_track -->
+<g id="node2" class="node">
+<title>v_track</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M545,-1021.81C545,-1021.81 389,-1021.81 389,-1021.81 383,-1021.81 377,-1015.81 377,-1009.81 377,-1009.81 377,-977.81 377,-977.81 377,-971.81 383,-965.81 389,-965.81 389,-965.81 545,-965.81 545,-965.81 551,-965.81 557,-971.81 557,-977.81 557,-977.81 557,-1009.81 557,-1009.81 557,-1015.81 551,-1021.81 545,-1021.81"/>
+<text xml:space="preserve" text-anchor="middle" x="467" y="-997.71" font-family="PingFang SC" font-size="13.00" fill="#22354f">YOLO11m → ByteTrack</text>
+<text xml:space="preserve" text-anchor="middle" x="467" y="-982.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">每个相机独立跟踪状态</text>
+</g>
+<!-- v_ground -->
+<g id="node3" class="node">
+<title>v_ground</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M537,-930.81C537,-930.81 395,-930.81 395,-930.81 389,-930.81 383,-924.81 383,-918.81 383,-918.81 383,-886.81 383,-886.81 383,-880.81 389,-874.81 395,-874.81 395,-874.81 537,-874.81 537,-874.81 543,-874.81 549,-880.81 549,-886.81 549,-886.81 549,-918.81 549,-918.81 549,-924.81 543,-930.81 537,-930.81"/>
+<text xml:space="preserve" text-anchor="middle" x="466" y="-906.71" font-family="PingFang SC" font-size="13.00" fill="#22354f">射线与道路平面求交</text>
+<text xml:space="preserve" text-anchor="middle" x="466" y="-891.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">使用采集时刻相机位姿</text>
+</g>
+<!-- v_filter -->
+<g id="node4" class="node">
+<title>v_filter</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M538,-839.81C538,-839.81 388,-839.81 388,-839.81 382,-839.81 376,-833.81 376,-827.81 376,-827.81 376,-795.81 376,-795.81 376,-789.81 382,-783.81 388,-783.81 388,-783.81 538,-783.81 538,-783.81 544,-783.81 550,-789.81 550,-795.81 550,-795.81 550,-827.81 550,-827.81 550,-833.81 544,-839.81 538,-839.81"/>
+<text xml:space="preserve" text-anchor="middle" x="463" y="-815.71" font-family="PingFang SC" font-size="13.00" fill="#22354f">CV Kalman 米制状态</text>
+<text xml:space="preserve" text-anchor="middle" x="463" y="-800.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">位置 / 速度 / 有效掩码</text>
+</g>
+<!-- r_sensor -->
+<g id="node5" class="node">
+<title>r_sensor</title>
+<polygon fill="#edf7f2" stroke="#38775e" stroke-width="1.2" points="287.94,-1159.53 79.64,-1159.53 26.06,-1056.81 234.36,-1056.81 287.94,-1159.53"/>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1112.07" font-family="PingFang SC" font-size="13.00" fill="#22354f">固定路侧 RGB</text>
+<text xml:space="preserve" text-anchor="middle" x="157" y="-1096.47" font-family="PingFang SC" font-size="13.00" fill="#22354f">覆盖主车遮挡冲突区域</text>
+</g>
+<!-- r_track -->
+<g id="node6" class="node">
+<title>r_track</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M257,-1021.81C257,-1021.81 101,-1021.81 101,-1021.81 95,-1021.81 89,-1015.81 89,-1009.81 89,-1009.81 89,-977.81 89,-977.81 89,-971.81 95,-965.81 101,-965.81 101,-965.81 257,-965.81 257,-965.81 263,-965.81 269,-971.81 269,-977.81 269,-977.81 269,-1009.81 269,-1009.81 269,-1015.81 263,-1021.81 257,-1021.81"/>
+<text xml:space="preserve" text-anchor="middle" x="179" y="-997.71" font-family="PingFang SC" font-size="13.00" fill="#22354f">YOLO11m → ByteTrack</text>
+<text xml:space="preserve" text-anchor="middle" x="179" y="-982.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">车辆检测与持续跟踪</text>
+</g>
+<!-- r_ground -->
+<g id="node7" class="node">
+<title>r_ground</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M265.5,-930.81C265.5,-930.81 110.5,-930.81 110.5,-930.81 104.5,-930.81 98.5,-924.81 98.5,-918.81 98.5,-918.81 98.5,-886.81 98.5,-886.81 98.5,-880.81 104.5,-874.81 110.5,-874.81 110.5,-874.81 265.5,-874.81 265.5,-874.81 271.5,-874.81 277.5,-880.81 277.5,-886.81 277.5,-886.81 277.5,-918.81 277.5,-918.81 277.5,-924.81 271.5,-930.81 265.5,-930.81"/>
+<text xml:space="preserve" text-anchor="middle" x="188" y="-906.71" font-family="PingFang SC" font-size="13.00" fill="#22354f">DLT + RANSAC 单应性</text>
+<text xml:space="preserve" text-anchor="middle" x="188" y="-891.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">像素接地点 → 地面坐标</text>
+</g>
+<!-- r_filter -->
+<g id="node8" class="node">
+<title>r_filter</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M274,-839.81C274,-839.81 120,-839.81 120,-839.81 114,-839.81 108,-833.81 108,-827.81 108,-827.81 108,-795.81 108,-795.81 108,-789.81 114,-783.81 120,-783.81 120,-783.81 274,-783.81 274,-783.81 280,-783.81 286,-789.81 286,-795.81 286,-795.81 286,-827.81 286,-827.81 286,-833.81 280,-839.81 274,-839.81"/>
+<text xml:space="preserve" text-anchor="middle" x="197" y="-815.71" font-family="PingFang SC" font-size="13.00" fill="#22354f">CV Kalman 米制状态</text>
+<text xml:space="preserve" text-anchor="middle" x="197" y="-800.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">保留误差与最近观测时间</text>
+</g>
+<!-- upload -->
+<g id="node9" class="node">
+<title>upload</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M513,-739.81C513,-739.81 389,-739.81 389,-739.81 383,-739.81 377,-733.81 377,-727.81 377,-727.81 377,-695.81 377,-695.81 377,-689.81 383,-683.81 389,-683.81 389,-683.81 513,-683.81 513,-683.81 519,-683.81 525,-689.81 525,-695.81 525,-695.81 525,-727.81 525,-727.81 525,-733.81 519,-739.81 513,-739.81"/>
+<text xml:space="preserve" text-anchor="middle" x="451" y="-715.71" font-family="PingFang SC" font-size="13.00" fill="#22354f">V2I 上传消息队列</text>
+<text xml:space="preserve" text-anchor="middle" x="451" y="-700.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">延迟 / 丢包 / 乱序</text>
+</g>
+<!-- associate -->
+<g id="node10" class="node">
+<title>associate</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M524.5,-637.21C524.5,-637.21 303.5,-637.21 303.5,-637.21 297.5,-637.21 291.5,-631.21 291.5,-625.21 291.5,-625.21 291.5,-593.2 291.5,-593.2 291.5,-587.2 297.5,-581.2 303.5,-581.2 303.5,-581.2 524.5,-581.2 524.5,-581.2 530.5,-581.2 536.5,-587.2 536.5,-593.2 536.5,-593.2 536.5,-625.21 536.5,-625.21 536.5,-631.21 530.5,-637.21 524.5,-637.21"/>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-613.11" font-family="PingFang SC" font-size="13.00" fill="#22354f">共同状态时刻对齐与车路关联</text>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-597.51" font-family="PingFang SC" font-size="13.00" fill="#22354f">Mahalanobis 门控 + 最小代价分配</text>
+</g>
+<!-- history -->
+<g id="node11" class="node">
+<title>history</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M494,-546.2C494,-546.2 334,-546.2 334,-546.2 328,-546.2 322,-540.2 322,-534.2 322,-534.2 322,-502.2 322,-502.2 322,-496.2 328,-490.2 334,-490.2 334,-490.2 494,-490.2 494,-490.2 500,-490.2 506,-496.2 506,-502.2 506,-502.2 506,-534.2 506,-534.2 506,-540.2 500,-546.2 494,-546.2"/>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-522.1" font-family="PingFang SC" font-size="13.00" fill="#22354f">保留双来源历史与质量</text>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-506.5" font-family="PingFang SC" font-size="13.00" fill="#22354f">原始时间戳 / age / 掩码</text>
+</g>
+<!-- predict -->
+<g id="node12" class="node">
+<title>predict</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M491.5,-443.6C491.5,-443.6 336.5,-443.6 336.5,-443.6 330.5,-443.6 324.5,-437.6 324.5,-431.6 324.5,-431.6 324.5,-399.6 324.5,-399.6 324.5,-393.6 330.5,-387.6 336.5,-387.6 336.5,-387.6 491.5,-387.6 491.5,-387.6 497.5,-387.6 503.5,-393.6 503.5,-399.6 503.5,-399.6 503.5,-431.6 503.5,-431.6 503.5,-437.6 497.5,-443.6 491.5,-443.6"/>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-419.5" font-family="PingFang SC" font-size="13.00" fill="#22354f">路侧 RC&#45;STGT 预测</text>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-403.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">完整未来轨迹模式与权重</text>
+</g>
+<!-- down -->
+<g id="node13" class="node">
+<title>down</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M509,-352.6C509,-352.6 319,-352.6 319,-352.6 313,-352.6 307,-346.6 307,-340.6 307,-340.6 307,-308.6 307,-308.6 307,-302.6 313,-296.6 319,-296.6 319,-296.6 509,-296.6 509,-296.6 515,-296.6 521,-302.6 521,-308.6 521,-308.6 521,-340.6 521,-340.6 521,-346.6 515,-352.6 509,-352.6"/>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-328.5" font-family="PingFang SC" font-size="13.00" fill="#22354f">I2V 下发预测消息</text>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-312.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">保留原 anchor_time 与有效期</text>
+</g>
+<!-- valid -->
+<g id="node14" class="node">
+<title>valid</title>
+<polygon fill="#fff3dc" stroke="#a36c1a" stroke-width="1.2" points="414,-261.6 296.1,-227.6 414,-193.6 531.9,-227.6 414,-261.6"/>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-231.5" font-family="PingFang SC" font-size="13.00" fill="#22354f">时效 / 坐标 / 覆盖</text>
+<text xml:space="preserve" text-anchor="middle" x="414" y="-215.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">检查通过？</text>
+</g>
+<!-- fuse -->
+<g id="node15" class="node">
+<title>fuse</title>
+<path fill="#fff3dc" stroke="#a36c1a" stroke-width="1.2" d="M410.5,-147C410.5,-147 269.5,-147 269.5,-147 263.5,-147 257.5,-141 257.5,-135 257.5,-135 257.5,-103 257.5,-103 257.5,-97 263.5,-91 269.5,-91 269.5,-91 410.5,-91 410.5,-91 416.5,-91 422.5,-97 422.5,-103 422.5,-103 422.5,-135 422.5,-135 422.5,-141 416.5,-147 410.5,-147"/>
+<text xml:space="preserve" text-anchor="middle" x="340" y="-122.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">车端结合最新本地观测</text>
+<text xml:space="preserve" text-anchor="middle" x="340" y="-107.3" font-family="PingFang SC" font-size="13.00" fill="#22354f">复核候选动作风险</text>
+</g>
+<!-- fallback -->
+<g id="node16" class="node">
+<title>fallback</title>
+<path fill="#fdeeea" stroke="#a35540" stroke-width="1.2" d="M615.5,-147C615.5,-147 460.5,-147 460.5,-147 454.5,-147 448.5,-141 448.5,-135 448.5,-135 448.5,-103 448.5,-103 448.5,-97 454.5,-91 460.5,-91 460.5,-91 615.5,-91 615.5,-91 621.5,-91 627.5,-97 627.5,-103 627.5,-103 627.5,-135 627.5,-135 627.5,-141 621.5,-147 615.5,-147"/>
+<text xml:space="preserve" text-anchor="middle" x="538" y="-122.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">本地预测与有限风险记忆</text>
+<text xml:space="preserve" text-anchor="middle" x="538" y="-107.3" font-family="PingFang SC" font-size="13.00" fill="#22354f">谨慎减速 / 本地 AEB</text>
+</g>
+<!-- next -->
+<g id="node17" class="node">
+<title>next</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M515.5,-56C515.5,-56 360.5,-56 360.5,-56 354.5,-56 348.5,-50 348.5,-44 348.5,-44 348.5,-12 348.5,-12 348.5,-6 354.5,0 360.5,0 360.5,0 515.5,0 515.5,0 521.5,0 527.5,-6 527.5,-12 527.5,-12 527.5,-44 527.5,-44 527.5,-50 521.5,-56 515.5,-56"/>
+<text xml:space="preserve" text-anchor="middle" x="438" y="-31.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">进入车端规划与控制</text>
+<text xml:space="preserve" text-anchor="middle" x="438" y="-16.3" font-family="PingFang SC" font-size="13.00" fill="#22354f">不直接执行路侧控制命令</text>
+</g>
+</g>
+</g>
+<g font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="10" fill="#657A90">
+<text x="24" y="1357">拟议方案示意 · 技术路线 V1.1 · 2026-10-26</text>
+</g></svg>

@@ -1,0 +1,35 @@
+digraph "03_transformer" {
+graph [rankdir="TB",bgcolor="white",pad="0.26",nodesep="0.36",ranksep="0.46",splines="spline",fontname="PingFang SC",fontsize="13",outputorder="edgesfirst",newrank="true"];
+node [fontname="PingFang SC",fontsize="13",fontcolor="#22354F"];
+edge [fontname="PingFang SC",fontsize="10.5",color="#62758C",fontcolor="#485D75",penwidth="1.1",arrowsize="0.65"];
+x [label="双来源历史 X\n[B, N, 20, 2, 12]",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="2.2778",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+mask [label="特征 / 观测 / 来源掩码\nage · 定位质量 · sample_dt",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="3.5756",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+encode [label="特征清理与来源编码\nMLP + source embedding",shape="box",style="rounded,filled",fillcolor="#F4F7FB",color="#71859E",width="2.7500",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+gate [label="可靠性门控融合\nMaskedSoftmax · 无效来源权重为 0",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="3.5972",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+temporal [label="时间 Transformer × 2\n[B·N, 20, 128] · 8 头",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.3333",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+spatial [label="车辆空间图注意力 × 2\n邻近 / 冲突关系 · 8 头",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.4167",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+map [label="车道折线与当前信号\n点级 MLP · masked pooling",shape="parallelogram",style="filled",fillcolor="#EDF7F2",color="#38775E",width="3.6289",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+map_attn [label="地图 Cross-Attention\n空地图使用 no_map token",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.7083",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+modes [label="K = 6 个模式 embedding\n逐车解码完整未来",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.6111",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+traj [label="未来轨迹均值\n[B, N, 6, 40, 2]",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="1.8194",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+prob [label="模式 logits → Softmax\n[B, N, 6]",shape="box",style="rounded,filled",fillcolor="#EAF1FC",color="#3B66A2",width="2.4722",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+loss [label="训练损失：赢家回归 + 模式分类\n未来有效掩码 · AdamW",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="3.0972",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+gt [label="未来真值轨迹\n仅训练 / 评测使用",shape="box",style="rounded,filled",fillcolor="#F1EFF9",color="#76628D",width="1.9861",height="0.7778",margin="0.20,0.14",penwidth="1.2"];
+{rank=same;x;mask;}
+{rank=same;spatial;map;}
+{rank=same;traj;prob;}
+{rank=same;gt;loss;}
+x -> encode;
+mask -> encode;
+encode -> gate;
+gate -> temporal;
+temporal -> spatial;
+spatial -> map_attn;
+map -> map_attn;
+map_attn -> modes;
+modes -> traj;
+map_attn -> prob [label="模式权重分支"];
+traj -> loss [label="训练时",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+prob -> loss [label="训练时",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+gt -> loss [label="监督标签",style="dashed",color="#8B879E",fontcolor="#716B85",arrowsize="0.55"];
+}

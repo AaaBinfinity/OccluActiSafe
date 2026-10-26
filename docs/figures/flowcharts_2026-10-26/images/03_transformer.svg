@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="811" height="1048" viewBox="0 0 811 1048" role="img" aria-labelledby="title desc">
+<title id="title">图 3 RC-STGT 多模态预测结构</title>
+<desc id="desc">形状以仿真起步配置表示，N 为可变车辆数。RC-STGT 为本项目工作名；HiVT 保留为独立基线。未来真值只监督训练损失。 拟议研究方案；流程图不表示模型、控制器或实验已经实现</desc>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<g font-family="PingFang SC, Microsoft YaHei, sans-serif">
+<text x="24" y="29" fill="#213651" font-size="20" font-weight="600">图 3  RC-STGT 多模态预测结构</text>
+<text x="24" y="52" fill="#5A6E85" font-size="11.5">拟研究模型：可靠性感知车路协同时空图 Transformer</text>
+<line x1="24" y1="67" x2="787" y2="67" stroke="#D9E2EC"/>
+</g>
+<g transform="translate(12,78)">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(18.72 907.77)">
+<title>03_transformer</title>
+<polygon fill="white" stroke="none" points="-18.72,18.72 -18.72,-907.77 768.29,-907.77 768.29,18.72 -18.72,18.72"/>
+<!-- x&#45;&gt;encode -->
+<g id="edge1" class="edge">
+<title>x&#45;&gt;encode</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M188.43,-786.75C203.02,-776.38 218.01,-765.71 231.39,-756.2"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="232.48,-758.22 236.46,-752.6 229.84,-754.51 232.48,-758.22"/>
+</g>
+<!-- mask&#45;&gt;encode -->
+<g id="edge2" class="edge">
+<title>mask&#45;&gt;encode</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M362.6,-785.77C348.56,-775.78 334.2,-765.57 321.32,-756.41"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="322.71,-754.61 316.09,-752.69 320.07,-758.31 322.71,-754.61"/>
+</g>
+<!-- encode&#45;&gt;gate -->
+<g id="edge3" class="edge">
+<title>encode&#45;&gt;gate</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M276.21,-695.14C276.21,-686.77 276.21,-677.42 276.21,-668.59"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="278.48,-668.82 276.21,-662.32 273.93,-668.82 278.48,-668.82"/>
+</g>
+<!-- gate&#45;&gt;temporal -->
+<g id="edge4" class="edge">
+<title>gate&#45;&gt;temporal</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M276.21,-604.14C276.21,-595.77 276.21,-586.42 276.21,-577.58"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="278.48,-577.82 276.21,-571.32 273.93,-577.82 278.48,-577.82"/>
+</g>
+<!-- temporal&#45;&gt;spatial -->
+<g id="edge5" class="edge">
+<title>temporal&#45;&gt;spatial</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M276.21,-512.84C276.21,-498.01 276.21,-479.54 276.21,-463.62"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="278.48,-463.72 276.21,-457.22 273.93,-463.72 278.48,-463.72"/>
+</g>
+<!-- spatial&#45;&gt;map_attn -->
+<g id="edge6" class="edge">
+<title>spatial&#45;&gt;map_attn</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M311.92,-398.48C332.52,-382.63 358.52,-362.62 380.1,-346.01"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="381.27,-347.98 385.04,-342.21 378.5,-344.37 381.27,-347.98"/>
+</g>
+<!-- map&#45;&gt;map_attn -->
+<g id="edge7" class="edge">
+<title>map&#45;&gt;map_attn</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M502.59,-375.05C489.64,-365.15 476.41,-355.03 464.51,-345.94"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="465.92,-344.15 459.37,-342.01 463.16,-347.77 465.92,-344.15"/>
+</g>
+<!-- map_attn&#45;&gt;modes -->
+<g id="edge8" class="edge">
+<title>map_attn&#45;&gt;modes</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M399.3,-284.42C391.74,-275.44 383.24,-265.36 375.33,-255.98"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="377.24,-254.71 371.31,-251.2 373.76,-257.64 377.24,-254.71"/>
+</g>
+<!-- map_attn&#45;&gt;prob -->
+<g id="edge10" class="edge">
+<title>map_attn&#45;&gt;prob</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M437.08,-284.09C442.67,-273.43 448.94,-261.05 454.21,-249.6 466.89,-222.05 479.76,-190.15 488.98,-166.47"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="491.01,-167.52 491.24,-160.64 486.77,-165.88 491.01,-167.52"/>
+<text xml:space="preserve" text-anchor="middle" x="501.51" y="-218.45" font-family="PingFang SC" font-size="10.50" fill="#485d75">模式权重分支</text>
+</g>
+<!-- modes&#45;&gt;traj -->
+<g id="edge9" class="edge">
+<title>modes&#45;&gt;traj</title>
+<path fill="none" stroke="#62758c" stroke-width="1.1" d="M339.57,-193.42C337.19,-184.96 334.54,-175.51 332.04,-166.59"/>
+<polygon fill="#62758c" stroke="#62758c" stroke-width="1.1" points="334.28,-166.18 330.33,-160.53 329.9,-167.41 334.28,-166.18"/>
+</g>
+<!-- traj&#45;&gt;loss -->
+<g id="edge11" class="edge">
+<title>traj&#45;&gt;loss</title>
+<path fill="none" stroke="#8b879e" stroke-width="1.1" stroke-dasharray="5,2" d="M350.9,-102.11C364.09,-89.47 379.84,-74.39 393.58,-61.22"/>
+<polygon fill="#8b879e" stroke="#8b879e" stroke-width="1.1" points="394.71,-62.8 397.35,-57.61 392.05,-60.02 394.71,-62.8"/>
+<text xml:space="preserve" text-anchor="middle" x="392.81" y="-76.15" font-family="PingFang SC" font-size="10.50" fill="#716b85">训练时</text>
+</g>
+<!-- prob&#45;&gt;loss -->
+<g id="edge12" class="edge">
+<title>prob&#45;&gt;loss</title>
+<path fill="none" stroke="#8b879e" stroke-width="1.1" stroke-dasharray="5,2" d="M481.71,-102.11C472.45,-89.69 461.44,-74.92 451.74,-61.91"/>
+<polygon fill="#8b879e" stroke="#8b879e" stroke-width="1.1" points="453.5,-61.05 448.67,-57.79 450.42,-63.35 453.5,-61.05"/>
+<text xml:space="preserve" text-anchor="middle" x="481.01" y="-76.15" font-family="PingFang SC" font-size="10.50" fill="#716b85">训练时</text>
+</g>
+<!-- gt&#45;&gt;loss -->
+<g id="edge13" class="edge">
+<title>gt&#45;&gt;loss</title>
+<path fill="none" stroke="#8b879e" stroke-width="1.1" stroke-dasharray="5,2" d="M259.22,-28C274.68,-28 291.42,-28 308.13,-28"/>
+<polygon fill="#8b879e" stroke="#8b879e" stroke-width="1.1" points="308.12,-29.93 313.62,-28 308.12,-26.08 308.12,-29.93"/>
+<text xml:space="preserve" text-anchor="middle" x="287.21" y="-34.15" font-family="PingFang SC" font-size="10.50" fill="#716b85">监督标签</text>
+</g>
+<!-- x -->
+<g id="node1" class="node">
+<title>x</title>
+<polygon fill="#edf7f2" stroke="#38775e" stroke-width="1.2" points="236.42,-889.05 48.37,-889.05 0,-786.33 188.04,-786.33 236.42,-889.05"/>
+<text xml:space="preserve" text-anchor="middle" x="118.21" y="-841.59" font-family="PingFang SC" font-size="13.00" fill="#22354f">双来源历史 X</text>
+<text xml:space="preserve" text-anchor="middle" x="118.21" y="-825.99" font-family="PingFang SC" font-size="13.00" fill="#22354f">[B, N, 20, 2, 12]</text>
+</g>
+<!-- mask -->
+<g id="node2" class="node">
+<title>mask</title>
+<polygon fill="#edf7f2" stroke="#38775e" stroke-width="1.2" points="605.56,-889.05 332.98,-889.05 262.86,-786.33 535.44,-786.33 605.56,-889.05"/>
+<text xml:space="preserve" text-anchor="middle" x="434.21" y="-841.59" font-family="PingFang SC" font-size="13.00" fill="#22354f">特征 / 观测 / 来源掩码</text>
+<text xml:space="preserve" text-anchor="middle" x="434.21" y="-825.99" font-family="PingFang SC" font-size="13.00" fill="#22354f">age · 定位质量 · sample_dt</text>
+</g>
+<!-- encode -->
+<g id="node3" class="node">
+<title>encode</title>
+<path fill="#f4f7fb" stroke="#71859e" stroke-width="1.2" d="M363.21,-751.33C363.21,-751.33 189.21,-751.33 189.21,-751.33 183.21,-751.33 177.21,-745.33 177.21,-739.33 177.21,-739.33 177.21,-707.33 177.21,-707.33 177.21,-701.33 183.21,-695.33 189.21,-695.33 189.21,-695.33 363.21,-695.33 363.21,-695.33 369.21,-695.33 375.21,-701.33 375.21,-707.33 375.21,-707.33 375.21,-739.33 375.21,-739.33 375.21,-745.33 369.21,-751.33 363.21,-751.33"/>
+<text xml:space="preserve" text-anchor="middle" x="276.21" y="-727.23" font-family="PingFang SC" font-size="13.00" fill="#22354f">特征清理与来源编码</text>
+<text xml:space="preserve" text-anchor="middle" x="276.21" y="-711.63" font-family="PingFang SC" font-size="13.00" fill="#22354f">MLP + source embedding</text>
+</g>
+<!-- gate -->
+<g id="node4" class="node">
+<title>gate</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M393.71,-660.33C393.71,-660.33 158.71,-660.33 158.71,-660.33 152.71,-660.33 146.71,-654.33 146.71,-648.33 146.71,-648.33 146.71,-616.33 146.71,-616.33 146.71,-610.33 152.71,-604.33 158.71,-604.33 158.71,-604.33 393.71,-604.33 393.71,-604.33 399.71,-604.33 405.71,-610.33 405.71,-616.33 405.71,-616.33 405.71,-648.33 405.71,-648.33 405.71,-654.33 399.71,-660.33 393.71,-660.33"/>
+<text xml:space="preserve" text-anchor="middle" x="276.21" y="-636.23" font-family="PingFang SC" font-size="13.00" fill="#22354f">可靠性门控融合</text>
+<text xml:space="preserve" text-anchor="middle" x="276.21" y="-620.63" font-family="PingFang SC" font-size="13.00" fill="#22354f">MaskedSoftmax · 无效来源权重为 0</text>
+</g>
+<!-- temporal -->
+<g id="node5" class="node">
+<title>temporal</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M348.21,-569.33C348.21,-569.33 204.21,-569.33 204.21,-569.33 198.21,-569.33 192.21,-563.33 192.21,-557.33 192.21,-557.33 192.21,-525.33 192.21,-525.33 192.21,-519.33 198.21,-513.33 204.21,-513.33 204.21,-513.33 348.21,-513.33 348.21,-513.33 354.21,-513.33 360.21,-519.33 360.21,-525.33 360.21,-525.33 360.21,-557.33 360.21,-557.33 360.21,-563.33 354.21,-569.33 348.21,-569.33"/>
+<text xml:space="preserve" text-anchor="middle" x="276.21" y="-545.23" font-family="PingFang SC" font-size="13.00" fill="#22354f">时间 Transformer × 2</text>
+<text xml:space="preserve" text-anchor="middle" x="276.21" y="-529.63" font-family="PingFang SC" font-size="13.00" fill="#22354f">[B·N, 20, 128] · 8 头</text>
+</g>
+<!-- spatial -->
+<g id="node6" class="node">
+<title>spatial</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M351.21,-454.97C351.21,-454.97 201.21,-454.97 201.21,-454.97 195.21,-454.97 189.21,-448.97 189.21,-442.97 189.21,-442.97 189.21,-410.97 189.21,-410.97 189.21,-404.97 195.21,-398.97 201.21,-398.97 201.21,-398.97 351.21,-398.97 351.21,-398.97 357.21,-398.97 363.21,-404.97 363.21,-410.97 363.21,-410.97 363.21,-442.97 363.21,-442.97 363.21,-448.97 357.21,-454.97 351.21,-454.97"/>
+<text xml:space="preserve" text-anchor="middle" x="276.21" y="-430.87" font-family="PingFang SC" font-size="13.00" fill="#22354f">车辆空间图注意力 × 2</text>
+<text xml:space="preserve" text-anchor="middle" x="276.21" y="-415.27" font-family="PingFang SC" font-size="13.00" fill="#22354f">邻近 / 冲突关系 · 8 头</text>
+</g>
+<!-- map -->
+<g id="node7" class="node">
+<title>map</title>
+<polygon fill="#edf7f2" stroke="#38775e" stroke-width="1.2" points="749.57,-478.33 462.66,-478.33 388.85,-375.61 675.76,-375.61 749.57,-478.33"/>
+<text xml:space="preserve" text-anchor="middle" x="569.21" y="-430.87" font-family="PingFang SC" font-size="13.00" fill="#22354f">车道折线与当前信号</text>
+<text xml:space="preserve" text-anchor="middle" x="569.21" y="-415.27" font-family="PingFang SC" font-size="13.00" fill="#22354f">点级 MLP · masked pooling</text>
+</g>
+<!-- map_attn -->
+<g id="node8" class="node">
+<title>map_attn</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M507.71,-340.61C507.71,-340.61 336.71,-340.61 336.71,-340.61 330.71,-340.61 324.71,-334.61 324.71,-328.61 324.71,-328.61 324.71,-296.6 324.71,-296.6 324.71,-290.6 330.71,-284.6 336.71,-284.6 336.71,-284.6 507.71,-284.6 507.71,-284.6 513.71,-284.6 519.71,-290.6 519.71,-296.6 519.71,-296.6 519.71,-328.61 519.71,-328.61 519.71,-334.61 513.71,-340.61 507.71,-340.61"/>
+<text xml:space="preserve" text-anchor="middle" x="422.21" y="-316.51" font-family="PingFang SC" font-size="13.00" fill="#22354f">地图 Cross&#45;Attention</text>
+<text xml:space="preserve" text-anchor="middle" x="422.21" y="-300.91" font-family="PingFang SC" font-size="13.00" fill="#22354f">空地图使用 no_map token</text>
+</g>
+<!-- modes -->
+<g id="node9" class="node">
+<title>modes</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M429.21,-249.6C429.21,-249.6 265.21,-249.6 265.21,-249.6 259.21,-249.6 253.21,-243.6 253.21,-237.6 253.21,-237.6 253.21,-205.6 253.21,-205.6 253.21,-199.6 259.21,-193.6 265.21,-193.6 265.21,-193.6 429.21,-193.6 429.21,-193.6 435.21,-193.6 441.21,-199.6 441.21,-205.6 441.21,-205.6 441.21,-237.6 441.21,-237.6 441.21,-243.6 435.21,-249.6 429.21,-249.6"/>
+<text xml:space="preserve" text-anchor="middle" x="347.21" y="-225.5" font-family="PingFang SC" font-size="13.00" fill="#22354f">K = 6 个模式 embedding</text>
+<text xml:space="preserve" text-anchor="middle" x="347.21" y="-209.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">逐车解码完整未来</text>
+</g>
+<!-- traj -->
+<g id="node10" class="node">
+<title>traj</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M375.71,-158.6C375.71,-158.6 268.71,-158.6 268.71,-158.6 262.71,-158.6 256.71,-152.6 256.71,-146.6 256.71,-146.6 256.71,-114.6 256.71,-114.6 256.71,-108.6 262.71,-102.6 268.71,-102.6 268.71,-102.6 375.71,-102.6 375.71,-102.6 381.71,-102.6 387.71,-108.6 387.71,-114.6 387.71,-114.6 387.71,-146.6 387.71,-146.6 387.71,-152.6 381.71,-158.6 375.71,-158.6"/>
+<text xml:space="preserve" text-anchor="middle" x="322.21" y="-134.5" font-family="PingFang SC" font-size="13.00" fill="#22354f">未来轨迹均值</text>
+<text xml:space="preserve" text-anchor="middle" x="322.21" y="-118.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">[B, N, 6, 40, 2]</text>
+</g>
+<!-- prob -->
+<g id="node11" class="node">
+<title>prob</title>
+<path fill="#eaf1fc" stroke="#3b66a2" stroke-width="1.2" d="M579.21,-158.6C579.21,-158.6 425.21,-158.6 425.21,-158.6 419.21,-158.6 413.21,-152.6 413.21,-146.6 413.21,-146.6 413.21,-114.6 413.21,-114.6 413.21,-108.6 419.21,-102.6 425.21,-102.6 425.21,-102.6 579.21,-102.6 579.21,-102.6 585.21,-102.6 591.21,-108.6 591.21,-114.6 591.21,-114.6 591.21,-146.6 591.21,-146.6 591.21,-152.6 585.21,-158.6 579.21,-158.6"/>
+<text xml:space="preserve" text-anchor="middle" x="502.21" y="-134.5" font-family="PingFang SC" font-size="13.00" fill="#22354f">模式 logits → Softmax</text>
+<text xml:space="preserve" text-anchor="middle" x="502.21" y="-118.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">[B, N, 6]</text>
+</g>
+<!-- loss -->
+<g id="node12" class="node">
+<title>loss</title>
+<path fill="#f1eff9" stroke="#76628d" stroke-width="1.2" d="M526.71,-56C526.71,-56 327.71,-56 327.71,-56 321.71,-56 315.71,-50 315.71,-44 315.71,-44 315.71,-12 315.71,-12 315.71,-6 321.71,0 327.71,0 327.71,0 526.71,0 526.71,0 532.71,0 538.71,-6 538.71,-12 538.71,-12 538.71,-44 538.71,-44 538.71,-50 532.71,-56 526.71,-56"/>
+<text xml:space="preserve" text-anchor="middle" x="427.21" y="-31.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">训练损失：赢家回归 + 模式分类</text>
+<text xml:space="preserve" text-anchor="middle" x="427.21" y="-16.3" font-family="PingFang SC" font-size="13.00" fill="#22354f">未来有效掩码 · AdamW</text>
+</g>
+<!-- gt -->
+<g id="node13" class="node">
+<title>gt</title>
+<path fill="#f1eff9" stroke="#76628d" stroke-width="1.2" d="M246.71,-56C246.71,-56 127.71,-56 127.71,-56 121.71,-56 115.71,-50 115.71,-44 115.71,-44 115.71,-12 115.71,-12 115.71,-6 121.71,0 127.71,0 127.71,0 246.71,0 246.71,0 252.71,0 258.71,-6 258.71,-12 258.71,-12 258.71,-44 258.71,-44 258.71,-50 252.71,-56 246.71,-56"/>
+<text xml:space="preserve" text-anchor="middle" x="187.21" y="-31.9" font-family="PingFang SC" font-size="13.00" fill="#22354f">未来真值轨迹</text>
+<text xml:space="preserve" text-anchor="middle" x="187.21" y="-16.3" font-family="PingFang SC" font-size="13.00" fill="#22354f">仅训练 / 评测使用</text>
+</g>
+</g>
+</g>
+<g font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="10" fill="#657A90">
+<text x="24" y="1034">拟议方案示意 · 技术路线 V1.1 · 2026-10-26</text>
+</g></svg>
