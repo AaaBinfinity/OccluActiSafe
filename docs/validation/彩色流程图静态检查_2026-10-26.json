@@ -1,0 +1,19 @@
+{
+  "checked_at_utc": "2026-10-26T09:14:31.760486+00:00",
+  "status": "passed",
+  "scope": "static checks of existing source and exports only",
+  "figures": 6,
+  "svg_png_exports_checked": 12,
+  "source_node_and_edge_consistency": true,
+  "training_truth_boundary_checked": true,
+  "html_local_links": "passed",
+  "new_rendering_performed": false,
+  "visual_review_performed": false,
+  "browser_execution_performed": false,
+  "model_or_simulation_tests_performed": false,
+  "historical_metadata": {
+    "manifest_date": "2026-10-26",
+    "manifest_reported_node_overlap_count": 0,
+    "note": "Overlap values are read from the archived manifest, not remeasured in this check."
+  }
+}

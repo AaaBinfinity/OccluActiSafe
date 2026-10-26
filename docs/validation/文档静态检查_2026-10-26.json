@@ -1,0 +1,29 @@
+{
+  "checked_at_utc": "2026-10-26T09:14:31.849050+00:00",
+  "status": "passed",
+  "counts": {
+    "markdown_files": 18,
+    "html_files": 4,
+    "json_files": 15,
+    "local_links": 247,
+    "remote_urls_skipped": 50,
+    "other_urls_skipped": 0,
+    "absolute_paths_skipped": 0,
+    "html_anchors": 12,
+    "non_html_anchors_skipped": 0,
+    "manifests": 4,
+    "sha256_checks": 17,
+    "png_dimension_checks": 17
+  },
+  "errors": [],
+  "scope": "静态检查当前仓库 MD/HTML 相对链接和 HTML 锚点、JSON 语法、四类既有图集清单的哈希与 PNG 文件头尺寸。",
+  "limits": [
+    "不联网；远程 URL 仅计数，未验证可访问性或内容。",
+    "跳过 docs/history、符号链接目录，以及任意层级依赖/缓存目录：.cache、.git、.mypy_cache、.nox、.pytest_cache、.ruff_cache、.tox、.venv、__pycache__、node_modules、venv。",
+    "跳过仓库根本地产物目录：artifacts、checkpoints、data、outputs、runs。",
+    "Markdown 提取器覆盖当前仓库使用的链接形式，不是完整 CommonMark 解析器。",
+    "不验证 Markdown 标题锚点、其他格式文件锚点、绝对路径或带协议的非 HTTP URL。",
+    "不检查 CSS url()/srcset/动态生成链接；不解码 PNG 像素或检查图形排版。",
+    "不证明算法、模型、前端或 CARLA 仿真运行正确。"
+  ]
+}
