@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-26",
+  "scope": "documents_and_generated_concepts_only",
+  "images": [
+    {
+      "id": 1,
+      "path": "docs/figures/driver_view_2026-10-26/images/01_incar_blind_junction.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "87d65a6a2a827658df50216c6ac28b1513b8450c15ad0ac5585f90e9965f5aa6"
+    },
+    {
+      "id": 2,
+      "path": "docs/figures/driver_view_2026-10-26/images/02_incar_pedestrian_emergence.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "bb69d156fb1b61ddf51d6140533831e1b334c60288bfc1e5aa181d7bbdd64f82"
+    }
+  ],
+  "local_links_checked": 53,
+  "broken_links": [],
+  "formula_arithmetic": "OBB-local rectangle/circle inside, separated and tangent examples checked; no production implementation tested",
+  "review": [
+    "core deliverable is algorithm package",
+    "final decisions remain on vehicle",
+    "pedestrian/cyclist mandatory scope replaces later-extension restriction",
+    "two driver-view concepts visually inspected and source labels reviewed"
+  ],
+  "not_run": [
+    "new algorithm implementation",
+    "model training",
+    "camera or interior rendering in CARLA",
+    "pedestrian/cyclist closed loop",
+    "B01-B08 and previous 53 specifications"
+  ]
+}
