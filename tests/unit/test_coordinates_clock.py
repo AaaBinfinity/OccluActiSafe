@@ -103,6 +103,18 @@ class ClockChecks(unittest.TestCase):
         with self.assertRaises(ValueError): require_available(ts(1.3), usable_time=ts(1.2), valid_until=ts(1.2))
         with self.assertRaises(ValueError): require_available(ts(1.2), usable_time=ts(1, "wall"))
 
+    def test_availability_checks_field_order_not_only_decision_time(self):
+        # 单个时刻均早于决策也不足以证明时序合法。
+        with self.assertRaises(ValueError):
+            require_available(ts(2), observation_time=ts(1.1), source_available_time=ts(1))
+        with self.assertRaises(ValueError):
+            require_available(ts(2), source_available_time=ts(1.1), usable_time=ts(1))
+        with self.assertRaises(ValueError):
+            require_available(ts(2), observation_time=ts(1.1), usable_time=ts(1))
+        # 状态可从采集时刻向后外推，晚于源处理时刻；决策时已到该状态时间即可。
+        require_available(ts(1.5), observation_time=ts(1), source_available_time=ts(1.1),
+                          state_time=ts(1.4), usable_time=ts(1.2))
+
 
 if __name__ == "__main__":
     unittest.main()

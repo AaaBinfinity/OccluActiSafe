@@ -86,7 +86,8 @@ def require_available(
     """消费时检查已采集、源处理完成、状态时刻和接收可用且未过期。
 
     仅对调用方提供的字段检查；需要哪类信息由各数据契约明确。
-    到期时刻本身仍有效；晚于期限才拒绝。
+    同时提供采集、源完成或接收可用时，检查这些时间自身的先后次序；
+    外推状态时刻不要求早于源处理完成。到期时刻本身仍有效。
     """
     fields = {
         "observation_time": observation_time,
@@ -97,6 +98,14 @@ def require_available(
     }
     present = [(name, value) for name, value in fields.items() if value is not None]
     require_same_domain(decision_time, *(value for _, value in present))
+    pairs = (
+        (observation_time, source_available_time, "observation_time", "source_available_time"),
+        (source_available_time, usable_time, "source_available_time", "usable_time"),
+        (observation_time, usable_time, "observation_time", "usable_time"),
+    )
+    for earlier, later, earlier_name, later_name in pairs:
+        if earlier is not None and later is not None:
+            _ordered(earlier, later, earlier_name, later_name)
     for name, value in present:
         if name == "valid_until":
             _ordered(decision_time, value, "decision_time", name)
