@@ -26,28 +26,26 @@
 
 设计补充：[数据来源与验证方案](docs/数据来源与验证方案.md)。后续Python训练/评测脚本支持IDE直接点运行，命令行保留作可选批量入口；首次环境和数据准备需先完成。
 
-## N01 首次安装与环境检查
+## N01 使用 uv 安装与检查
 
-包元数据要求 Python 3.10 或以上，主开发环境目标为 Python 3.11；使用本机已安装的对应解释器创建虚拟环境。当前轻量包没有运行时第三方依赖，构建安装仍需要 Python 打包工具。下面的命令在仓库根目录执行；实际验证过的系统和解释器版本见节点计划。
+项目使用 `pyproject.toml` 声明包和依赖，`uv.lock` 保存当前依赖解析结果，`.python-version` 选择默认 Python 3.11。共享包仍支持 Python 3.10 起；当前没有第三方运行时依赖，所以锁文件内容很少。构建依赖 `setuptools>=61` 不由这个锁文件固定。
 
-macOS / Linux：
+首次准备时，先确保已安装 `uv`，然后在仓库根目录执行：
 
 ```sh
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e .
-python scripts/check_environment.py
+uv sync --locked
 ```
 
-Windows PowerShell：
+该命令按锁文件创建或同步 `.venv`，以可编辑方式安装本项目；必要时可能下载 Python 或构建依赖。`uv sync` 默认会移除环境中不属于当前项目的额外包，因此请不要将已有的其他项目环境当成本项目 `.venv` 使用。
 
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\python.exe scripts\check_environment.py
+准备完成后可在仓库根目录运行：
+
+```sh
+uv run --no-sync python scripts/check_environment.py
+uv run --no-sync python -B -m unittest discover -s tests/unit -v
 ```
 
-首次安装后，IDE 选择 `.venv` 中的 Python 解释器，打开 `scripts/check_environment.py` 并直接运行，无需填写参数；检查按脚本位置确定仓库根目录，不依赖工作目录。若指定版本的解释器命令不可用，请先安装或选择已有的受支持解释器。检查仅报告当前轻量工程和可选模块发现情况，不自动安装、下载或验证 GPU/CARLA 兼容性；缺少必要项目包或 Python 版本过低会失败并提示缺项。
+也可以在 IDE 中选择 `.venv/bin/python`（Windows 为 `.venv/Scripts/python.exe`），打开 `scripts/check_environment.py` 直接运行，无需填写参数。入口按脚本位置确定仓库根目录，不依赖工作目录，检查过程不会自动安装或下载；它只报告当前轻量工程和可选模块发现情况，不验证 GPU/CARLA 兼容性。缺少项目包或 Python 版本过低会失败并提示缺项。上述 uv 流程已在 macOS 验证；其他系统的实际验证状态见节点计划。
 
 专题入口：[算法成品与鬼探头](docs/算法成品与盲区鬼探头方案.md) · [车路通信](docs/车路通信方案.md) · [论文流程图](docs/论文流程图集.md) · [辅助界面概念图](docs/成品形态与界面效果图.md)。
 
