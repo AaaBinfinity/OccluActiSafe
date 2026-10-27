@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from occluactisafe.data.adapters.tfd import (
-    OFFICIAL_TYPES, discover_tfd, iter_maps, iter_traffic_lights, iter_trajectories, iter_trajectory_file,
+    OFFICIAL_TYPES, discover_tfd, iter_maps, iter_traffic_lights, iter_trajectories, iter_trajectory_file, read_map_catalog,
 )
 from occluactisafe.data.quality import TYPE_TO_CATEGORY, audit_trajectories
 
@@ -87,6 +87,36 @@ class TFDAdapterTests(unittest.TestCase):
         self.assertEqual(rows[1]["category_status"], "official_unknown")
         self.assertIn("y", rows[1]["missing_columns"])
         self.assertEqual(rows[2]["extra_values"], ["extra"])
+
+    def test_prefixed_map_is_discovered_but_not_matched_by_guessed_number(self):
+        self.write_csv("single-vehicle/trajectories/train/data/1000.csv",
+                       ["timestamp", "id", "type", "x", "y", "intersect_id"],
+                       [["1", "1", "VEHICLE", "3", "4", "yizhuang#7-1_po"]])
+        maps = self.root / "maps"
+        maps.mkdir()
+        (maps / "yizhuang_hdmap7.json").write_text(
+            json.dumps({"LANE": {"A": {"centerline": ["(3, 4)"]}}, "STOPLINE": {},
+                        "CROSSWALK": {}, "JUNCTION": {}}), encoding="utf-8")
+        (maps / "ignore.json").write_text("{}", encoding="utf-8")
+        found = discover_tfd(self.root)
+        self.assertEqual(found["map_files"], ["maps/yizhuang_hdmap7.json"])
+        lightweight = list(iter_maps(self.root, include_original=False))
+        self.assertEqual(lightweight[0]["map_id"], "yizhuang_hdmap7")
+        self.assertEqual(lightweight[0]["lane_entry_count"], 1)
+        self.assertNotIn("original", lightweight[0])
+        self.assertEqual(len(lightweight[0]["sha256"]), 64)
+        catalog = read_map_catalog(self.root)
+        self.assertEqual(catalog["maps"], lightweight)
+        self.assertEqual(list(iter_trajectories(self.root, map_catalog=catalog))[0]["map_status"], "unresolved")
+
+    def test_conflicting_exact_map_id_is_ambiguous(self):
+        self.write_csv("single-vehicle/trajectories/001.csv", ["timestamp", "id", "type", "x", "y", "intersect_id"],
+                       [["1", "1", "VEHICLE", "3", "4", "01"]])
+        for split, lanes in (("train", {}), ("val", {"x": {}})):
+            path = self.root / split / "maps" / "hdmap01.json"
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps({"LANE": lanes}), encoding="utf-8")
+        self.assertEqual(list(iter_trajectories(self.root))[0]["map_status"], "ambiguous")
 
     def test_absent_root_and_duplicate_csv_headers_are_rejected(self):
         with self.assertRaises(FileNotFoundError):

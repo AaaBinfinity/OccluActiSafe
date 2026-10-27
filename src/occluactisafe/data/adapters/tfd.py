@@ -5,8 +5,10 @@
 """
 
 import csv
+import hashlib
 import json
 from pathlib import Path
+import re
 
 # README 示意拼写与官方 fusion/config.py 的实际大写枚举均保留；未知类别不当车辆。
 OFFICIAL_TYPES = {
@@ -65,9 +67,18 @@ def _location_info(root, path, locations):
 
 
 def _map_files(root):
-    return sorted((path for path in root.rglob("hdmap*.json")
-                   if path.is_file() and path.parent.name == "maps"),
+    return sorted((path for path in root.rglob("*.json")
+                   if path.is_file() and path.parent.name == "maps"
+                   and re.fullmatch(r"(?:.+_)?hdmap[^/]*\.json", path.name)),
                   key=lambda item: item.relative_to(root).as_posix())
+
+
+def _file_sha256(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def _bad_constant(value):
@@ -83,49 +94,61 @@ def _unique_object(pairs):
     return result
 
 
-def iter_maps(root):
-    """逐地图读取 LANE/STOPLINE/CROSSWALK；损坏文件显式报告，不构造车道。"""
+def iter_maps(root, *, include_original=True):
+    """逐地图读取，include_original=False 时仅返回轻量索引和文件摘要。"""
     root = _root(root)
     for path in _map_files(root):
         item = {"source_file": path.relative_to(root).as_posix(),
-                "map_id": path.stem[len("hdmap"):], "status": "present",
-                "missing_sections": [], "original": None, "error": None}
+                "map_id": path.stem, "sha256": _file_sha256(path), "status": "present",
+                "missing_sections": [], "lane_entry_count": None, "error": None}
         try:
             with path.open("r", encoding="utf-8-sig") as stream:
                 data = json.load(stream, parse_constant=_bad_constant, object_pairs_hook=_unique_object)
             if not isinstance(data, dict):
                 raise ValueError("地图 JSON 顶层必须是对象")
-            item["original"] = data
             item["missing_sections"] = [key for key in ("LANE", "STOPLINE", "CROSSWALK") if key not in data]
             if "LANE" not in data:
                 item["status"] = "incomplete"
             elif not isinstance(data["LANE"], dict):
                 raise ValueError("地图 LANE 应为对象")
+            else:
+                item["lane_entry_count"] = len(data["LANE"])
+            if include_original:
+                item["original"] = data
         except (OSError, UnicodeError, ValueError) as exc:
             item["status"] = "invalid"
             item["error"] = f"{type(exc).__name__}: {exc}"
+            if include_original:
+                item["original"] = None
+        if not include_original:
+            # 下一个文件开始解析前释放大型结构；只在逐次迭代中使用。
+            data = None
         yield item
 
 
 def _map_catalog(root):
-    # 同名地图可在独立 split 目录出现；有损坏文件、同名冲突都不能冒充有效。
-    result = {}
-    for item in iter_maps(root):
-        map_id = item["map_id"]
-        existing = result.get(map_id)
-        if existing is None:
-            result[map_id] = item
-        elif existing["status"] != item["status"] or existing.get("original") != item["original"]:
-            result[map_id] = {"status": "ambiguous"}
-    return result
+    # 单个地图解析结束即丢弃正文，只保存摘要；不能用带前缀的名称猜映射。
+    maps, exact = [], {}
+    for item in iter_maps(root, include_original=False):
+        maps.append(item)
+        if not item["map_id"].startswith("hdmap"):
+            continue
+        previous = exact.get(item["map_id"])
+        if previous is None:
+            exact[item["map_id"]] = {"status": item["status"], "sha256": item["sha256"]}
+        elif previous["status"] != item["status"] or previous.get("sha256") != item["sha256"]:
+            exact[item["map_id"]] = {"status": "ambiguous"}
+    return {"maps": maps, "exact": exact}
 
 
 def _map_status(raw, catalog):
+    if not catalog["maps"]:
+        return "missing"
     map_id = raw.get("intersect_id", "").strip()
     if not map_id:
         return "unknown"
-    item = catalog.get(map_id)
-    return "missing" if item is None else item["status"]
+    match = catalog["exact"].get("hdmap" + map_id)
+    return match["status"] if match is not None else "unresolved"
 
 
 def discover_tfd(root):
@@ -205,10 +228,10 @@ def iter_trajectory_file(root, source_file, *, map_catalog=None):
         }
 
 
-def iter_trajectories(root):
+def iter_trajectories(root, *, map_catalog=None):
     """逐行读取所有轨迹，不排序、去重、填补或推断在线可得性。"""
     root = _root(root)
-    catalog = _map_catalog(root)
+    catalog = _map_catalog(root) if map_catalog is None else map_catalog
     for path in _locations(root, TRAJECTORY_LOCATIONS):
         yield from iter_trajectory_file(root, path, map_catalog=catalog)
 
@@ -218,10 +241,10 @@ def read_map_catalog(root):
     return _map_catalog(_root(root))
 
 
-def iter_traffic_lights(root):
+def iter_traffic_lights(root, *, map_catalog=None):
     """逐行读取信号表，保留 lane_id/颜色/剩余值原文，不推断可用时刻。"""
     root = _root(root)
-    catalog = _map_catalog(root)
+    catalog = _map_catalog(root) if map_catalog is None else map_catalog
     for path in _locations(root, SIGNAL_LOCATIONS):
         collection, source, split, episode_id = _location_info(root, path, SIGNAL_LOCATIONS)
         for line, original, extra_values, missing_columns in _iter_csv(path):
