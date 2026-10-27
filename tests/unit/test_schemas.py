@@ -148,7 +148,7 @@ class SchemaTests(unittest.TestCase):
         obs = ObservationMessage.from_dict(fixture("golden_observation.json"))
         packet = ObservationPacket(obs.map_id, obs.map_version, obs.coordinate_frame_id, obs.frame_id,
                                    obs.clock_domain, obs.observation_time, obs.source_available_time, obs.tracks)
-        event = TickEvent("1.0", "run-1", "episode-1", 0, 20, obs.clock_domain, 1.0, (packet,))
+        event = TickEvent("1.0", "run-1", "episode-1", 0, 20, obs.clock_domain, 1.05, (packet,))
         self.assertEqual(TickEvent.from_json(event.to_json()), event)
         bad = event.to_dict(); bad["hidden_actor_truth"] = {"x": 100}
         with self.assertRaises(ValueError):
@@ -157,6 +157,9 @@ class SchemaTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ObservationPacket.from_dict(bad)
         bad = event.to_dict(); bad["sim_time"] = 0.5
+        with self.assertRaises(ValueError):
+            TickEvent.from_dict(bad)
+        bad = event.to_dict(); bad["sim_time"] = 1.0
         with self.assertRaises(ValueError):
             TickEvent.from_dict(bad)
 

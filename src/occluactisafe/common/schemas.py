@@ -506,8 +506,8 @@ class TickEvent(Record):
         for packet in self.observations:
             if packet.clock_domain != self.clock_domain or packet.frame_id != self.frame_id:
                 raise ContractError("TickEvent 观测帧或时钟域不一致")
-            if packet.observation_time > self.sim_time:
-                raise ContractError("TickEvent 不能包含未来采集观测")
+            if packet.observation_time > self.sim_time or packet.source_available_time > self.sim_time:
+                raise ContractError("TickEvent 不能包含未来采集或尚未处理完成的观测")
 
 
 @dataclass(frozen=True)
