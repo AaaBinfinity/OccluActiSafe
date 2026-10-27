@@ -111,6 +111,28 @@ def _config_path(path, root):
     return (path if path.is_absolute() else root / path).resolve()
 
 
+def validate_resolved_config(config):
+    """校验完整、已解析的 N02 配置；不填充缺失字段，也不修改输入。"""
+    def exact_fields(value, template, path="config"):
+        if not isinstance(value, dict):
+            raise ValueError(f"{path} 必须是映射")
+        if set(value) != set(template):
+            raise ValueError(f"{path} 字段不完整或含未知字段")
+        for key, field_template in template.items():
+            if isinstance(field_template, dict):
+                exact_fields(value[key], field_template, f"{path}.{key}")
+
+    exact_fields(config, DEFAULTS)
+    for name, path in config["paths"].items():
+        if not isinstance(path, str) or not Path(path).is_absolute():
+            raise ValueError(f"paths.{name} 必须是已解析的绝对路径")
+    validated = deepcopy(config)
+    _validate(validated, PROJECT_ROOT)
+    if validated != config:
+        raise ValueError("配置路径必须是规范化的绝对路径")
+    return validated
+
+
 def load_config(*, config_file=None, default_config_file=None, overrides=None,
                 cli_overrides=None, project_root=None):
     """合并包默认→base.yaml→所选任务 YAML→脚本覆盖→显式 CLI。

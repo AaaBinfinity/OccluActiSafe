@@ -149,6 +149,33 @@ class ManifestTests(unittest.TestCase):
                 self.create(**bad)
         self.assertFalse(self.output.exists())
 
+    def test_manifest_rejects_incomplete_unknown_and_sensitive_config(self):
+        cases = []
+        for field in ("pwd", "access_key", "custom_field"):
+            cfg = deepcopy(self.config)
+            cfg["runtime"][field] = "sensitive"
+            cases.append(cfg)
+        cfg = deepcopy(self.config)
+        del cfg["clock"]["sensor_dt"]
+        cases.append(cfg)
+        cfg = deepcopy(self.config)
+        cfg["runtime"]["seed"] = "0"
+        cases.append(cfg)
+        cfg = deepcopy(self.config)
+        cfg["paths"]["data_root"] = "relative/path"
+        cases.append(cfg)
+        cfg = deepcopy(self.config)
+        cfg["paths"]["data_root"] = "/tmp/pwd=sensitive"
+        cases.append(cfg)
+        for cfg in cases:
+            with self.subTest(cfg=cfg), self.assertRaises(ValueError):
+                self.create(config=cfg)
+        with self.assertRaises(ValueError):
+            self.create(data={"name": "access_key=sensitive", "version": "1", "sha256": "a" * 64})
+        self.assertFalse(self.output.exists())
+        # A complete, public config remains accepted.
+        self.assertEqual(self.create()["config"]["resolved"], self.config)
+
     def test_missing_data_is_explicit(self):
         self.assertIsNone(self.create(data=None)["data"])
 

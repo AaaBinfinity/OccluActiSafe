@@ -7,17 +7,16 @@ import platform
 from pathlib import Path
 import re
 import subprocess
-import sys
 from datetime import datetime, timezone
 from uuid import uuid4
 
 import yaml
 
-from .config import PROJECT_ROOT
+from .config import PROJECT_ROOT, validate_resolved_config
 
 
-_SENSITIVE_KEY = re.compile(r"(?:password|passwd|secret|token|credential|api[_-]?key|private[_-]?key|authorization)", re.I)
-_SENSITIVE_VALUE = re.compile(r"(?:bearer\s+\S+|(?:password|passwd|secret|token|api[_-]?key|credential)\s*[=:]\s*\S+|://)", re.I)
+_SENSITIVE_KEY = re.compile(r"(?:password|passwd|pwd|secret|token|credential|(?:api|access|private)[_-]?key|authorization)", re.I)
+_SENSITIVE_VALUE = re.compile(r"(?:bearer\s+\S+|(?:password|passwd|pwd|secret|token|(?:api|access|private)[_-]?key|credential|authorization)\s*[=:]\s*\S+|://)", re.I)
 _SHA256 = re.compile(r"[0-9a-fA-F]{64}\Z")
 
 
@@ -80,7 +79,9 @@ def create_run_manifest(*, config, input_mode, data, output_root, project_root=N
     """创建一个唯一 run 目录并写入 manifest.json，返回清单字典。
 
     data 是包含 name/version/sha256 的映射，或明确的 None（无数据）。
-    config 记录已解析配置及其哈希；拒绝凭据、URL、非有限数和任意对象。
+    config 须为完整、已解析的 N02 配置，记录其内容及哈希；仅允许公开信息。
+    调用方必须确保 data 的 name/version、input_mode 和路径不包含任何秘密。
+    凭据检测无法识别所有任意格式，调用方不得依赖该检测代替输入检查。
     """
     if not isinstance(config, dict):
         raise ValueError("config 必须是已解析配置映射")
@@ -94,6 +95,7 @@ def create_run_manifest(*, config, input_mode, data, output_root, project_root=N
         if not isinstance(data["sha256"], str) or not _SHA256.fullmatch(data["sha256"]):
             raise ValueError("data sha256 必须是64位十六进制字符串")
     _check_public(config, "config")
+    config = validate_resolved_config(config)
     _check_public(input_mode, "input_mode")
     _check_public(data, "data")
     config_bytes = _canonical(config)
