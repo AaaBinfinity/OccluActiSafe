@@ -14,12 +14,12 @@ import yaml
 
 from occluactisafe.common.config import PROJECT_ROOT, load_config
 from occluactisafe.common.run_manifest import create_run_manifest
-from occluactisafe.data.adapters.tfd import discover_tfd, iter_maps, iter_trajectories, iter_traffic_lights
+from occluactisafe.data.adapters.tfd import discover_tfd, read_map_catalog, iter_trajectories, iter_traffic_lights
 from occluactisafe.data.quality import audit_trajectory_stream
 
 
 _DEFAULTS = {
-    "source": "v2x_seq_tfd", "data_root": "data/raw/v2x_seq_tfd/TFD-Example",
+    "source": "v2x_seq_tfd", "data_root": "data/raw/v2x_seq_tfd/V2X-Seq-TFD-Example",
     "output_root": "artifacts/data_audit", "dataset_scope": "example",
     "dataset_version": "unknown", "acquired_date": "unknown",
     "source_url": "https://github.com/AIR-THU/DAIR-V2X-Seq#dataset-download",
@@ -171,6 +171,8 @@ def run_audit(config, *, project_root=PROJECT_ROOT):
     status = {"status": "running", "run_id": run["run_id"]}
     _write_json(run_dir / "audit_status.json", status)
     try:
+        # 一次逐文件解析地图后只保留轻量索引；轨迹和信号共享，避免将所有地图驻留内存。
+        map_catalog = read_map_catalog(data)
         samples, points = [], []
         preview_key = None
         map_counts = Counter()
@@ -191,19 +193,13 @@ def run_audit(config, *, project_root=PROJECT_ROOT):
                         points.append((x, y))
             def anomaly(row):
                 _line(anomaly_stream, row)
-            quality = audit_trajectory_stream(iter_trajectories(data), accept, anomaly)
+            quality = audit_trajectory_stream(iter_trajectories(data, map_catalog=map_catalog), accept, anomaly)
         signals = 0
         with (run_dir / "traffic_lights.jsonl").open("w", encoding="utf-8") as stream:
-            for signal in iter_traffic_lights(data):
+            for signal in iter_traffic_lights(data, map_catalog=map_catalog):
                 _line(stream, signal)
                 signals += 1
-        maps = []
-        for item in iter_maps(data):
-            result = {key: value for key, value in item.items() if key != "original"}
-            original = item.get("original")
-            lane = original.get("LANE") if isinstance(original, dict) else None
-            result["lane_entry_count"] = len(lane) if isinstance(lane, (dict, list)) else None
-            maps.append(result)
+        maps = map_catalog["maps"]
         _write_json(run_dir / "map_index.json", maps)
         _write_json(run_dir / "inspection_samples.json", samples)
         preview = _preview(run_dir / "trajectory_preview.svg", points)

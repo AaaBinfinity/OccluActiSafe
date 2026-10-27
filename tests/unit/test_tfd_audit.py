@@ -92,6 +92,20 @@ class AuditIntegrationTests(unittest.TestCase):
         quality = json.loads((statuses[0].parent / "data_quality.json").read_text())
         self.assertEqual(len(quality["empty_or_header_only_trajectory_files"]), 1)
 
+    def test_prefixed_map_is_indexed_without_fabricated_association(self):
+        original = self.data / "maps" / "hdmap01.json"
+        original.rename(self.data / "maps" / "yizhuang_hdmap01.json")
+        result = run_audit(self.config(), project_root=ROOT)
+        run_dir = Path(result["run_dir"])
+        quality = json.loads((run_dir / "data_quality.json").read_text(encoding="utf8"))
+        maps = json.loads((run_dir / "map_index.json").read_text(encoding="utf8"))
+        self.assertEqual(quality["map_status_valid_row_counts"], {"unresolved": 3})
+        self.assertEqual(quality["map_file_count"], 1)
+        self.assertEqual(maps[0]["map_id"], "yizhuang_hdmap01")
+        self.assertEqual(maps[0]["lane_entry_count"], 1)
+        self.assertEqual(len(maps[0]["sha256"]), 64)
+        self.assertNotIn("original", maps[0])
+
     def test_path_precedence_and_config_validation(self):
         old = Path.cwd()
         try:
