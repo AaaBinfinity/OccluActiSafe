@@ -69,7 +69,8 @@ class AuditIntegrationTests(unittest.TestCase):
         self.assertEqual(data_manifest["provenance_verification"], "user_provided_unverified")
         self.assertEqual(data_manifest["usage_conditions_claim"], "unverified")
         self.assertEqual(data_manifest["usage_conditions_evidence"], "not_provided_or_verified_by_audit")
-        self.assertEqual(data_manifest["acquired_date"], "unknown")
+        self.assertEqual(data_manifest["acquired_date_claim"], "unknown")
+        self.assertEqual(data_manifest["acquired_date_evidence"], "user_supplied_unverified")
         self.assertEqual(len(data_manifest["files"]), 3)
         self.assertTrue(all(len(item["sha256"]) == 64 for item in data_manifest["files"]))
 
@@ -105,13 +106,16 @@ class AuditIntegrationTests(unittest.TestCase):
         for bad in ({"bogus": 1}, {"dataset_scope": "missing"},
                     {"source_url": "https://user:pass@example.com/"},
                     {"source_url": "https://example.com/?token=secret"},
-                    {"source_url": "https://example.com/#token=secret"}):
+                    {"source_url": "https://example.com/#token=secret"},
+                    {"acquired_date": "2026-02-30"}):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 load_task_config(self.config_file, overrides=bad, project_root=self.root)
         default = self.root / "default.yaml"
         default.write_text("dataset_scope: full\n", encoding="utf8")
         with self.assertRaisesRegex(ValueError, "完整数据须明确指定"):
             load_task_config(default, project_root=self.root)
+        self.assertEqual(load_task_config(self.config_file, project_root=self.root,
+                                         overrides={"acquired_date": "2026-10-27"})["acquired_date"], "2026-10-27")
         inside = self.config(); inside["output_root"] = str(self.data / "writes")
         with self.assertRaisesRegex(ValueError, "原始数据"):
             run_audit(inside, project_root=ROOT)

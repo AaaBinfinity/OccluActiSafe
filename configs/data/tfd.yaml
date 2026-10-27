@@ -4,5 +4,6 @@ data_root: data/raw/v2x_seq_tfd/TFD-Example
 output_root: artifacts/data_audit
 dataset_scope: example
 dataset_version: unknown
+acquired_date: unknown
 source_url: https://github.com/AIR-THU/DAIR-V2X-Seq#dataset-download
 usage_conditions: unverified

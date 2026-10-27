@@ -1,7 +1,7 @@
 """N03 离线数据审计编排；输入必须是人工准备的数据，不自动下载。"""
 from collections import Counter
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import hashlib
 import html
 import json
@@ -21,7 +21,7 @@ from occluactisafe.data.quality import audit_trajectory_stream
 _DEFAULTS = {
     "source": "v2x_seq_tfd", "data_root": "data/raw/v2x_seq_tfd/TFD-Example",
     "output_root": "artifacts/data_audit", "dataset_scope": "example",
-    "dataset_version": "unknown",
+    "dataset_version": "unknown", "acquired_date": "unknown",
     "source_url": "https://github.com/AIR-THU/DAIR-V2X-Seq#dataset-download",
     "usage_conditions": "unverified",
 }
@@ -68,6 +68,16 @@ def load_task_config(config_file, *, overrides=None, cli_overrides=None, project
     for name in ("dataset_version", "source_url"):
         if not isinstance(config[name], str) or not config[name].strip():
             raise ValueError(f"{name} 必须是非空公开文字")
+    acquired = config["acquired_date"]
+    if not isinstance(acquired, str):
+        raise ValueError("acquired_date 必须是 YYYY-MM-DD 或 unknown 字符串")
+    if acquired != "unknown":
+        try:
+            parsed = date.fromisoformat(acquired)
+        except ValueError as exc:
+            raise ValueError("acquired_date 必须是 YYYY-MM-DD 或 unknown") from exc
+        if parsed.isoformat() != acquired:
+            raise ValueError("acquired_date 必须使用 YYYY-MM-DD")
     url = urlsplit(config["source_url"])
     if (url.scheme != "https" or not url.hostname or url.username or url.password or url.query
             or "=" in url.fragment or re.search(r"token|secret|password|credential|api[_-]?key", url.fragment, re.I)):
@@ -150,7 +160,8 @@ def run_audit(config, *, project_root=PROJECT_ROOT):
                      "source_url": config["source_url"], "dataset_scope": config["dataset_scope"],
                      "dataset_version": config["dataset_version"], "usage_conditions_claim": config["usage_conditions"],
                      "usage_conditions_evidence": "not_provided_or_verified_by_audit",
-                     "acquired_date": "unknown", "audit_utc": datetime.now(timezone.utc).isoformat(),
+                     "acquired_date_claim": config["acquired_date"],
+                     "acquired_date_evidence": "user_supplied_unverified", "audit_utc": datetime.now(timezone.utc).isoformat(),
                      "data_root": str(data), "dataset_sha256": dataset_sha, "task_config_sha256": task_config_hash,
                      "provenance_verification": "user_provided_unverified",
                      "files": files, "discovery": discovery,
