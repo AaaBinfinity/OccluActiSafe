@@ -10,7 +10,7 @@
 
 ## 当前阶段
 
-N01 已经用户验收；N02 已实现公共配置、坐标、时钟、数据契约和运行清单，等待用户验收，测试与证据见[节点计划](docs/项目节点实施与验收计划.md)。数据适配、预测与控制算法、模型训练、通信服务及 CARLA 闭环仍待对应节点授权。检测器须统一比较YOLO26、YOLOv8、YOLO11及有必要的其他候选，按本项目实测结果选用，不预设胜者。53 项正式测试与 B01～B08 补充测试是规格；概念图中的数值不能作为实验结果。
+N01、N02 已经用户验收；N03 已实现 TFD 离线数据适配和审计入口，但官方样例下载受限、正式数据尚未就绪，节点受阻，详情见[节点计划](docs/项目节点实施与验收计划.md)。预测与控制算法、模型训练、通信服务及 CARLA 闭环仍待对应节点授权。检测器须统一比较YOLO26、YOLOv8、YOLO11及有必要的其他候选，按本项目实测结果选用，不预设胜者。53 项正式测试与 B01～B08 补充测试是规格；概念图中的数值不能作为实验结果。
 
 ## 阅读入口
 
@@ -47,7 +47,19 @@ uv run --no-sync python -B -m unittest discover -s tests/unit -v
 
 也可以在 IDE 中选择 `.venv/bin/python`（Windows 为 `.venv/Scripts/python.exe`），打开 `scripts/check_environment.py` 直接运行，无需填写参数。入口按脚本位置确定仓库根目录，不依赖工作目录，检查过程不会自动安装或下载；它只报告当前轻量工程和可选模块发现情况，不验证 GPU/CARLA 兼容性。缺少项目包或 Python 版本过低会失败并提示缺项。上述 uv 流程已在 macOS 验证；其他系统的实际验证状态见节点计划。
 
-N02 的字段、消息时间和调用约定见[数据契约字典](docs/N02数据契约字典.md)。基础配置在 `configs/base.yaml`，由 `load_config()` 依次合并包默认、基础配置、选定任务、脚本覆盖与显式 CLI；当前不提供数据处理或训练入口。
+N02 的字段、消息时间和调用约定见[数据契约字典](docs/N02数据契约字典.md)。基础配置在 `configs/base.yaml`，由 `load_config()` 依次合并包默认、基础配置、选定任务、脚本覆盖与显式 CLI。
+
+## 审计已取得的 TFD 数据
+
+准备并核对官方数据后，可在 IDE 选择 `.venv` 解释器直接运行 `scripts/prepare_data.py`；默认读取 `data/raw/v2x_seq_tfd/TFD-Example`，缺数据时明确失败，不会自动下载。也可在仓库根目录运行：
+
+```sh
+uv run --no-sync python scripts/prepare_data.py
+# 数据在其他目录时，明确指定已有目录
+uv run --no-sync python scripts/prepare_data.py --data-root /path/to/TFD-Example
+```
+
+正式数据需明确指定目录并使用 `--scope full`；脚本不会仅凭该标记宣称正式数据已就绪。报告的原始时间和坐标单位在核实前保持未确认；官方样例、许可及运行结果见 [N03 数据审计说明](docs/N03数据审计说明.md)。当前没有训练入口。
 
 专题入口：[算法成品与鬼探头](docs/算法成品与盲区鬼探头方案.md) · [车路通信](docs/车路通信方案.md) · [论文流程图](docs/论文流程图集.md) · [辅助界面概念图](docs/成品形态与界面效果图.md)。
 
