@@ -180,6 +180,17 @@ class SchemaTests(unittest.TestCase):
             AdvanceRequest("1.0", "run", "episode", 0, 21, "sim", 1.3, 1.4, control)
         with self.assertRaises(ValueError):
             AdvanceRequest("1.0", "run", "episode", 0, 21, "sim", 1.1, 1.4, control)
+        timeout = ControlResult("req-1", "plan-1", "timeout", False, "sim", 1., 1.2,
+                                0., 0.7, 0., "solver timeout")
+        self.assertEqual(ControlResult.from_json(timeout.to_json()), timeout)
+        with self.assertRaises(ValueError):
+            AdvanceRequest("1.0", "run", "episode", 0, 21, "sim", 1.1, 1.2, timeout)
+        fallback = ControlResult("req-1", "plan-1", "fallback", True, "sim", 1., 1.2,
+                                 0., 0.7, 0., "solver timeout")
+        self.assertEqual(AdvanceRequest("1.0", "run", "episode", 0, 21, "sim", 1.1, 1.2, fallback).control, fallback)
+        with self.assertRaises(ValueError):
+            ControlResult("req-1", "plan-1", "fallback", True, "sim", 1., 1.2,
+                          0.2, 0.7, 0., "solver timeout")
 
     def test_ego_state_roundtrip(self):
         ego = EgoState("vehicle-A", "sim", "map", "rear_axle", 1., 1.1, 1.0,

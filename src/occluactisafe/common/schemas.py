@@ -476,6 +476,8 @@ class ControlResult(Record):
             raise ContractError("控制有效期早于计划起点")
         if not (0 <= self.throttle <= 1 and 0 <= self.brake <= 1 and -1 <= self.steer <= 1):
             raise ContractError("控制请求超出归一化范围")
+        if self.throttle > 0 and self.brake > 0:
+            raise ContractError("同一控制周期不能同时请求油门和制动")
         if self.solver_status == "success" and (not self.safety_rechecked or self.fallback_reason is not None):
             raise ContractError("成功控制必须经安全复核且不能带回退原因")
         if self.solver_status != "success" and self.fallback_reason is None:
@@ -526,6 +528,8 @@ class AdvanceRequest(Record):
         _version(self.schema_version); _frame(self.generation, self.target_frame_id)
         if self.control.clock_domain != self.clock_domain or self.valid_until < self.request_time:
             raise ContractError("AdvanceRequest 时钟域或有效期非法")
+        if not self.control.safety_rechecked:
+            raise ContractError("桥接请求必须携带经安全复核的控制，包括回退")
         if self.control.valid_until < self.request_time or self.valid_until > self.control.valid_until:
             raise ContractError("请求携带的控制已过期或请求期限超出控制期限")
 
