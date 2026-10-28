@@ -18,6 +18,11 @@ def run(config):
 
 
 def main(argv=None):
+    # Windows 重定向输出可能使用无法表示中文的系统编码；IDE 的替代流不一定支持 reconfigure。
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="审计已取得的 V2X-Seq TFD 数据")
     parser.add_argument("--config", type=Path, default=CONFIG_FILE,
                         help="N03 任务配置文件，默认 configs/data/tfd.yaml")

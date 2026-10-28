@@ -162,6 +162,16 @@ class AuditIntegrationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "原始数据"):
             run_audit(inside, project_root=ROOT)
 
+    def test_entry_reports_missing_data_with_isolated_windows_encoding(self):
+        missing = self.root / "unavailable"
+        self.config_file.write_text(f"data_root: {missing}\noutput_root: {self.output}\n", encoding="utf8")
+        result = subprocess.run([sys.executable, "-I", "-B", str(SCRIPT), "--config", str(self.config_file)],
+                                cwd=self.root, capture_output=True, text=True, encoding="utf8")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("TFD 数据目录不存在", result.stderr)
+        self.assertNotIn("UnicodeEncodeError", result.stderr)
+        self.assertFalse(self.output.exists())
+
     def test_entry_no_args_fails_clearly_and_import_does_not_run(self):
         missing = self.root / "unavailable"
         self.config_file.write_text(f"data_root: {missing}\noutput_root: {self.output}\n", encoding="utf8")
