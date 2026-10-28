@@ -1,5 +1,6 @@
 """N03 集成测试只用自建夹具；不代表官方样本或正式数据。"""
 import csv
+import gzip
 import json
 import os
 from pathlib import Path
@@ -7,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from occluactisafe.data.tfd_audit import load_task_config, run_audit
 
@@ -58,14 +60,24 @@ class AuditIntegrationTests(unittest.TestCase):
         self.assertEqual(quality["valid"]["subtype_track_counts"]["Cyclist"], 1)
         self.assertEqual(quality["empty_or_header_only_trajectory_files"], [])
         self.assertEqual(quality["traffic_light_row_count"], 1)
+        with gzip.open(run_dir / "trajectories.jsonl.gz", "rt", encoding="utf8") as f:
+            rows = [json.loads(line) for line in f]
+        self.assertEqual(len(rows), 3)
+        self.assertEqual([row["source_row"] for row in rows], [3, 2, 5])
+        self.assertEqual(rows[0]["original"]["x"], "1")
+        with gzip.open(run_dir / "traffic_lights.jsonl.gz", "rt", encoding="utf8") as f:
+            signals = [json.loads(line) for line in f]
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0]["original"]["color_1"], "red")
+        self.assertFalse((run_dir / "trajectories.jsonl").exists())
         self.assertEqual(quality["map_status_valid_row_counts"], {"present": 3})
         maps = json.loads((run_dir / "map_index.json").read_text(encoding="utf8"))
         self.assertEqual(maps[0]["lane_entry_count"], 1)
         self.assertEqual(quality["time_unit"], "unverified_raw_units")
         self.assertTrue((run_dir / "trajectory_preview.svg").is_file())
-        anomalies = [json.loads(line) for line in (run_dir / "anomalies.jsonl").read_text().splitlines()]
+        anomalies = [json.loads(line) for line in (run_dir / "anomalies.jsonl").read_text(encoding="utf8").splitlines()]
         self.assertTrue(all(item["source_file"] and item["source_row"] >= 2 and item["reason"] for item in anomalies))
-        data_manifest = json.loads((run_dir / "data_manifest.json").read_text())
+        data_manifest = json.loads((run_dir / "data_manifest.json").read_text(encoding="utf8"))
         self.assertEqual(data_manifest["provenance_verification"], "user_provided_unverified")
         self.assertEqual(data_manifest["usage_conditions_claim"], "unverified")
         self.assertEqual(data_manifest["usage_conditions_evidence"], "not_provided_or_verified_by_audit")
@@ -88,9 +100,20 @@ class AuditIntegrationTests(unittest.TestCase):
             run_audit(self.config(), project_root=ROOT)
         statuses = list(self.output.glob("*/audit_status.json"))
         self.assertEqual(len(statuses), 1)
-        self.assertEqual(json.loads(statuses[0].read_text())["status"], "failed")
-        quality = json.loads((statuses[0].parent / "data_quality.json").read_text())
+        self.assertEqual(json.loads(statuses[0].read_text(encoding="utf8"))["status"], "failed")
+        quality = json.loads((statuses[0].parent / "data_quality.json").read_text(encoding="utf8"))
         self.assertEqual(len(quality["empty_or_header_only_trajectory_files"]), 1)
+
+    def test_low_disk_space_preserves_failed_status(self):
+        with mock.patch("occluactisafe.data.tfd_audit.shutil.disk_usage") as disk:
+            disk.return_value = type("Usage", (), {"free": 1})()
+            with self.assertRaisesRegex(OSError, "可用空间不足"):
+                run_audit(self.config(), project_root=ROOT)
+        statuses = list(self.output.glob("*/audit_status.json"))
+        self.assertEqual(len(statuses), 1)
+        status = json.loads(statuses[0].read_text(encoding="utf8"))
+        self.assertEqual(status["status"], "failed")
+        self.assertFalse(status["formal_data_ready"])
 
     def test_prefixed_map_is_indexed_without_fabricated_association(self):
         original = self.data / "maps" / "hdmap01.json"

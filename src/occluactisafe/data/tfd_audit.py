@@ -3,11 +3,13 @@ from collections import Counter
 from copy import deepcopy
 from datetime import date, datetime, timezone
 import hashlib
+import gzip
 import html
 import json
 import math
 from pathlib import Path
 import re
+import shutil
 from urllib.parse import urlsplit
 
 import yaml
@@ -125,6 +127,16 @@ def _preview(path, points):
     return True
 
 
+# 为失败状态与其他进程保留空间；每批检查，避免逐行查询磁盘。
+_MIN_FREE_BYTES = 10 * 1024**3
+_DISK_CHECK_ROWS = 10_000
+
+
+def _check_free_space(path):
+    if shutil.disk_usage(path).free < _MIN_FREE_BYTES:
+        raise OSError("审计输出磁盘可用空间不足 10 GiB，已停止并保留部分产物")
+
+
 def run_audit(config, *, project_root=PROJECT_ROOT):
     """记录数据清单并逐文件审计；不构造缺失数据，也不进行训练/划分。"""
     root = Path(project_root).resolve()
@@ -173,14 +185,19 @@ def run_audit(config, *, project_root=PROJECT_ROOT):
     try:
         # 一次逐文件解析地图后只保留轻量索引；轨迹和信号共享，避免将所有地图驻留内存。
         map_catalog = read_map_catalog(data)
+        _check_free_space(run_dir)
         samples, points = [], []
         preview_key = None
         map_counts = Counter()
-        with (run_dir / "trajectories.jsonl").open("w", encoding="utf-8") as output_stream, \
+        with gzip.open(run_dir / "trajectories.jsonl.gz", "wt", encoding="utf-8", newline="\n", compresslevel=1) as output_stream, \
              (run_dir / "anomalies.jsonl").open("w", encoding="utf-8") as anomaly_stream:
+            written_rows = 0
             def accept(row):
-                nonlocal preview_key
+                nonlocal preview_key, written_rows
+                if written_rows % _DISK_CHECK_ROWS == 0:
+                    _check_free_space(run_dir)
                 _line(output_stream, row)
+                written_rows += 1
                 map_counts[row.get("map_status", "unknown")] += 1
                 if len(samples) < 20:
                     samples.append(row)
@@ -195,8 +212,10 @@ def run_audit(config, *, project_root=PROJECT_ROOT):
                 _line(anomaly_stream, row)
             quality = audit_trajectory_stream(iter_trajectories(data, map_catalog=map_catalog), accept, anomaly)
         signals = 0
-        with (run_dir / "traffic_lights.jsonl").open("w", encoding="utf-8") as stream:
+        with gzip.open(run_dir / "traffic_lights.jsonl.gz", "wt", encoding="utf-8", newline="\n", compresslevel=1) as stream:
             for signal in iter_traffic_lights(data, map_catalog=map_catalog):
+                if signals % _DISK_CHECK_ROWS == 0:
+                    _check_free_space(run_dir)
                 _line(stream, signal)
                 signals += 1
         maps = map_catalog["maps"]
