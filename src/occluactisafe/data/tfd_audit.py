@@ -208,8 +208,13 @@ def run_audit(config, *, project_root=PROJECT_ROOT):
                     x, y = float(row["x"]), float(row["y"])
                     if math.isfinite(x) and math.isfinite(y):
                         points.append((x, y))
+            anomaly_rows = 0
             def anomaly(row):
+                nonlocal anomaly_rows
+                if anomaly_rows % _DISK_CHECK_ROWS == 0:
+                    _check_free_space(run_dir)
                 _line(anomaly_stream, row)
+                anomaly_rows += 1
             quality = audit_trajectory_stream(iter_trajectories(data, map_catalog=map_catalog), accept, anomaly)
         signals = 0
         with gzip.open(run_dir / "traffic_lights.jsonl.gz", "wt", encoding="utf-8", newline="\n", compresslevel=1) as stream:

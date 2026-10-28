@@ -60,7 +60,8 @@ def audit_trajectories(records):
 
     def issue(code, row, reason, **extra):
         counts[code] += 1
-        anomalies.append({"kind": code, **_location(row), "reason": reason, **extra})
+        anomalies.append({"kind": code, **_location(row), "reason": reason,
+                          "original": dict(row["original"]), **extra})
 
     for row in records:
         if not isinstance(row, dict):

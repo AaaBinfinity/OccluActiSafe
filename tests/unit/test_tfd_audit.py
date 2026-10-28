@@ -77,6 +77,11 @@ class AuditIntegrationTests(unittest.TestCase):
         self.assertTrue((run_dir / "trajectory_preview.svg").is_file())
         anomalies = [json.loads(line) for line in (run_dir / "anomalies.jsonl").read_text(encoding="utf8").splitlines()]
         self.assertTrue(all(item["source_file"] and item["source_row"] >= 2 and item["reason"] for item in anomalies))
+        duplicate = next(item for item in anomalies if item["kind"] == "duplicate")
+        self.assertEqual(duplicate["original"]["id"], "a")
+        self.assertEqual(duplicate["original"]["x"], "1")
+        missing = next(item for item in anomalies if item["kind"] == "missing_coordinates")
+        self.assertEqual(missing["original"]["x"], "")
         data_manifest = json.loads((run_dir / "data_manifest.json").read_text(encoding="utf8"))
         self.assertEqual(data_manifest["provenance_verification"], "user_provided_unverified")
         self.assertEqual(data_manifest["usage_conditions_claim"], "unverified")
