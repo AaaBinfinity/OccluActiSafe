@@ -204,6 +204,27 @@ class AuditIntegrationTests(unittest.TestCase):
         self.assertEqual(imported.stdout, "")
         self.assertFalse(self.output.exists())
 
+    def test_ide_default_config_without_cli_runs_from_three_directories(self):
+        # 模拟 IDE 选定脚本 CONFIG_FILE；main([]) 没有必填参数，也不依赖 cwd。
+        self.config_file.write_text(f"data_root: {self.data}\noutput_root: {self.output}\n", encoding="utf-8")
+        wrapper = (
+            "import runpy,sys; from pathlib import Path; "
+            "ns=runpy.run_path(sys.argv[1],run_name='ide_entry'); "
+            "ns['main'].__globals__['CONFIG_FILE']=Path(sys.argv[2]); "
+            "raise SystemExit(ns['main']([]))"
+        )
+        for cwd in (ROOT, ROOT / "scripts", self.root):
+            result = subprocess.run([sys.executable, "-I", "-B", "-c", wrapper,
+                                     str(SCRIPT), str(self.config_file)], cwd=cwd,
+                                    capture_output=True, text=True, encoding="utf-8", timeout=30)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("TFD 审计完成", result.stdout)
+        statuses = list(self.output.glob("*/audit_status.json"))
+        self.assertEqual(len(statuses), 3)
+        for path in statuses:
+            status = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual((status["raw_rows"], status["valid_rows"]), (5, 3))
+
 
 if __name__ == "__main__":
     unittest.main()
