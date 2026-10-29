@@ -117,6 +117,10 @@ class AuditIntegrationTests(unittest.TestCase):
         config = self.config(); config["workers"] = 2
         parallel = run_audit(config, project_root=ROOT)
         a, b = Path(serial["run_dir"]), Path(parallel["run_dir"])
+        left_manifest = json.loads((a / "data_manifest.json").read_text(encoding="utf-8"))
+        right_manifest = json.loads((b / "data_manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(left_manifest["files"], right_manifest["files"])
+        self.assertEqual(left_manifest["dataset_sha256"], right_manifest["dataset_sha256"])
         for name in ("data_quality.json", "anomalies.jsonl", "inspection_samples.json"):
             self.assertEqual((a / name).read_bytes(), (b / name).read_bytes(), name)
         with gzip.open(a / "trajectories.jsonl.gz", "rb") as left, gzip.open(b / "trajectories.jsonl.gz", "rb") as right:

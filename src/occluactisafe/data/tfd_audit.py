@@ -1,5 +1,6 @@
 """N03 离线数据审计编排；输入必须是人工准备的数据，不自动下载。"""
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import date, datetime, timezone
 import hashlib
@@ -112,6 +113,19 @@ def _write_json(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
 
 
+def _file_identity(args):
+    data, name = args
+    path = (data / name).resolve()
+    if not path.is_relative_to(data):
+        raise ValueError(f"数据文件越出数据根目录：{name}")
+    before = path.stat()
+    sha = _sha(path)
+    after = path.stat()
+    if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
+        raise ValueError(f"计算哈希时原始文件发生变化：{name}")
+    return {"path": name, "size_bytes": before.st_size, "sha256": sha}
+
+
 def _line(stream, item):
     stream.write(json.dumps(item, ensure_ascii=False, allow_nan=False, separators=(",", ":")) + "\n")
 
@@ -157,14 +171,12 @@ def run_audit(config, *, project_root=PROJECT_ROOT):
     filenames = sorted(set(discovery["trajectory_files"] + discovery["traffic_light_files"] + discovery["map_files"]))
     files = []
     print(f"发现轨迹 {len(discovery['trajectory_files'])} 个、信号 {len(discovery['traffic_light_files'])} 个；开始逐文件 SHA-256", flush=True)
-    for index, name in enumerate(filenames):
-        source_file = (data / name).resolve()
-        if not source_file.is_relative_to(data):
-            raise ValueError(f"数据文件越出数据根目录：{name}")
-        files.append({"path": name, "size_bytes": source_file.stat().st_size,
-                      "sha256": _sha(source_file)})
-        if (index + 1) % 10000 == 0:
-            print(f"已哈希 {index + 1}/{len(filenames)} 个文件", flush=True)
+    # 分批提交，避免为几十万个文件一次创建所有 Future；map 保持摘要顺序。
+    with ThreadPoolExecutor(max_workers=config["workers"]) as pool:
+        for start in range(0, len(filenames), 1000):
+            files.extend(pool.map(_file_identity, ((data, name) for name in filenames[start:start + 1000])))
+            if len(files) % 10000 == 0:
+                print(f"已哈希 {len(files)}/{len(filenames)} 个文件", flush=True)
     source_digest = hashlib.sha256()
     for item in files:
         source_digest.update(item["path"].encode("utf-8") + b"\0" + bytes.fromhex(item["sha256"]))
