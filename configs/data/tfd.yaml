@@ -1,0 +1,11 @@
+# 仅审计已经取得的 TFD-Example；不会自动下载、解压或创建数据。
+source: v2x_seq_tfd
+data_root: H:/OccluActiSafeDataset/V2X-Seq-TFD-Example
+output_root: H:/OccluActiSafeDataset/artifacts/data_audit
+dataset_scope: example
+dataset_version: unknown
+acquired_date: unknown
+source_url: https://github.com/AIR-THU/DAIR-V2X-Seq#dataset-download
+usage_conditions: unverified
+workers: 1
+usage_conditions_note: not_provided
