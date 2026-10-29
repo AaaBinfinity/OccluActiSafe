@@ -1,0 +1,71 @@
+数据集与轨迹预测专题文献索引（检索日期：2026-10-29）
+
+编号仅为本次检索清单，论文最终序号按实际引用顺序确定。条目按 GB/T 7714—2025 的常用著录结构整理；未知出版地、DOI、卷期或页码不臆填，正式引用前再核对。论文和补充材料计一项；没有以总页数充当引用页码。研究结果均为原论文报告，不代表本项目已实现或验证。
+
+来源分类以论文机构为准：国内 5 项、国外 5 项、跨国或跨境合作 2 项。香港与海外机构合作单独列出，避免将地域标签与国籍混淆。检索接触知网期刊平台公开页面和期刊官方站点，知网门户跳转海外版；未确认机构 IP 或机构登录，未通过机构授权下载知网全文。公开摘要或可用全文之外的细节均标未核实。代码、数据的“公开”仅表示已见官方入口，不代表已下载、运行或核对许可。
+
+[1] YU H B, YANG W X, RUAN H Z, et al. V2X-Seq: a large-scale sequential dataset for vehicle-infrastructure cooperative perception and forecasting[C]//Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2023: 5486-5495.
+核心必读；国内：清华大学等机构。正式会议论文；标识 CVPR 2023，DOI 未核实。来源：https://openaccess.thecvf.com/content/CVPR2023/html/Yu_V2X-Seq_A_Large-Scale_Sequential_Dataset_for_Vehicle-Infrastructure_Cooperative_Perception_and_CVPR_2023_paper.html
+PDF：既有资料已有正文及补充材料，见 ../已有参考文献/；同一项研究，本次不重复下载。阅读范围：正文中数据集和任务段落，非全文精读。代码和数据官方入口 https://github.com/AIR-THU/DAIR-V2X-Seq ，未下载运行，数据条件和许可证须再核对。
+输入与遮挡：真实车端和路侧轨迹、局部矢量地图及部分视角的信号灯；轨迹预测子集提供车端、路侧及协同视角。面向协同扩展视野，但不能将其直接等同于专门的遮挡条件预测基准。通信延迟：本次阅读范围内未确认预测基准的具体延迟设置。价值：用于数据章节、坐标和时间对齐、多视角轨迹构建及线上/离线任务划分；限制是轨迹标注和实际可见输入不同，不能将融合真值或未来数据喂给闭环控制器。
+
+[2] RUAN H Z, YU H B, YANG W X, et al. Learning cooperative trajectory representations for motion forecasting[C]//Advances in Neural Information Processing Systems 37. 2024. DOI:10.52202/079017-0429.
+核心必读；国内：清华大学团队。正式会议论文；官方来源 https://proceedings.neurips.cc/paper_files/paper/2024/hash/1812042b83f20707a898ff6f8af7db84-Abstract-Conference.html 。PDF：02_V2X_Graph.pdf，下载与校验状态见文末。代码/数据入口 https://github.com/AIR-THU/V2X-Graph ，已找到入口，未运行。
+阅读范围：摘要及正文数据、延迟表的局部；V2X-Graph 融合协同轨迹特征，使用 V2X-Seq 和 V2X-Traj；关注协同感知盲区，但不应把所有实验当作遮挡分层实验。正文有通信延迟鲁棒性表，具体设置和实现须逐项复核。可用于协同特征融合、通信时效实验与比较；限制：不能将论文指标直接视为本项目结果。
+
+[3] 王庆荣, 谭小泽, 朱昌锋, 等. 基于门控循环单元和Transformer的车辆轨迹预测方法[J]. 汽车技术, 2024(7): 1-8.
+可选参考；国内：兰州交通大学等机构；正式中文期刊论文，DOI 未核实。期刊全文网页 https://castjournals.cast.org.cn/joweb/qcjs/CN/1209910182600110197 。PDF：未下载；本次使用期刊网页正文，未确认公开 PDF 下载地址。代码未核实，公开 NGSIM 数据入口见 https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm ，未下载运行。
+阅读范围：网页摘要、方法和实验部分。输入 NGSIM US-101/I-80 历史轨迹、周围车辆状态，GRU 编码、Transformer 时空交互与解码；并非专门研究遮挡，通信延迟未核实。价值：模型设计与 GRU 对比思路；该文是组合模型而非独立 GRU 基线，高速公路与路口车路协同存在域差异。
+
+[4] 赵一鸣, 邴其春, 张伟健, 等. 基于Transformer-GCN-GRU的车辆轨迹预测方法[J/OL]. 青岛理工大学学报, 2026[2026-10-29]. https://qdjg.cbpt.cnki.net/portal/journal/portal/client/paper/198dfb0255b825cdab61e09c3b919afc.
+可选参考；国内：青岛理工大学等；期刊网络发表，卷期页码及 DOI 未核实。知网期刊平台公开摘要，PDF 未下载，未确认合法开放下载入口。数据 NGSIM 公开入口见 [3]，论文代码未核实。
+阅读范围：公开摘要。输入历史轨迹和车道环境，Transformer 提取时间依赖、GCN 处理车辆关系、GRU 预测。摘要未表明专门研究遮挡或通信延迟；适合模型设计中比较时空图与注意力组合，限制是高速公路数据，不能证明协同路口或遮挡性能。
+
+[5] SHENG Z H, XU Y W, XUE S B, et al. Graph-based spatial-temporal convolutional network for vehicle trajectory prediction in autonomous driving[J]. IEEE Transactions on Intelligent Transportation Systems, 2022, 23(10): 17654-17665.
+可选参考；国内：上海交通大学团队，见 https://csc-lab.com/zh/publication/sheng-2022-graph/ ；正式期刊论文，DOI 未核实；作者预印本 https://arxiv.org/abs/2109.12764 。PDF：05_GSTCN.pdf，下载与校验状态见文末。NGSIM 数据公开见 [3]；代码未核实。
+阅读范围：摘要、数据与不完美数据实验段落。输入 NGSIM I-80/US-101 的周围车辆历史轨迹，用 GCN 与时间卷积预测分布；研究不完美数据的鲁棒性，但不能据此断言其专门验证真实遮挡。通信延迟未核实。价值：时空图基线及复杂度、推理速度对照；限制为单一高速公路域与轨迹级输入。
+
+[6] CHANG M F, LAMBERT J, SANGKLOY P, et al. Argoverse: 3D tracking and forecasting with rich maps[C]//Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2019: 8748-8757.
+核心必读；国外：Argo AI、卡内基梅隆大学和佐治亚理工学院；正式会议论文。官方来源 https://openaccess.thecvf.com/content_CVPR_2019/html/Chang_Argoverse_3D_Tracking_and_Forecasting_With_Rich_Maps_CVPR_2019_paper.html 。PDF：06_Argoverse.pdf，下载与校验状态见文末；官方数据 https://www.argoverse.org/ ，基线 https://github.com/jagjeet-singh/argoverse-forecasting ，均未运行。DOI 未核实。
+阅读范围：摘要及预测任务、基线和评价段落。车辆历史轨迹与矢量地图，论文提供 CV、近邻、LSTM 和多模态评价；不是专门研究遮挡或车路通信，延迟未核实。价值：CV 基线和 ADE/FDE 原始基准依据；其地图 oracle 用未来信息，仅作上界，不可用于本项目在线控制。域差异：单车数据非车路协同。
+
+[7] XU Y, BAZARJANI A, CHI H G, et al. Uncovering the missing pattern: unified framework towards trajectory imputation and prediction[C]//Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2023: 9632-9643.
+核心必读；国外：Northeastern University、Honda Research Institute USA 等；正式会议论文。官方 https://openaccess.thecvf.com/content/CVPR2023/html/Xu_Uncovering_the_Missing_Pattern_Unified_Framework_Towards_Trajectory_Imputation_and_CVPR_2023_paper.html ；PDF：07_Missing_Pattern.pdf，下载与校验状态见文末。DOI 未核实；代码未核实；Vehicle-TIP 源数据入口 https://github.com/shijieS/OmniMOTDataset ，衍生集实际获取状态未核实。
+阅读范围：摘要、正文局部及补充材料数据段。真正针对不完整观测：车辆 Vehicle-TIP 使用 Omni-MOT 的完整度构造可见性，另有 Basketball-TIP 和 Football-TIP；输入多主体不完整轨迹及掩码，GC-VRNN 利用缺失模式进行补全与预测。遮挡与视野缺失均是动机，不能将所有缺失等同物理遮挡；通信延迟未核实。价值：缺失掩码、连续缺失分层及因果补全实验；图像坐标与交通米制坐标不可直接比较。
+
+[8] CHRISTIANOS F, KARKUS P, IVANOVIC B, et al. Planning with occluded traffic agents using bi-level variational occlusion models[C]//2023 IEEE International Conference on Robotics and Automation. 2023.
+核心必读；国外：NVIDIA 等与爱丁堡大学合作，论文机构以原文复核；正式会议论文，页码和 DOI 未核实。来源 https://arxiv.org/abs/2210.14584 ；PDF：08_BiVO.pdf，下载与校验状态见文末。nuScenes 数据 https://www.nuscenes.org/ ，代码未核实，均未运行。
+阅读范围：摘要。真正研究不可见交通参与者，先推断遮挡目标位置再生成轨迹分布，用 nuScenes 做闭环回放仿真；输入的具体特征与遮挡构造细节待复核。通信延迟未核实。价值：未观测主体假设及预测到规划的接口；闭环回放并非真实道路部署，不可用未来真值直接控制。
+
+[9] PANG Z Q, RAMANAN D, LI M T, et al. Streaming motion forecasting for autonomous driving[C]//2023 IEEE/RSJ International Conference on Intelligent Robots and Systems. 2023: 7407-7414.
+核心必读；国外：伊利诺伊大学及卡内基梅隆大学；正式会议论文，DOI 未核实。来源 https://arxiv.org/abs/2310.01351 ；PDF：09_Streaming.pdf，下载与校验状态见文末。官方代码 https://github.com/ziqipang/StreamingForecasting ，未运行。
+阅读范围：摘要及基准局部。流式预测显式处理主体消失、再出现和被遮挡状态，传播多模态预测并保持时间一致；基于 Argoverse 轨迹流，详细观测输入与标注协议须查全文。通信延迟未核实。价值：连续帧预测、遮挡后状态维护及一致性评价；不是车路协同通信实验。
+
+[10] ZHOU Z K, YE L Y, WANG J P, et al. HiVT: hierarchical vector transformer for multi-agent motion prediction[C]//Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2022: 8823-8833.
+核心必读；跨境合作：香港城市大学、加拿大维多利亚大学和美国波多黎各大学；正式会议论文。官方 https://openaccess.thecvf.com/content/CVPR2022/html/Zhou_HiVT_Hierarchical_Vector_Transformer_for_Multi-Agent_Motion_Prediction_CVPR_2022_paper.html 。PDF：10_HiVT.pdf，下载与校验状态见文末；代码 https://github.com/ZikangZhou/HiVT ，Argoverse 数据见 [6]，未运行；DOI 未核实。
+阅读范围：摘要和引言。输入向量化历史轨迹与地图，分层提取局部上下文、全局交互；非专门研究遮挡，通信延迟未核实。价值：Transformer 强基线、多主体一次前向和坐标不变表征；应用 V2X-Seq 时需自行核对适配、相同输入及计算预算。
+
+[11] LIU Z W, LI C, YANG N, et al. MSTF: multiscale transformer for incomplete trajectory prediction[C]//2024 IEEE Intelligent Vehicles Symposium. 2024: 573-580. DOI:10.1109/IV55156.2024.10588771.
+核心必读；跨国合作：国内研究团队及 UCLA、利物浦大学，机构具体分工需对照全文；正式会议论文。来源 https://arxiv.org/abs/2407.05671 ，出版信息 https://www.liverpool.ac.uk/people/guangliang-cheng/research-outputs 。PDF：11_MSTF.pdf，下载与校验状态见文末；代码与数据入口未核实。
+阅读范围：摘要和论文检索片段。专门研究不完整轨迹：多尺度注意力结合缺失模式及连续性表示；摘要说用两个真实数据集，KITTI 出现在正文片段，另一数据集名称未核实。遮挡是缺失原因之一，具体缺失生成及真实遮挡比例待复核；通信延迟未核实。价值：遮挡缺失建模和 Transformer 消融，限制：不应假定已解决完全未曾观测目标。
+
+[12] ZHOU Z W, XIANG H, ZHENG Z L, et al. V2XPnP: vehicle-to-everything spatio-temporal fusion for multi-agent perception and prediction[C]//Proceedings of the IEEE/CVF International Conference on Computer Vision. 2025: 25399-25409. DOI:10.1109/ICCV51701.2025.02356.
+核心必读；国外：正式论文署名机构 UCLA；正式会议论文。官方项目 https://mobility-lab.seas.ucla.edu/v2xpnp/ ；PDF：12_V2XPnP.pdf，下载与校验状态见文末；代码 https://github.com/Zewei-Zhou/V2XPnP 和数据项目页已找到，未下载运行。
+阅读范围：摘要与项目页。真实多车多路侧 V2XPnP Sequential Dataset 含传感器序列、地图和按可见关系取出的轨迹；Transformer 融合时空与多主体信息，明确针对受限可观测性，但遮挡专项分层实验需复核。论文比较单步与多步通信，具体网络延迟建模未核实，通信步数不等于延迟。价值：可见性构建、感知到预测接口及多协作模式；采集和标注条件与本项目需分别核对。
+
+评价与实验使用边界：ADE 为预测时域逐点位移误差的平均；FDE 为终点位移误差；多模态 min 指选取候选中的最优者，属于事后 oracle 指标，不能代替线上可选轨迹的质量。Argoverse [6] 对 top-K ADE/FDE 有明确基准定义，Miss Rate 的具体计算应核对官方实现 https://github.com/argoverse/argoverse-api/blob/master/argoverse/evaluation/eval_forecasting.py ：其按最小 FDE 与阈值比较；阈值、K、时域、采样率、单位及有效主体必须随实验报告。2 m 只是常见 Argoverse 配置，不是普适阈值。报告单模态和多模态、按遮挡持续时间和消息年龄分层，并补充端到端延迟；评价真值只用于离线标签与评价，在线预测和控制不得读取未来或不可见目标真值。
+
+优先阅读：[1] 明确本项目车路协同数据与任务；[2] 将协同轨迹融合及通信时效落到预测方法；[7] 明确缺失观测、掩码与遮挡数据构造。随后读 [10] 建立 HiVT 基线，[8] 了解不可见主体与规划接口。[3] 的 GRU-Transformer 不能替代独立 GRU，独立 GRU 的具体基线配置仍需另行确定；本清单没有声称 ADE/FDE、GRU 或 CV 的最早发明论文，采用任务基准原始依据。
+
+PDF 核验与下载来源：本次新增 9 个文件，用 PDF 解析器读取首页和页数，首页题名与对应研究匹配；这只验证可解析与书目匹配，不表示逐页精读。已有 [1] 正文也已核验可解析及首页匹配；其补充材料未在本次重新验证。以下为本次直接来源，未测试授权以外的访问渠道：
+02_V2X_Graph.pdf：https://proceedings.neurips.cc/paper_files/paper/2024/file/1812042b83f20707a898ff6f8af7db84-Paper-Conference.pdf
+05_GSTCN.pdf：https://arxiv.org/pdf/2109.12764 （作者预印本）
+06_Argoverse.pdf：https://openaccess.thecvf.com/content_CVPR_2019/papers/Chang_Argoverse_3D_Tracking_and_Forecasting_With_Rich_Maps_CVPR_2019_paper.pdf
+07_Missing_Pattern.pdf：https://openaccess.thecvf.com/content/CVPR2023/papers/Xu_Uncovering_the_Missing_Pattern_Unified_Framework_Towards_Trajectory_Imputation_and_CVPR_2023_paper.pdf
+08_BiVO.pdf：https://arxiv.org/pdf/2210.14584 （作者预印本）
+09_Streaming.pdf：https://arxiv.org/pdf/2310.01351 （作者预印本）
+10_HiVT.pdf：https://openaccess.thecvf.com/content/CVPR2022/papers/Zhou_HiVT_Hierarchical_Vector_Transformer_for_Multi-Agent_Motion_Prediction_CVPR_2022_paper.pdf
+11_MSTF.pdf：https://arxiv.org/pdf/2407.05671 （作者预印本）
+12_V2XPnP.pdf：https://openaccess.thecvf.com/content/ICCV2025/papers/Zhou_V2XPnP_Vehicle-to-Everything_Spatio-Temporal_Fusion_for_Multi-Agent_Perception_and_Prediction_ICCV_2025_paper.pdf
+
+统计和缺口：12 项中，本目录 9 项有可解析 PDF；[1] 复用已有正文，另有既有补充材料；[3][4] 未获取 PDF，公开网页可读。PDF 不纳入本次 Git 提交，需分别核查版权和再分发许可。知网平台摘要可检索，但机构 IP 权限未确认，不能声称读过知网授权全文；中文学位论文和直接对应协同遮挡的中文期刊资料尚不足，故不为比例收录证据弱的条目。开放代码、数据入口不等于复现成功。进一步阅读全文、核对数据协议和许可证后才能确定最终实验配置。
