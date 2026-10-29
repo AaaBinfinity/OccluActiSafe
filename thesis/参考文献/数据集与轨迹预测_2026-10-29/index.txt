@@ -68,4 +68,6 @@ PDF 核验与下载来源：本次新增 9 个文件，用 PDF 解析器读取�
 11_MSTF.pdf：https://arxiv.org/pdf/2407.05671 （作者预印本）
 12_V2XPnP.pdf：https://openaccess.thecvf.com/content/ICCV2025/papers/Zhou_V2XPnP_Vehicle-to-Everything_Spatio-Temporal_Fusion_for_Multi-Agent_Perception_and_Prediction_ICCV_2025_paper.pdf
 
-统计和缺口：12 项中，本目录 9 项有可解析 PDF；[1] 复用已有正文，另有既有补充材料；[3][4] 未获取 PDF，公开网页可读。PDF 不纳入本次 Git 提交，需分别核查版权和再分发许可。知网平台摘要可检索，但机构 IP 权限未确认，不能声称读过知网授权全文；中文学位论文和直接对应协同遮挡的中文期刊资料尚不足，故不为比例收录证据弱的条目。开放代码、数据入口不等于复现成功。进一步阅读全文、核对数据协议和许可证后才能确定最终实验配置。
+统计和缺口：12 项中，本目录 9 项有可解析 PDF；[1] 复用已有正文，另有既有补充材料；[3][4] 未获取 PDF，公开网页可读。知网平台摘要可检索，但机构 IP 权限未确认，不能声称读过知网授权全文；中文学位论文和直接对应协同遮挡的中文期刊资料尚不足，故不为比例收录证据弱的条目。开放代码、数据入口不等于复现成功。进一步阅读全文、核对数据协议和许可证后才能确定最终实验配置。
+
+全文分发许可与 Git：09_Streaming.pdf 为 Ziqi Pang、Deva Ramanan、Mengtian Li、Yu-Xiong Wang 的作者预印本，来源 https://arxiv.org/abs/2310.01351 ，未作修改；其页面标明 CC BY-NC-SA 4.0（https://creativecommons.org/licenses/by-nc-sa/4.0/），允许在满足署名、非商业等条件下分享，故将该文件提交至本研究仓库。05_GSTCN.pdf、08_BiVO.pdf、11_MSTF.pdf 的 arXiv 页面显示授予 arXiv 的非独占分发许可（https://arxiv.org/licenses/nonexclusive-distrib/1.0/），未核实第三方再分发授权；02、06、07、10、12 的本次下载版本的第三方再分发权限也未核实。上述 8 个文件仅保留本地，不提交；可通过各自官方链接获取。论文代码的许可证不能自动视为论文全文的许可证。
