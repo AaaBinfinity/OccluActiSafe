@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-26",
-  "version": "V2.0",
+  "date": "2026-10-29",
+  "version": "V3.0",
   "retained_formats": [
     "svg"
   ],
@@ -8,32 +8,32 @@
     {
       "id": "01_overall",
       "title": "系统总体技术路线",
-      "svg_sha256": "2ed1167ee6c6946a5d8d667b8d0960190ba2d295d293f66b6e44ce6b30cd0273"
+      "svg_sha256": "731463c3b2d6961091369a0e96e071745157c4acf718405605c4eea749515392"
     },
     {
       "id": "02_cooperative_perception",
       "title": "车路协同感知与信息交互流程",
-      "svg_sha256": "2fa20f2b923818f29b21c9050370f65fc71a94cf45c1590dcc6f61bcb8195384"
+      "svg_sha256": "7622a04fdc71122632edcf32f1f24233ea929e89f0c42e0bbf705d909863c069"
     },
     {
       "id": "03_transformer",
       "title": "RC-STGT 轨迹预测模型结构",
-      "svg_sha256": "87eff54a5471fd6ac5fdeba5f84ece9fb3e02704eb085643d8c04605d2d805db"
+      "svg_sha256": "1e27cd9b37af650c16ffeb781dabcbfae13e7aae6e2409a0b923b3ab9cd9e984"
     },
     {
       "id": "04_risk_decision",
       "title": "碰撞风险评估与主动避撞决策流程",
-      "svg_sha256": "a9f3c1430ed37c8b0fdb757b8920efc87abcff1e6b4dd696885e29f3141a36fd"
+      "svg_sha256": "839283d498b162277ae95347fc252dffd7b681a5fe0d48561b60c2d6edf9351c"
     },
     {
       "id": "05_mpc",
       "title": "MPC 车辆控制与失效回退流程",
-      "svg_sha256": "9888ae0f2a3e393d6fdf107dd6f54ad32297b14ae60d5e3fa79d29017d47f97d"
+      "svg_sha256": "062284351c7a9c67da086453bd9c34ecaca85f41aee65d8635f52a97d91c4316"
     },
     {
       "id": "06_testing",
       "title": "实验测试与研究验证流程",
-      "svg_sha256": "bb260a2b7e69e062ce5ff2f62ea4fd2b64b8b66a7b2c99757f685b2b8c6efb33"
+      "svg_sha256": "aa5b6712b589b30a67110e9dbf659707f1be498d39d029c5ad2734fe12f815c1"
     }
   ]
 }

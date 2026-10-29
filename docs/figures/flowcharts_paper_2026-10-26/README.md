@@ -8,15 +8,16 @@
 
 图宽148.17 mm，字号10.5 pt，线宽0.75 pt。流程图表示拟实施设计，不是模型或CARLA运行证据。
 
-既有图源按早期方案保留：YOLO11m不是最终选型，当前至少三族对比（N17离线预选、N26闭环选型）；车辆SAT图不替代行人圆/骑行者几何。旧的到达/校准标签以usable_time和专用风险校准集解释，最新执行约束见 [节点计划](../../项目节点实施与验收计划.md)。本次只补说明，不重绘SVG或改图源/清单。
+当前图源按[研究方案](../../毕业设计研究方案.md)、[技术路线](../../详细技术路线.md)和[节点计划](../../项目节点实施与验收计划.md)更新。路侧发送目标状态与预测轨迹，车端进行最终风险判断与动作决策；三族检测器比较、行人/骑行者几何、消息可用性及SPD真实图像验证均已纳入图示。图中模型、周期和结果为拟实施设计，不代表已完成实验。
 
 ## 重新生成
 
+在已有 Node.js、`sharp` 和相应字体的环境中，从仓库根目录运行：
+
 ```sh
-npm install --no-save --package-lock=false sharp
 node docs/figures/flowcharts_paper_2026-10-26/render.cjs
 ```
 
-脚本仅更新SVG、合并draw.io与清单，不再生成PNG、预览图、逐图draw.io、HTML或重复Markdown。需要栅格格式时按用途临时导出。
+如`sharp`不在默认模块搜索路径，先将`FLOWCHART_NODE_MODULES`设置为本机已有的`node_modules`目录。脚本不自动安装依赖；文本测量使用`sharp`，字体为`Songti SC`和`Times New Roman`，字体或依赖变化后须检查实际视觉效果。
 
-默认使用Node模块解析；已有依赖时可设置 `FLOWCHART_NODE_MODULES`。文本测量使用 `sharp`，系统字体为 `Songti SC` 与 `Times New Roman`。字体或依赖变化后须检查差异与实际视觉效果。
+脚本以`source/figures.json`为唯一节点/连线来源，同步更新6张SVG、合并draw.io与SHA-256清单。PNG和预览图按用途临时导出，不重复入库；生成后检查图源与导出内容、版面、连接及文档链接。
