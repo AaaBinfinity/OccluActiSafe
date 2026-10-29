@@ -1,9 +1,0 @@
-# 仅审计已经取得的 TFD-Example；不会自动下载、解压或创建数据。
-source: v2x_seq_tfd
-data_root: data/raw/v2x_seq_tfd/V2X-Seq-TFD-Example
-output_root: artifacts/data_audit
-dataset_scope: example
-dataset_version: unknown
-acquired_date: unknown
-source_url: https://github.com/AIR-THU/DAIR-V2X-Seq#dataset-download
-usage_conditions: unverified
