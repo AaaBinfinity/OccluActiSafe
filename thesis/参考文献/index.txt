@@ -1,7 +1,7 @@
 李向东,曹菁,刘泉宽,等.V2X技术支撑车路云协同安全预警机制开发研究[J].世界汽车,2026,(7):74-75.
+杜少毅,孙远,刘宇颖,等.面向自动驾驶协同感知的高效传输方法综述[J].西安交通大学学报,2026,60(10):1-21.
+焦卓彬,刘美琴.基于模型预测控制的汽车主动安全系统仿真研究[J].时代汽车,2024,(17):109-111.
+刘茂龙.智能驾驶AEB系统开发与验证标定研究[J].汽车电器,2026,(5):45-47.DOI:10.13273/j.cnki.qcdq.2026.05.007.
+禚凇瑀.基于机器视觉路面识别的自动紧急制动策略研究[D].吉林大学,2023.DOI:10.27162/d.cnki.gjlin.2023.004287.
 
 YU H, YANG W, RUAN H, et al. V2X-Seq: a large-scale sequential dataset for vehicle-infrastructure cooperative perception and forecasting[C]//Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). 2023: 5486-5495.
-
-杜少毅,孙远,刘宇颖,等.面向自动驾驶协同感知的高效传输方法综述[J].西安交通大学学报,2026,60(10):1-21.
-
-焦卓彬,刘美琴.基于模型预测控制的汽车主动安全系统仿真研究[J].时代汽车,2024,(17):109-111.
