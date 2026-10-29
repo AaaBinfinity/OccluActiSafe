@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0", "message_type": "observation",
+  "source_id": "vehicle-A", "session_id": "session-1", "sequence": 7,
+  "recipient_id": "roadside-1", "map_id": "map-A", "map_version": "1",
+  "coordinate_frame_id": "map-right-handed", "frame_id": 20, "clock_domain": "sim-episode-1",
+  "observation_time": 1.0, "source_available_time": 1.05,
+  "generated_time": 1.06, "transmitted_time": 1.07, "valid_until": 1.5,
+  "tracks": [{
+    "source_track_id": "track-7", "source_id": "vehicle-A", "session_id": "session-1", "sensor_id": "front",
+    "category": "vehicle", "role": "target", "clock_domain": "sim-episode-1",
+    "coordinate_frame_id": "map-right-handed", "reference_point": "geometric_center",
+    "observation_time": 0.95, "last_seen_time": 0.95, "source_available_time": 1.0, "state_time": 1.0,
+    "x": 10.0, "y": 2.0, "vx": 0.0, "vy": 0.0, "yaw": null, "length": 4.2, "width": 1.8,
+    "size_source": "class_prior", "size_uncertainty": null, "covariance_xy": [[0.1, 0.0], [0.0, 0.2]],
+    "observed_mask": true, "state_valid_mask": true, "size_valid": true,
+    "velocity_valid": true, "yaw_valid": false, "quality": 0.85
+  }]
+}
