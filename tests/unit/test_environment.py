@@ -3,6 +3,7 @@
 import contextlib
 import importlib.metadata
 import io
+import os
 from pathlib import Path
 import runpy
 import subprocess
@@ -25,7 +26,7 @@ class EnvironmentChecks(unittest.TestCase):
              "assert importlib.metadata.version('occluactisafe') == occluactisafe.__version__; "
              "assert not any(x in sys.modules for x in ('torch','carla','casadi')); "
              "print(occluactisafe.__version__)"],
-            cwd=ROOT, capture_output=True, text=True,
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertTrue(result.stdout.strip())
@@ -36,7 +37,7 @@ class EnvironmentChecks(unittest.TestCase):
                 with self.subTest(cwd=str(cwd)):
                     result = subprocess.run(
                         [sys.executable, "-I", "-B", str(SCRIPT)], cwd=cwd,
-                        capture_output=True, text=True,
+                        capture_output=True, text=True, encoding="utf-8",
                     )
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     self.assertIn(f"项目根目录：{ROOT}", result.stdout)
@@ -64,7 +65,7 @@ runpy.run_path(script, run_name="__main__")
         with tempfile.TemporaryDirectory() as other:
             result = subprocess.run(
                 [sys.executable, "-I", "-B", "-c", wrapper, str(SCRIPT)], cwd=other,
-                capture_output=True, text=True,
+                capture_output=True, text=True, encoding="utf-8",
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual(list(Path(other).iterdir()), [])
@@ -74,11 +75,29 @@ runpy.run_path(script, run_name="__main__")
         result = subprocess.run(
             [sys.executable, "-I", "-B", "-c",
              "import runpy,sys; runpy.run_path(sys.argv[1], run_name='environment_import_test')",
-             str(SCRIPT)], cwd=ROOT, capture_output=True, text=True,
+             str(SCRIPT)], cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(result.stdout, "")
         self.assertEqual(result.stderr, "")
+
+    def test_redirected_ascii_streams_keep_utf8_success_and_missing_package_errors(self):
+        # 显式覆盖输出编码，不能依赖父进程 UTF-8 模式或系统代码页。
+        env = {**os.environ, "PYTHONIOENCODING": "ascii"}
+        for flags, expected_code in (([], 0), (["-S"], 1)):
+            with self.subTest(flags=flags):
+                result = subprocess.run(
+                    [sys.executable, "-B", *flags, str(SCRIPT)], cwd=ROOT,
+                    env=env, capture_output=True, text=True, encoding="utf-8",
+                )
+                self.assertEqual(result.returncode, expected_code, result.stdout + result.stderr)
+                self.assertIn(f"项目根目录：{ROOT}", result.stdout)
+                if expected_code == 0:
+                    self.assertIn("轻量工程环境检查通过", result.stdout)
+                else:
+                    self.assertIn("缺少已安装的 occluactisafe 项目包", result.stderr)
+                    self.assertIn("环境检查未通过", result.stderr)
+                    self.assertNotIn("轻量工程环境检查通过", result.stdout + result.stderr)
 
     def test_missing_package_and_unsupported_python_are_failures(self):
         namespace = runpy.run_path(str(SCRIPT), run_name="environment_unit_test")

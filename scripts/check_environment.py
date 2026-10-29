@@ -15,6 +15,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 def main(argv=None):
     """检查解释器、项目安装和仓库路径，失败时返回非零状态码。"""
+    # 重定向管道在 Windows 上可能使用系统代码页；与调用方约定 UTF-8。
+    # IDE/测试替代流（如 StringIO）没有 reconfigure，仍可直接使用。
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="检查 OccluActiSafe 轻量工程环境")
     parser.parse_args(argv)
     # 导入项目包时不在本次检查中写入字节码缓存。
