@@ -3,3 +3,5 @@
 YU H, YANG W, RUAN H, et al. V2X-Seq: a large-scale sequential dataset for vehicle-infrastructure cooperative perception and forecasting[C]//Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). 2023: 5486-5495.
 
 杜少毅,孙远,刘宇颖,等.面向自动驾驶协同感知的高效传输方法综述[J].西安交通大学学报,2026,60(10):1-21.
+
+焦卓彬,刘美琴.基于模型预测控制的汽车主动安全系统仿真研究[J].时代汽车,2024,(17):109-111.
