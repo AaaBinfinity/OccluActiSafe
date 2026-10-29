@@ -176,13 +176,13 @@ class AuditIntegrationTests(unittest.TestCase):
         missing = self.root / "unavailable"
         self.config_file.write_text(f"data_root: {missing}\noutput_root: {self.output}\n", encoding="utf8")
         entry = subprocess.run([sys.executable, "-B", str(SCRIPT), "--config", str(self.config_file)],
-                               cwd=self.root, capture_output=True, text=True)
+                               cwd=self.root, capture_output=True, text=True, encoding="utf8")
         self.assertNotEqual(entry.returncode, 0)
         self.assertIn("TFD 数据目录不存在", entry.stderr)
         self.assertNotIn("TFD 审计完成", entry.stdout)
         imported = subprocess.run([sys.executable, "-B", "-c",
                                    "import runpy,sys; runpy.run_path(sys.argv[1],run_name='imported')", str(SCRIPT)],
-                                  cwd=self.root, capture_output=True, text=True)
+                                  cwd=self.root, capture_output=True, text=True, encoding="utf8")
         self.assertEqual(imported.returncode, 0, imported.stderr)
         self.assertEqual(imported.stdout, "")
         self.assertFalse(self.output.exists())
