@@ -4,9 +4,11 @@ import argparse
 import importlib
 import importlib.metadata
 import importlib.util
+import os
 import platform
 from pathlib import Path
 import sys
+import sysconfig
 
 
 # 本节点的默认任务是检查已安装的轻量工程；不要求训练或仿真依赖。
@@ -28,12 +30,21 @@ def main(argv=None):
     errors = []
     print("默认任务：轻量工程环境检查（不安装、不下载）")
     print(f"项目根目录：{PROJECT_ROOT}")
-    # platform.platform() 在 macOS 上可能启动外部命令查询处理器；
-    # 此处只读取系统和内核版本，保持检查过程不启动子进程。
-    print(f"操作系统：{platform.system()} {platform.release()}")
+    # 3.10/3.11 的 platform.uname() 在 Windows 上也可能运行 ver 命令。
+    # 直接读取系统接口，保持检查过程不启动子进程。
+    if sys.platform == "win32":
+        version = sys.getwindowsversion()
+        system, release = "Windows", f"{version.major}.{version.minor}.{version.build}"
+        machine = sysconfig.get_platform()
+    elif hasattr(os, "uname"):
+        info = os.uname()
+        system, release, machine = info.sysname, info.release, info.machine
+    else:
+        system, release, machine = sys.platform, "未查询", "未查询"
+    print(f"操作系统：{system} {release}")
     print(f"解释器：{sys.executable}")
     print(f"Python：{platform.python_version()}（最低 3.10，主环境目标 3.11）")
-    print(f"机器架构：{platform.machine()}")
+    print(f"系统／解释器平台：{machine}")
 
     if sys.version_info < (3, 10):
         errors.append("Python 版本不支持：需要 Python 3.10 或更高版本。")
