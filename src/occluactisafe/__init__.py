@@ -1,0 +1,3 @@
+"""OccluActiSafe 的轻量包入口。"""
+
+__version__ = "0.1.0"
