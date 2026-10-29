@@ -1,2 +1,4 @@
 # PDF 是二进制文档，禁止文本差异与行尾转换。
 *.pdf binary
+# SVG 清单按仓库原始字节校验，跨平台检出统一保留 LF。
+*.svg text eol=lf
