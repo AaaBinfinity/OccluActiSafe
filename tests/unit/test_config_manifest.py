@@ -44,15 +44,16 @@ class ConfigTests(unittest.TestCase):
 
     def test_paths_are_independent_of_cwd(self):
         original = Path.cwd()
-        try:
-            config = load_config()
-            with tempfile.TemporaryDirectory() as tmp:
+        config = load_config()
+        with tempfile.TemporaryDirectory() as tmp:
+            try:
                 os.chdir(tmp)
                 self.assertEqual(load_config(), config)
-            self.assertEqual(config["paths"]["data_root"], str((PROJECT_ROOT / "data").resolve()))
-            self.assertEqual(config["paths"]["output_root"], str((PROJECT_ROOT / "artifacts").resolve()))
-        finally:
-            os.chdir(original)
+            finally:
+                # Windows 不允许删除仍作为当前工作目录的文件夹。
+                os.chdir(original)
+        self.assertEqual(config["paths"]["data_root"], str((PROJECT_ROOT / "data").resolve()))
+        self.assertEqual(config["paths"]["output_root"], str((PROJECT_ROOT / "artifacts").resolve()))
 
     def test_strict_values_and_period_consistency(self):
         cases = [
@@ -113,7 +114,7 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(first["input_mode"], "analytic_observation")
         self.assertIs(first["source"]["working_tree_dirty"], False)
         self.assertEqual(len(first["source"]["git_commit"]), 40)
-        self.assertEqual(json.loads((self.output / first["run_id"] / "manifest.json").read_text()), first)
+        self.assertEqual(json.loads((self.output / first["run_id"] / "manifest.json").read_text(encoding="utf-8")), first)
         resolved_path = self.output / first["run_id"] / "resolved_config.yaml"
         self.assertEqual(load_config(config_file=resolved_path), self.config)
         self.assertIn("python", first["environment"])
@@ -127,13 +128,13 @@ class ManifestTests(unittest.TestCase):
 
     def test_relative_output_root_does_not_depend_on_cwd(self):
         original = Path.cwd()
-        try:
-            with tempfile.TemporaryDirectory() as other:
+        with tempfile.TemporaryDirectory() as other:
+            try:
                 os.chdir(other)
                 run = self.create(output_root="artifacts")
-            self.assertTrue((self.root / "artifacts" / run["run_id"] / "manifest.json").is_file())
-        finally:
-            os.chdir(original)
+            finally:
+                os.chdir(original)
+        self.assertTrue((self.root / "artifacts" / run["run_id"] / "manifest.json").is_file())
 
     def test_reject_credentials_urls_invalid_data_and_nan(self):
         cases = []
