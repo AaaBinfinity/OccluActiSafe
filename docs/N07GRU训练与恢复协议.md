@@ -49,3 +49,5 @@ N07重新实施时保持原有数据划分、模型与三seed各3epoch配置，�
 恢复到新run时复制检查点对应的逐步前缀，后续步号连续、无重复；周期中间恢复继续累计本epoch损失/最大梯度，不只统计恢复后的批次。旧检查点缺少逐步日志时明确拒绝本次完整留存模式，不把缺失补成0；旧版本仍可用对应Git版本复查。失败/中断保留已有CSV和图表，图表生成失败不能标成成功。
 
 本次自动图表实现为`prediction/telemetry.py:StepLog`与`prediction/training_plots.py:render_training_plots()`，Matplotlib3.11.2已加入training依赖组并锁定。每seed自动生成step_training、step_optimization、step_resources和epoch_validation四类图，各有PNG/SVG；每次优化更新一行，写入后flush，默认不平滑、不降采样。图内标明seed和run，图表清单记录原始CSV及导出文件SHA-256。需离线复核时，调用`render_training_plots(seed_dir, output_dir=新的复核目录)`，不会改写原run图表或原始CSV。绘图前后恢复全部RNG状态，避免绘图影响训练与恢复可复现性；正常绘图失败会使任务失败并留证。
+
+本次完整重跑已完成，实际run、106项测试、逐步记录数量、图表与恢复证据统一见节点计划当前N07结果；旧run没有逐步记录的事实保持不变。
