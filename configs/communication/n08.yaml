@@ -1,0 +1,25 @@
+# N08进程内机制夹具；不读真实数据、不训练、不启动CARLA或UDP。
+schema_version: n08-mechanism-1
+seed: 17
+clock_domain: sim-n08-fixture
+output_root: H:/OccluActiSafeDataset/artifacts/n08
+channels:
+  V2I:
+    propagation_delay_s: 0.1
+    processing_delay_s: 0.05
+    capacity_bps: 1000000
+    max_queue_wait_s: 0.5
+    max_pending_messages: 128
+    max_message_bytes: 262144
+  I2V:
+    propagation_delay_s: 0.2
+    processing_delay_s: 0.2
+    capacity_bps: 1000000
+    max_queue_wait_s: 0.5
+    max_pending_messages: 128
+    max_message_bytes: 262144
+receiver:
+  max_observation_age_s: 2.0
+  max_state_age_s: 2.0
+  max_anchor_age_s: 1.0
+  planning_horizon_s: 3.0
