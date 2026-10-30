@@ -164,7 +164,7 @@ def run_preprocess(config, *, project_root=PROJECT_ROOT):
             chosen.extend([r for r in selected if r['project_role']==role][:limit])
         selected=chosen
     if not selected:raise ValueError('没有符合所声明输入协议的文件')
-    base=load_config(project_root=root)
+    base=load_config(project_root=root,overrides={'runtime':{'seed':config['seed']}})
     run=create_run_manifest(config=base,input_mode='offline_annotation_history_reference',
                             data={'name':'TFD_N03_registered','version':manifest['dataset_version'],'sha256':manifest['dataset_sha256']},
                             output_root=out,project_root=root)

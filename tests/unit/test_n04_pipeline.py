@@ -36,6 +36,7 @@ class PreprocessTests(unittest.TestCase):
         self.assertEqual(result['status'],'completed');self.assertEqual(result['counts']['written'],8)
         self.assertEqual(result['counts']['eligible_targets'],8)
         run=Path(result['run_dir']);manifest=json.loads((run/'split_manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(json.loads((run/'manifest.json').read_text(encoding='utf-8'))['seed'],config['seed'])
         self.assertEqual(audit_group_split(manifest)['cross_split_shared_keys'],0)
         self.assertEqual(sum(len(PredictionDataset(run,r)) for r in ('train','model_val','risk_calibration','test')),8)
         source=next(self.data.rglob('*.csv'));source.write_text(source.read_text(encoding='utf-8')+'\n',encoding='utf-8')
