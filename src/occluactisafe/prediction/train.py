@@ -21,6 +21,8 @@ from occluactisafe.prediction.baselines.gru import MultiModalGRU
 from occluactisafe.prediction.losses import multimodal_loss
 from occluactisafe.prediction.evaluate import sha256, write_json
 from occluactisafe.evaluation.prediction_metrics import score_target, MetricAccumulator
+from occluactisafe.prediction.telemetry import StepLog
+from occluactisafe.prediction.training_plots import render_training_plots
 
 INPUTS = ('features','feature_mask','observed_mask','actual_dt','history_times','categories','anchor_position')
 
@@ -192,9 +194,15 @@ def evaluate(model, data, device, batch_size, *, save_dir=None, guard=None):
 
 
 def training_contract(config, identity, seed):
-    return {'data':identity,'model':config['model'],'seed':seed,'optimizer':{'name':'AdamW','lr':config['learning_rate'],'weight_decay':config['weight_decay']},
+    return {'telemetry_schema':1,'data':identity,'model':config['model'],'seed':seed,'optimizer':{'name':'AdamW','lr':config['learning_rate'],'weight_decay':config['weight_decay']},
             'batch_size':config['batch_size'],'epochs':config['epochs'],'patience':config['patience'],'gradient_clip':config['gradient_clip'],
             'budget':config['budget'],'selection':'model_val minADE_m','history_steps':identity['task']['history_steps'],'future_steps':identity['task']['future_steps']}
+
+
+def render_preserving_rng(directory):
+    state=rng_state()
+    try:return render_training_plots(directory)
+    finally:restore_rng(state)
 
 
 def train_seed(config, data, identity, group_dir, seed, device):
@@ -203,7 +211,8 @@ def train_seed(config, data, identity, group_dir, seed, device):
     model=MultiModalGRU(future_steps=identity['task']['future_steps'],**config['model']).to(device)
     optimizer=torch.optim.AdamW(model.parameters(),lr=config['learning_rate'],weight_decay=config['weight_decay'])
     contract=training_contract(config,identity,seed)
-    progress={'epoch':0,'next_batch':0,'steps':0,'best_score':None,'bad_epochs':0,'elapsed_seconds':0.,'curve':[]}
+    progress={'epoch':0,'next_batch':0,'steps':0,'best_score':None,'bad_epochs':0,'elapsed_seconds':0.,'curve':[],
+              'epoch_loss_sum':0.,'epoch_batches':0,'epoch_grad_max':0.,'step_log_prefix_sha256':None}
     if config['resume']:
         progress=load_checkpoint(config['resume'],model,optimizer,contract)
         shutil.copy2(config['resume'],directory/'latest.pt')
@@ -212,42 +221,66 @@ def train_seed(config, data, identity, group_dir, seed, device):
     started=time.perf_counter(); prior=progress['elapsed_seconds']
     guard=lambda:enforce_budget(config['budget'],started,prior,directory)
     n=len(data['train']['features']); batch_size=config['batch_size']; stop_reason='epochs_completed'
+    log=None
     try:
+        log=StepLog(directory/'step_metrics.csv',source=Path(config['resume']).parent/'step_metrics.csv' if config['resume'] else None,
+                    steps=progress['steps'],prefix_sha256=progress['step_log_prefix_sha256'])
+        if progress['curve']:
+            write_json(directory/'curve.json',progress['curve'])
+            with (directory/'epoch_metrics.csv').open('w',encoding='utf-8',newline='') as f:
+                writer=csv.DictWriter(f,fieldnames=list(progress['curve'][0]));writer.writeheader();writer.writerows(progress['curve'])
         for epoch in range(progress['epoch'],config['epochs']):
             model.train(); order=np.random.default_rng(seed+epoch).permutation(n)
             start_batch=progress['next_batch'] if epoch==progress['epoch'] else 0
-            losses=[];grads=[]
             for bi,offset in enumerate(range(0,n,batch_size)):
                 if bi < start_batch: continue
                 guard()
                 if progress['steps']>=config['budget']['max_optimizer_steps']: raise RuntimeError('达到N06优化步数预算')
-                batch=batch_to_device(data['train'],order[offset:offset+batch_size],device)
+                if device.type=='cuda':torch.cuda.synchronize(device)
+                step_started=time.perf_counter();indices=order[offset:offset+batch_size]
+                batch=batch_to_device(data['train'],indices,device)
                 optimizer.zero_grad(set_to_none=True); output=forward(model,batch)
                 loss,record=multimodal_loss(output,batch['truth'],batch['future_mask'])
                 if loss is None: raise ValueError('声明的完整监督批次没有有效目标')
                 if not torch.isfinite(loss): raise RuntimeError('训练loss非有限')
                 loss.backward();norm=torch.nn.utils.clip_grad_norm_(model.parameters(),config['gradient_clip'])
                 if not torch.isfinite(norm): raise RuntimeError('梯度非有限')
-                optimizer.step();losses.append(float(loss.detach()));grads.append(float(norm))
+                optimizer.step()
+                if device.type=='cuda':torch.cuda.synchronize(device)
+                step_seconds=time.perf_counter()-step_started;loss_value=float(loss.detach());grad_value=float(norm)
                 progress.update(epoch=epoch,next_batch=bi+1,steps=progress['steps']+1)
+                progress['epoch_loss_sum']+=loss_value;progress['epoch_batches']+=1
+                progress['epoch_grad_max']=max(progress['epoch_grad_max'],grad_value)
+                log.append({'global_step':progress['steps'],'epoch':epoch+1,'batch_index':bi+1,'target_count':record['valid_targets'],
+                    'loss':loss_value,'regression_loss':record['reg'],'classification_loss':record['mode'],
+                    'train_minADE_m':record['train_minADE'],'gradient_norm_before_clip':grad_value,
+                    'learning_rate':optimizer.param_groups[0]['lr'],'step_seconds':step_seconds,
+                    'elapsed_seconds':prior+time.perf_counter()-started,
+                    'gpu_allocated_mib':torch.cuda.memory_allocated(device)/1024**2 if device.type=='cuda' else None,
+                    'gpu_reserved_mib':torch.cuda.memory_reserved(device)/1024**2 if device.type=='cuda' else None,
+                    'host_working_set_mib':working_set_bytes()/1024**2,'batch_target_indices':json.dumps(indices.tolist(),separators=(',',':'))})
+                progress['step_log_prefix_sha256']=log.sha256
                 if progress['steps']%200==0:
                     progress['elapsed_seconds']=prior+time.perf_counter()-started
                     save_checkpoint(directory/'latest.pt',model,optimizer,contract,progress)
-                    print(f'N07 seed={seed} epoch={epoch+1} step={progress["steps"]} loss={losses[-1]:.5f}',flush=True)
+                    print(f'N07 seed={seed} epoch={epoch+1} step={progress["steps"]} loss={loss_value:.5f}',flush=True)
             validation=evaluate(model,data['model_val'],device,batch_size,guard=guard)
             score=validation['overall']['minADE_m']
             if score is None: raise ValueError('验证集没有可评分对象')
             improved=progress['best_score'] is None or score<progress['best_score']
             progress['bad_epochs']=0 if improved else progress['bad_epochs']+1
             if improved: progress['best_score']=score
-            progress['curve'].append({'epoch':epoch+1,'steps':progress['steps'],'train_loss':float(np.mean(losses)) if losses else None,
-                'gradient_norm_max':max(grads) if grads else None,**validation['overall']})
-            progress.update(epoch=epoch+1,next_batch=0,elapsed_seconds=prior+time.perf_counter()-started)
-            save_checkpoint(directory/'latest.pt',model,optimizer,contract,progress)
-            if improved: save_checkpoint(directory/'best.pt',model,optimizer,contract,progress)
+            progress['curve'].append({'epoch':epoch+1,'steps':progress['steps'],
+                'train_loss':progress['epoch_loss_sum']/progress['epoch_batches'],
+                'gradient_norm_max':progress['epoch_grad_max'],**validation['overall']})
+            progress.update(epoch=epoch+1,next_batch=0,epoch_loss_sum=0.,epoch_batches=0,epoch_grad_max=0.)
             write_json(directory/'curve.json',progress['curve'])
             with (directory/'epoch_metrics.csv').open('w',encoding='utf-8',newline='') as f:
                 writer=csv.DictWriter(f,fieldnames=list(progress['curve'][0]));writer.writeheader();writer.writerows(progress['curve'])
+            render_preserving_rng(directory)
+            progress['elapsed_seconds']=prior+time.perf_counter()-started
+            save_checkpoint(directory/'latest.pt',model,optimizer,contract,progress)
+            if improved: save_checkpoint(directory/'best.pt',model,optimizer,contract,progress)
             print(f'N07 seed={seed} epoch={epoch+1} validation={validation["overall"]}',flush=True)
             if progress['bad_epochs']>=config['patience']: stop_reason='early_stopping';break
         # 检验best重载输出，随后完整保存best验证预测。
@@ -258,9 +291,11 @@ def train_seed(config, data, identity, group_dir, seed, device):
         load_checkpoint(directory/'best.pt',clone,None,contract);clone.eval()
         with torch.no_grad(): torch.testing.assert_close(expected,forward(clone,before)['pred'],rtol=0,atol=0)
         final=evaluate(model,data['model_val'],device,batch_size,save_dir=directory,guard=guard)
+        plot_manifest=render_preserving_rng(directory)
         if device.type=='cuda': torch.cuda.synchronize(device)
         result={'seed':seed,'status':'completed','stop_reason':stop_reason,'steps':progress['steps'],'epochs':progress['epoch'],
             'wall_seconds':prior+time.perf_counter()-started,'metrics':final,'checkpoint_reload_equal':True,
+            'step_log_rows':log.rows,'step_log_prefix_sha256':log.sha256,'plot_images':len(plot_manifest['images']),
             'best_sha256':sha256(directory/'best.pt'),'latest_sha256':sha256(directory/'latest.pt'),
             'host_working_set_end_bytes':working_set_bytes(),'peak_allocated_bytes':torch.cuda.max_memory_allocated(device) if device.type=='cuda' else None,
             'peak_reserved_bytes':torch.cuda.max_memory_reserved(device) if device.type=='cuda' else None}
@@ -269,7 +304,12 @@ def train_seed(config, data, identity, group_dir, seed, device):
         progress['elapsed_seconds']=prior+time.perf_counter()-started
         save_checkpoint(directory/'interrupted.pt',model,optimizer,contract,progress)
         write_json(directory/'failure.json',{'error_type':type(exc).__name__,'error':str(exc),'progress':progress})
+        if log is not None:
+            try:render_preserving_rng(directory)
+            except Exception as plot_error:write_json(directory/'plot_failure.json',{'error_type':type(plot_error).__name__,'error':str(plot_error)})
         raise
+    finally:
+        if log is not None:log.close()
 
 
 def run(config):
