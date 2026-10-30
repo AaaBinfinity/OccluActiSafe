@@ -87,7 +87,11 @@ def run(config):
         if original['project_role'] != config['role'] or original['original_split'] != 'train':
             raise ValueError('窗口索引与冻结分组不符')
     count = min(len(dataset), config['max_windows']) if config['max_windows'] else len(dataset)
-    manifest = create_run_manifest(config=load_config(overrides={'runtime': {'seed': task['seed']}}),
+    manifest = create_run_manifest(config=load_config(overrides={
+                                       'runtime': {'seed': task['seed']},
+                                       'prediction': {'history_steps': task['history_steps'],
+                                                      'future_steps': task['future_steps'], 'future_dt': task['dt']},
+                                       'planning': {'horizon_s': min(3.0, task['future_steps'] * task['dt'])}}),
                                    input_mode='offline_annotation_history_reference_cv',
                                    data=n04_manifest['data'], output_root=out)
     directory = out / manifest['run_id']

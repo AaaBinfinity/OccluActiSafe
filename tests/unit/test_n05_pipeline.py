@@ -27,6 +27,9 @@ class EvaluationPipelineTests(unittest.TestCase):
         b = run(load_evaluation_config(self.config))
         self.assertEqual(a['overall'], b['overall'])
         self.assertEqual(a['overall']['ADE_m'], 0)
+        manifest = json.loads((Path(a['run_dir']) / 'manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(manifest['config']['resolved']['prediction'],
+                         {'history_steps': 3, 'future_steps': 2, 'future_dt': .1})
         for name in ('predictions.csv', 'per_agent_metrics.csv', 'input_inventory.jsonl'):
             self.assertEqual(sha256(Path(a['run_dir']) / name), sha256(Path(b['run_dir']) / name))
         # 删除监督明确失败，不能静默跳过样本。
