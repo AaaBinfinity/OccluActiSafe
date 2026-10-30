@@ -187,6 +187,28 @@ class ReceiveTests(unittest.TestCase):
         self.assertEqual(validate_received(r, stamp(12.2), p, state=s).reason, "duplicate_or_out_of_order")
         r = received(arrival=12.2, usable=12.3)
         self.assertEqual(validate_received(r, stamp(12.1), p).reason, "not_arrived")
+        # 节点计划的原始1/1.2秒夹具也逐值执行。
+        obs = observation(sent=1, observed=1)
+        r = ReceivedMessage(obs, 1, 1.2, DOMAIN)
+        edge = ReceiverPolicy("roadside-1", "map-A", "1", "map-right-handed", DOMAIN,
+                              {"vehicle-A": "session-1"})
+        self.assertEqual(validate_received(r, stamp(1.1), edge).reason, "not_usable")
+        self.assertTrue(validate_received(r, stamp(1.2), edge).accepted)
+
+    def test_c06_later_arrival_cannot_enter_current_inputs(self):
+        p1, p2 = prediction(1), prediction(2)
+        table = {message_key(p1): Disturbance(.2, False), message_key(p2): Disturbance(.4, False)}
+        c = SimChannel(ChannelConfig("I2V", DOMAIN), perturbations=table)
+        c.send(p1, stamp(12)); c.send(p2, stamp(12))
+        available = c.deliver(stamp(12.2))
+        self.assertEqual([r.payload.sequence for r in available], [1])
+        self.assertEqual(c.deliver(stamp(12.3)), [])
+        p = policy(); state = ReceiverState(p)
+        self.assertTrue(validate_received(available[0], stamp(12.3), p, state=state).accepted)
+        self.assertEqual(query_prediction(available[0], now=stamp(12.3), when=stamp(12.5), policy=p), (0, 5))
+        self.assertEqual(validate_received(received(p2, 12.4, 12.4), stamp(12.3), p, state=state).reason,
+                         "not_arrived")
+        self.assertEqual(state.sequences[("roadside-1", "edge-1")], 1)
 
     def test_identity_episode_map_fields_ttl_and_future_anchor_rejections(self):
         p = policy()

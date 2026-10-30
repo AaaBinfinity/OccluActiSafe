@@ -215,6 +215,15 @@ def run_diagnostics(config):
                            {"roadside-1": "edge-1"}, **config["receiver"])
         point = query_prediction(due[0], now=now(12.2), when=now(12.5), policy=p)
         check("V03_C06_absolute_time", point == (0., 5.), {"query": 12.5, "position_m": point, "anchor": 12.})
+        late = _prediction(domain, 1)
+        c = channel("C06_late_arrival", fixed, perturbations={
+            ("roadside-1", "edge-1", 1): Disturbance(.4, False)})
+        send(c, late, 12)
+        before_late = c.deliver(now(12.3))
+        late_check = receive_check("C06_not_arrived", ReceivedMessage(late, 12.4, 12.4, domain), 12.3, p)
+        check("C06_future_arrival_excluded", not before_late and late_check.reason == "not_arrived",
+              {"decision_time": 12.3, "future_arrival": 12.4, "delivered": len(before_late), "reason": late_check.reason})
+        c.deliver(now(12.4))
         short = receive_check("TTL_not_coverage", due[0], 12.9, p, plan_start=now(13.1))
         check("V03_C06_coverage_rejection", short.reason == "coverage_insufficient", short.reason)
         delayed = ReceivedMessage(due[0].payload, 12.2, 12.4, domain)
@@ -267,7 +276,8 @@ def run_diagnostics(config):
                   "I2V": {"transmitted_time": pred.transmitted_time, "arrival_time": downloaded.arrival_time,
                             "usable_time": downloaded.usable_time}}
         _json(directory / "duplex_timing.json", duplex)
-        _json(directory / "duplex_stats.json", {"V2I": dict(up.stats), "I2V": dict(down.stats),
+        _json(directory / "duplex_stats.json", {"V2I": {**dict(up.stats), "validation_wall_seconds": upload_check.validation_wall_s},
+             "I2V": {**dict(down.stats), "validation_wall_seconds": out.validation_wall_s},
              "injected_inference_s": .03, "edge_input_read_time": uploaded.usable_time})
         # 精确38400字节的合法JSON填充夹具，与20目标float32坐标的理论示例分开。
         cap_cfg = replace(fixed, capacity_bps=1e6, max_queue_wait_s=.5)
