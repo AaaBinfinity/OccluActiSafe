@@ -116,7 +116,7 @@ def render_diagnostic_plots(run_dir, *, output_dir=None):
         rows = list(csv.DictReader(stream))
     duplex = json.loads((run_dir / "duplex_timing.json").read_text(encoding="utf-8"))
     graph_files = []
-    fig, axes = plt.subplots(2, 1, figsize=(9, 6), layout="constrained")
+    fig, axes = plt.subplots(2, 1, figsize=(9, 6))
     if rows:
         x = [float(r["time"]) for r in rows]
         axes[0].plot(x, [float(r["queue_wait_s"]) for r in rows], "o-", label="Required wait (including rejected)")
@@ -126,11 +126,12 @@ def render_diagnostic_plots(run_dir, *, output_dir=None):
     axes[0].set(ylabel="Queue wait (s)", title="N08 mechanism: 38,400 byte wire messages, 10 Hz, 1 Mbit/s")
     axes[1].set(xlabel="Simulation send time (s)", ylabel="Admission")
     for ax in axes: ax.grid(alpha=.2); ax.legend(loc="best")
-    fig.text(.99, .005, f"Run {run_dir.name[:12]}; raw records; no smoothing; software channel only", ha="right", fontsize=8)
+    fig.text(.01, .01, f"Run {run_dir.name[:12]}; raw records; no smoothing; software channel only", fontsize=8)
+    fig.tight_layout(rect=(0, .05, 1, 1))
     for suffix in ("png", "svg"):
         path = output / f"capacity_queue.{suffix}"; fig.savefig(path, dpi=150); graph_files.append(path)
     plt.close(fig)
-    fig, ax = plt.subplots(figsize=(9, 4), layout="constrained")
+    fig, ax = plt.subplots(figsize=(9, 4))
     for i, (name, row) in enumerate(duplex.items()):
         ax.plot([row["transmitted_time"], row["arrival_time"], row["usable_time"]], [i] * 3, "o-")
         for key, yshift in (("transmitted_time", .14), ("arrival_time", -.22), ("usable_time", .14)):
@@ -138,7 +139,9 @@ def render_diagnostic_plots(run_dir, *, output_dir=None):
     ax.set(yticks=range(len(duplex)), yticklabels=list(duplex), xlabel="Absolute simulation time (s)",
            title="N08 mechanism: arrival and usable times remain separate", ylim=(-.5, 1.5))
     ax.grid(alpha=.2)
-    fig.text(.99, .005, f"Run {run_dir.name[:12]}; injected times; actual Python wall times logged separately", ha="right", fontsize=8)
+    ax.margins(x=.16)
+    fig.text(.01, .01, f"Run {run_dir.name[:12]}; injected times; actual Python wall times logged separately", fontsize=8)
+    fig.tight_layout(rect=(0, .06, 1, 1))
     for suffix in ("png", "svg"):
         path = output / f"duplex_timing.{suffix}"; fig.savefig(path, dpi=150); graph_files.append(path)
     plt.close(fig)
