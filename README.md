@@ -33,7 +33,7 @@ N04本机已生成65,575个窗口，原始坐标异常保留，完整 TARGET_AGE
 
 ## 后续实施入口
 
-首次准备：安装 uv 和 Python 3.11，在仓库目录执行 `uv sync --locked`。在 IDE 选择项目虚拟环境的解释器，直接运行 `scripts/check_environment.py`；也可执行 `uv run --locked python scripts/check_environment.py`。日常检查只读，不安装或下载；缺少项目或依赖时退出非零。共享包最低 Python 3.10，检查不会验证 GPU、训练或仿真。后续运行入口采用 `run(config)` 加可选 CLI；具体入口待相应节点授权。
+首次准备：安装 uv 和 Python 3.11，在仓库目录执行 `uv sync --locked`。在 IDE 选择项目虚拟环境的解释器，直接运行 `scripts/check_environment.py`；也可执行 `uv run --locked python scripts/check_environment.py`。日常检查只读，不安装或下载；缺少项目或依赖时退出非零。项目仅支持 Python 3.11，默认环境为仓库根目录 `.venv`，检查不会验证 GPU、训练或仿真。后续运行入口采用 `run(config)` 加可选 CLI；具体入口待相应节点授权。
 
 [N02 数据契约字典](docs/N02数据契约字典.md)、[N03 数据审计说明](docs/N03数据审计说明.md)及[N04 数据窗口协议](docs/N04数据窗口与划分协议.md)对应已实现接口及运行方法。IDE直接运行 `scripts/prepare_windows.py` 使用 `configs/data/n04.yaml`，将全部声明车端历史协议写到移动硬盘；不安装依赖或训练模型。后续各 Python 入口须支持 IDE 无必填参数运行；缺数据或依赖明确失败，不自动下载或伪造数据。
 
