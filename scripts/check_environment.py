@@ -24,7 +24,8 @@ def main(argv=None):
         if reconfigure is not None:
             reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="检查 OccluActiSafe 轻量工程环境")
-    parser.parse_args(argv)
+    parser.add_argument('--gpu', action='store_true', help='显式检查CUDA环境；完整前后向另运行smoke_check.py')
+    args = parser.parse_args(argv)
     # 导入项目包时不在本次检查中写入字节码缓存。
     sys.dont_write_bytecode = True
     errors = []
@@ -78,7 +79,16 @@ def main(argv=None):
         except (ImportError, ValueError):
             available = False
         print(f"可选能力 {label}：{'发现模块' if available else '未安装'}（未验证兼容性）")
-    print("GPU、驱动和显存：本节点未检查")
+    if args.gpu:
+        try:
+            from occluactisafe.common.device import import_torch, select_device, inventory
+            torch = import_torch()
+            info = inventory(torch, select_device('cuda:0', torch))
+            print(f"GPU环境：{info}；完整前后向另运行scripts/smoke_check.py")
+        except (ImportError, OSError, RuntimeError, ValueError) as exc:
+            errors.append(f'GPU检查失败：{exc}')
+    else:
+        print("GPU、驱动和显存：未检查（可显式传--gpu；前后向使用smoke_check.py）")
 
     if errors:
         for error in errors:

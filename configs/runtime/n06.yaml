@@ -1,0 +1,19 @@
+# N06仅验设备机制；不读取数据、不训练课题模型
+device: cuda:0
+seed: 17
+steps: 5
+matrix_size: 512
+batch_size: 64
+hidden_size: 128
+allocator_limit_mib: 12288
+minimum_free_mib: 512
+output_root: H:/OccluActiSafeDataset/artifacts/n06
+# 后续单次训练的资源上限，必须由后续获授权入口实际执行
+training_budget:
+  max_wall_seconds: 7200
+  max_optimizer_steps: 20000
+  max_epochs: 60
+  max_gpu_allocator_mib: 12288
+  max_host_working_set_mib: 8192
+  dataloader_workers: 0
+  seeds: [17, 29, 43]
