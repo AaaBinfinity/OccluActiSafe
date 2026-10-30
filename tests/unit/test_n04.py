@@ -1,6 +1,8 @@
 """N04机制与入口测试；构造夹具不冒充真实轨迹实验。"""
 from copy import deepcopy
+import csv
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -12,6 +14,14 @@ from occluactisafe.data.labels import build_future_labels
 from occluactisafe.prediction.dataset import MaskedScaler, save_sample, load_sample, PredictionDataset
 
 ROOT=Path(__file__).resolve().parents[2]
+
+
+def evidence(name, value):
+    """仅显式设置外部证据目录时保存小型机制产物。"""
+    directory=os.environ.get('N04_EVIDENCE_DIR')
+    if not directory:return
+    root=Path(directory).resolve();root.mkdir(parents=True,exist_ok=True)
+    (root/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 
 
 def observation(t, identity='a', **changes):
@@ -41,6 +51,7 @@ class GroupTests(unittest.TestCase):
         for a in sets:
             for b in sets:
                 if a!=b:self.assertFalse(sets[a]&sets[b])
+        evidence('split_audit.json',{'fixture':True,**audit_group_split(split),'manifest':split})
 
     def test_deterministic_order_seed_and_insufficient_groups_fail(self):
         rows=self.records();self.assertEqual(build_group_split(rows),build_group_split(list(reversed(rows))))
@@ -66,19 +77,30 @@ class WindowTests(unittest.TestCase):
         self.assertFalse(missing['observed_mask'][0,4]);self.assertFalse(missing['feature_mask'][0,4].any())
         self.assertAlmostEqual(missing['actual_dt'][0,5],0.2)
         self.assertAlmostEqual(missing['features'][0,5,2],10)
+        if os.environ.get('N04_EVIDENCE_DIR'):
+            folder=Path(os.environ['N04_EVIDENCE_DIR']);folder.mkdir(parents=True,exist_ok=True)
+            with (folder/'features_fixture.csv').open('w',encoding='utf-8',newline='') as stream:
+                writer=csv.writer(stream);writer.writerow(['track_id','history_time_s',*FEATURES,'actual_dt_s'])
+                for i,identity in enumerate(w['track_ids']):
+                    for j,t in enumerate(w['history_times']):writer.writerow([identity,t,*w['features'][i,j],w['actual_dt'][i,j]])
 
     def test_m04_future_replacement_and_future_only_targets_do_not_change_inputs(self):
         history=[observation(i/10) for i in range(20)]
         future=[observation(i/10) for i in range(20,30)]
         before=self.build(history+future)
         changed=[dict(r,x=1e15,y=-1e15,category='PEDESTRIAN') for r in future]
-        after=self.build(history+changed+[observation(2.1,'future_only')])
+        late=observation(1.8,'late_arrival',arrival_time=2.0,usable_time=2.0)
+        after=self.build(history+changed+[observation(2.1,'future_only'),late])
         self.assertEqual(before['input_hash'],after['input_hash'])
         np.testing.assert_array_equal(before['features'],after['features'])
         labels=build_future_labels(future,before,future_steps=10)
         changed_labels=build_future_labels(changed,after,future_steps=10)
         self.assertFalse(np.array_equal(labels['future_positions'],changed_labels['future_positions']))
         self.assertNotIn('future_only',after['track_ids'])
+        self.assertNotIn('late_arrival',after['track_ids'])
+        evidence('causality_audit.json',{'fixture':True,'scope':'M04 preprocessing only',
+                 'before_input_hash':before['input_hash'],'after_input_hash':after['input_hash'],
+                 'labels_changed':True,'late_arrival_excluded':True,'future_only_id_excluded':True})
 
     def test_arrival_is_not_usable_and_wrong_domains_rejected(self):
         row=observation(1.0,arrival_time=1.0,usable_time=1.2)
@@ -112,6 +134,8 @@ class ScalerDatasetTests(unittest.TestCase):
         self.assertEqual(a.freeze(),first);self.assertEqual(first['count'][9],0)
         b=MaskedScaler();b.update(x[:1],m[:1],role='train');b.update(x[1:],m[1:],role='train')
         self.assertEqual(b.freeze(),first)
+        evidence('scaler_audit.json',{'fixture':True,'before':first,'after_nontrain_extremes':a.freeze(),
+                 'invalid_extreme_feature_count':int(first['count'][9]),'unknown_fields_excluded_by_feature_whitelist':list(FEATURES)})
 
     def test_labels_separate_input_reader_hash_and_lazy_dataset(self):
         with tempfile.TemporaryDirectory() as tmp:
