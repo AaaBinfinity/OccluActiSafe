@@ -1,0 +1,31 @@
+# 仅N09机制：构造ObservationPacket，不读数据/训练/启动CARLA。
+schema_version: n09-mechanism-1
+seed: 17
+episode_id: n09-fixture
+clock_domain: sim-n09-fixture
+output_root: H:/OccluActiSafeDataset/artifacts/n09
+map:
+  map_id: map-A
+  map_version: '1'
+  coordinate_frame_id: map-right-handed
+filter:
+  sigma_ax: 1.0
+  sigma_ay: 1.0
+  default_position_variance: 1.0
+  min_position_variance: 0.000001
+  known_velocity_variance: 4.0
+  unknown_velocity_variance: 25.0
+  low_speed_mps: 0.1
+association:
+  position_gate_m: 4.0
+  mahalanobis_gate_sq: 9.21
+  unmatched_cost: 1.5
+  velocity_scale_mps: 10.0
+  velocity_weight: 0.2
+  heading_weight: 0.1
+  ambiguity_margin: 0.05
+history:
+  max_points: 20
+  history_seconds: 2.0
+  retention_seconds: 3.0
+  max_source_tracks: 256
