@@ -1,0 +1,14 @@
+windows_dir: H:/OccluActiSafeDataset/artifacts/n04/fd47055e0f80407a87a0e05199e53a8a
+output_root: H:/OccluActiSafeDataset/artifacts/n07
+model_config: configs/models/gru.yaml
+budget_config: configs/runtime/n06.yaml
+device: cuda:0
+seeds: [17, 29, 43]
+epochs: 3
+batch_size: 64
+learning_rate: 0.0003
+weight_decay: 0.01
+patience: 10
+gradient_clip: 1.0
+resume: null
+preflight_only: false
