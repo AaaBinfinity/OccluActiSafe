@@ -124,16 +124,30 @@ class FusionHistory:
             valid_received.append(record)
         valid_received.sort(key=lambda r: (r.usable_time, r.arrival_time, r.payload.transmitted_time,
                                             r.payload.source_id, r.payload.session_id, r.payload.sequence))
+        message_fingerprints = defaultdict(set)
+        for record in valid_received:
+            if record.arrival_time <= now.seconds and record.usable_time <= now.seconds:
+                p = record.payload
+                try:
+                    message_fingerprints[(p.source_id, p.session_id, p.sequence)].add(_digest(p.to_dict()))
+                except (ValueError, TypeError):
+                    pass  # 仍交N08验证器给出明确的invalid_message原因。
         for record in valid_received:
             # 先查接收头部，不触碰晚到/未处理消息里的目标或轨迹数值。
             if record.arrival_time > now.seconds or record.usable_time > now.seconds:
                 event("received_not_available"); continue
             if self.receiver_policy is None:
                 event("receiver_policy_required"); continue
+            p = record.payload
+            if len(message_fingerprints[(p.source_id, p.session_id, p.sequence)]) > 1:
+                event("conflicting_message_duplicate", source_id=p.source_id, session_id=p.session_id, sequence=p.sequence)
+                continue
             checked = validate_received(record, now, self.receiver_policy, state=self.receiver_state)
             if not checked.accepted:
                 event("receive_" + checked.reason); continue
             payload = checked.received.payload
+            event("received_accepted", source_id=payload.source_id, session_id=payload.session_id, sequence=payload.sequence,
+                  arrival_time=record.arrival_time, usable_time=record.usable_time, valid_until=payload.valid_until)
             tracks = payload.tracks if isinstance(payload, ObservationMessage) else tuple(t.track for t in payload.targets)
             # 只提取合法状态；绝不把预测的未来坐标作为Kalman测量。
             observed = payload.observation_time if isinstance(payload, ObservationMessage) else max((t.observation_time for t in tracks), default=now.seconds)
@@ -161,17 +175,17 @@ class FusionHistory:
                     event("future_track", key); continue
                 if now.seconds - track.last_seen_time > self.history_config.retention_seconds:
                     event("stale_input", key); continue
-                candidates[(key, track.last_seen_time)].append(track)
+                candidates[(key, track.last_seen_time)].append((track, packet.source_available_time, packet.frame_id))
         # 先按原观测寿命清理，不能因重发或新的计算任务刷新寿命。
         for key, entry in list(self._entries.items()):
             if now.seconds - entry["state"].last_seen_time > self.history_config.retention_seconds:
                 del self._entries[key]; event("retention_expired", key)
-        for (key, _), tracks in sorted(candidates.items(), key=lambda item: (item[0][1], item[0][0])):
-            fingerprints = {_digest(track.to_dict()) for track in tracks}
+        for (key, _), observations in sorted(candidates.items(), key=lambda item: (item[0][1], item[0][0])):
+            fingerprints = {_digest(track.to_dict()) for track, _, _ in observations}
             if len(fingerprints) > 1:
-                event("conflicting_duplicate", key, count=len(tracks)); continue
-            track = tracks[0]
-            if len(tracks) > 1: event("duplicate_in_batch", key, count=len(tracks) - 1)
+                event("conflicting_duplicate", key, count=len(observations)); continue
+            track, packet_available, packet_frame = min(observations, key=lambda v: (v[1], v[2]))
+            if len(observations) > 1: event("duplicate_in_batch", key, count=len(observations) - 1)
             old = self._entries.get(key)
             if old is not None:
                 previous = old["state"]
@@ -198,8 +212,10 @@ class FusionHistory:
                 old.update(state=state, track=track)
                 action = "measurement_updated"
             old["history"].append({"accepted_time": now.seconds, "kind": "raw_observation" if track.observed_mask and track.state_time == track.last_seen_time else "derived_state",
-                                   "track": track.to_dict(), "R_reason": reason})
-            consumed.append({"key": list(key.as_tuple()), "track": track.to_dict()})
+                                   "track": track.to_dict(), "packet_available_time": packet_available,
+                                   "packet_frame_id": packet_frame, "R_reason": reason})
+            consumed.append({"key": list(key.as_tuple()), "track": track.to_dict(),
+                             "packet_available_time": packet_available, "packet_frame_id": packet_frame})
             event(action, key, R_reason=reason, updates=state.updates)
         views = {}
         for key, entry in sorted(self._entries.items()):

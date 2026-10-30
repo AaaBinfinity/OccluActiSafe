@@ -196,6 +196,22 @@ class CausalHistoryTests(unittest.TestCase):
         self.assertTrue(b.agents[0]["unified_id"].startswith("episode-2/"))
         self.assertEqual(len(flattened(b)[0]["history"]), 1)
 
+    def test_delayed_fresh_measurement_is_independent_of_snapshot_frequency(self):
+        initial = packet([track()])
+        delayed = packet([track(t=1.2, x=2)], available=1.6)
+        a, b = engine(), engine()
+        a.step(now(1), [initial]); b.step(now(1), [initial])
+        a.step(now(1.1)); a.step(now(1.3)); a.step(now(1.5))
+        left = a.step(now(1.6), [delayed]); right = b.step(now(1.6), [delayed])
+        self.assertEqual(left.feature_sha256, right.feature_sha256)
+        self.assertEqual(flattened(left)[0]["last_seen_time"], 1.2)
+        self.assertEqual(len(flattened(left)[0]["history"]), 2)
+        derived = replace(track(), state_time=1.5, x=5., observed_mask=False)
+        c = engine(); c.step(now(1.5), [packet([derived], available=1.5)])
+        rejected = c.step(now(1.6), [packet([track(t=1.1, x=1)], available=1.6)])
+        self.assertTrue(any(e["reason"] == "source_state_time_regression" for e in rejected.events))
+        self.assertEqual(flattened(rejected)[0]["last_seen_time"], 1.)
+
     def test_m04_future_available_packet_cannot_add_target_or_change_features(self):
         histories = [packet([track(t=1, x=0)])]
         future = packet([track("road", "new-hidden", t=2, x=99999)], available=2.2)
@@ -261,11 +277,26 @@ class CausalHistoryTests(unittest.TestCase):
         e = engine(receiver_policy=policy)
         self.assertFalse(e.step(now(1.15), received=[record]).agents)
         self.assertEqual(len(e.step(now(1.2), received=[record]).agents), 1)
+        first = e.step(now(1.2))
+        self.assertEqual(flattened(first)[0]["history"][0]["packet_available_time"], 1.2)
         repeated = e.step(now(1.3), received=[record])
         self.assertEqual(flattened(repeated)[0]["measurement_updates"], 1)
         self.assertTrue(any(v["reason"] == "receive_duplicate_or_out_of_order" for v in repeated.events))
         e.begin_episode("episode-2", DOMAIN, receiver_policy=policy)
         self.assertEqual(len(e.step(now(1.2), received=[record]).agents), 1)
+
+    def test_conflicting_received_replays_reject_all_independent_of_order(self):
+        policy = ReceiverPolicy("edge", "map-A", "1", "map-right-handed", DOMAIN, {"vehicle": "session-1"})
+        first = ObservationMessage("1.0", "observation", "vehicle", "session-1", 0, "edge", "map-A", "1",
+                                   "map-right-handed", 0, DOMAIN, 1, 1, 1, 1, 2, (track(),))
+        second = replace(first, tracks=(track(x=100),))
+        records = [ReceivedMessage(msg, 1.1, 1.2, DOMAIN) for msg in (first, second)]
+        for order in (records, records[::-1]):
+            e = engine(receiver_policy=policy)
+            result = e.step(now(1.2), received=order)
+            self.assertFalse(result.agents)
+            self.assertFalse(e.receiver_state.sequences)
+            self.assertEqual(sum(v["reason"] == "conflicting_message_duplicate" for v in result.events), 2)
 
 
 if __name__ == "__main__": unittest.main()
