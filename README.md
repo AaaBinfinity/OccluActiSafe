@@ -48,3 +48,5 @@ N04本机已生成65,575个窗口，原始坐标异常保留，完整 TARGET_AGE
 文档静态检查：`python3 scripts/check_docs.py`。该检查覆盖本地资源、JSON 和图资产清单，不代表算法测试、外链可用性或 CARLA 已验证。
 
 N02 提供配置、时钟、坐标、消息与运行清单函数；字段及使用约束见 [N02 数据契约字典](docs/N02数据契约字典.md)。测试可在已安装环境中运行 `python -B -m unittest discover -s tests/unit -v`，也可在 IDE 中直接运行对应测试文件。
+
+N05入口：选择仓库`.venv`后直接运行`scripts/evaluate_prediction.py`，默认完整`model_val`，不打开独立测试标签。算法、指标与证据说明见[N05协议](docs/N05预测基线与指标协议.md)。
