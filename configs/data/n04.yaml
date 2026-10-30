@@ -1,0 +1,13 @@
+# 本机默认任务：完整已声明车端历史协议。首次安装/挂盘与日常运行分开。
+audit_dir: H:/OccluActiSafeDataset/artifacts/n03_20261029/full_audit/80e4390cb71442498769c622eebf06e9
+output_root: H:/OccluActiSafeDataset/artifacts/n04
+seed: 20261030
+ratios: [0.65, 0.15, 0.10, 0.10]
+history_steps: 50
+future_steps: 50
+dt: 0.1
+workers: 6
+max_files: 0
+active_views:
+  - single-vehicle/trajectories
+  - cooperative-vehicle-infrastructure/vehicle-trajectories
