@@ -1,0 +1,9 @@
+# N05冻结验证协议；不打开项目独立test或risk_calibration标签
+windows_dir: H:/OccluActiSafeDataset/artifacts/n04/fd47055e0f80407a87a0e05199e53a8a
+output_root: H:/OccluActiSafeDataset/artifacts/n05
+role: model_val
+top_k: 1
+miss_threshold_m: 2.0
+max_windows: 0
+allow_test: false
+frozen_config_sha256: null
