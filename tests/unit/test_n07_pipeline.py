@@ -24,8 +24,18 @@ class TrainingPipelineTests(unittest.TestCase):
         config=load_training_config(self.config);result=run(config)
         self.assertEqual(result['status'],'completed');self.assertTrue(result['results'][0]['checkpoint_reload_equal'])
         directory=Path(result['run_dir']);checkpoint=directory/'seed_17/latest.pt'
+        import csv
+        seed_dir=directory/'seed_17'
+        with (seed_dir/'step_metrics.csv').open(encoding='utf-8',newline='') as stream:steps=list(csv.DictReader(stream))
+        self.assertEqual([int(r['global_step']) for r in steps],list(range(1,result['results'][0]['steps']+1)))
+        self.assertTrue(all(float(r['target_count'])>0 for r in steps))
+        plots=json.loads((seed_dir/'plot_manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(plots['step_rows'],len(steps));self.assertEqual(plots['epoch_rows'],2)
+        self.assertEqual(len(plots['images']),8);self.assertFalse(plots['smoothing'])
+        self.assertTrue(all((seed_dir/p['file']).is_file() for p in plots['images']))
         resumed=run(load_training_config(self.config,overrides={'resume':str(checkpoint)}))
         self.assertEqual(resumed['results'][0]['metrics'],result['results'][0]['metrics'])
+        self.assertEqual((Path(resumed['run_dir'])/'seed_17/step_metrics.csv').read_bytes(),(seed_dir/'step_metrics.csv').read_bytes())
         self.assertTrue((directory/'seed_17/validation_predictions.npz').is_file())
         for file in Path(config['windows_dir']).rglob('*.labels.npz'):file.unlink()
         with self.assertRaises(FileNotFoundError):run(config)
