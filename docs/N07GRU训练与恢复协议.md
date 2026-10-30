@@ -28,7 +28,7 @@ N06每seed的训练/验证/最终评分受7200秒、20000更新、最多60epoch�
 
 `save_checkpoint()`原子写best.pt/latest.pt，包含模型、AdamW状态、epoch/下一batch/优化步数、最佳验证值与未改善epoch数、已用墙钟、既有曲线、完整契约及Python/NumPy/Torch/CUDA RNG状态。契约含数据集合/输入清单/split/scaler哈希、H/F、模型结构、seed、优化器参数、batch、epoch/patience/clip和预算；训练归一化数值另以normalization.json保存，checkpoint保留其不可变身份。序列化参考[PyTorch 2.11说明](https://docs.pytorch.org/docs/2.11/notes/serialization.html)，仅加载本项目产生的tensor/基础类型检查点，`weights_only=True`。
 
-每200步及每epoch保存latest，验证minADE改善保存best。异常时另保存interrupted.pt及failure.json。恢复显式指定一个原seed，不兼容的契约拒绝；恢复到新run，保留旧run，既有best/latest复制到新目录。批次排列由seed+epoch生成，下一batch游标避免重复更新，恢复包含优化器和随机状态，不只是重新读权重。若从周期中间恢复，该epoch曲线的训练loss/梯度统计只包含恢复后实际执行的批次；已保存的旧epoch曲线保留，不能把这段统计称完整epoch均值。
+每200步及每epoch保存latest，验证minADE改善保存best。异常时另保存interrupted.pt及failure.json。恢复显式指定一个原seed，不兼容的契约拒绝；恢复到新run，保留旧run，既有best/latest复制到新目录。批次排列由seed+epoch生成，下一batch游标避免重复更新，恢复包含优化器和随机状态，不只是重新读权重。新版恢复会继承逐步日志前缀及checkpoint中的epoch累计loss/批次数/最大梯度，再继续更新，因此中途恢复后的epoch曲线覆盖完整epoch；旧run的恢复局限作为旧代码事实保留在Git与旧证据中，不追补旧记录。
 
 最终加载best，在实际模型验证输入上重新建模并要求重载前后输出逐值相同，再完整输出validation_predictions.npz、per_agent_metrics.csv、result.json及检查点哈希。恢复到已完成任务也应能重新输出结果，不要求额外更新。该设计不声称旧失败run消失或自测等于用户验收。
 
@@ -47,3 +47,5 @@ N06每seed的训练/验证/最终评分受7200秒、20000更新、最多60epoch�
 N07重新实施时保持原有数据划分、模型与三seed各3epoch配置，重新进行完整训练；旧run仅保留作先前证据，不能补造其逐步记录。每seed保存step_metrics.csv，横轴global_step表示一次已完成优化更新，loss/regression/classification/train_minADE来自更新前该批次，梯度为裁剪前范数；验证仍只按epoch计算。每epoch、完成或中断时自动从原始日志生成训练损失/误差、优化/资源和epoch验证PNG/SVG及plot_manifest；保留数据行数、轴/单位、输入哈希、不平滑声明与图文件哈希。模型、参数、划分和早停标准不因此改变。
 
 恢复到新run时复制检查点对应的逐步前缀，后续步号连续、无重复；周期中间恢复继续累计本epoch损失/最大梯度，不只统计恢复后的批次。旧检查点缺少逐步日志时明确拒绝本次完整留存模式，不把缺失补成0；旧版本仍可用对应Git版本复查。失败/中断保留已有CSV和图表，图表生成失败不能标成成功。
+
+本次自动图表实现为`prediction/telemetry.py:StepLog`与`prediction/training_plots.py:render_training_plots()`，Matplotlib3.11.2已加入training依赖组并锁定。每seed自动生成step_training、step_optimization、step_resources和epoch_validation四类图，各有PNG/SVG；每次优化更新一行，写入后flush，默认不平滑、不降采样。图内标明seed和run，图表清单记录原始CSV及导出文件SHA-256。需离线复核时，调用`render_training_plots(seed_dir, output_dir=新的复核目录)`，不会改写原run图表或原始CSV。绘图前后恢复全部RNG状态，避免绘图影响训练与恢复可复现性；正常绘图失败会使任务失败并留证。
