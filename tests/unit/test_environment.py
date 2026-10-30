@@ -110,7 +110,8 @@ runpy.run_path(script, run_name="__main__")
         cases = (
             (mock.patch("importlib.metadata.version", side_effect=missing_project),
              "缺少已安装的 occluactisafe 项目包"),
-            (mock.patch.object(sys, "version_info", (3, 9, 0)), "Python 版本不支持"),
+            (mock.patch.object(sys, "version_info", (3, 10, 0)), "Python 版本不支持"),
+            (mock.patch.object(sys, "version_info", (3, 12, 0)), "Python 版本不支持"),
         )
         for patcher, expected in cases:
             with self.subTest(expected=expected), patcher:
