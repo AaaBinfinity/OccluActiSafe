@@ -59,14 +59,18 @@ def verify(folder):
                    {'requested_rad':spec['angle_rad'],'final_wheel_mean_deg':statistics.mean(wheels[-5:])})
         metrics.append({'case_id':case_id,'name':name,'repeat':status['repeat'],'samples':len(rows),
             'mean_speed_error_mps':statistics.mean(abs(float(r['speed_mps'])-spec['target_speed_mps']) for r in rows),
+            'tail_2s_mean_signed_speed_error_mps':statistics.mean(float(r['speed_mps'])-spec['target_speed_mps'] for r in rows[-40:]) if len(rows)>=40 else None,
+            'tail_2s_mean_abs_speed_error_mps':statistics.mean(abs(float(r['speed_mps'])-spec['target_speed_mps']) for r in rows[-40:]) if len(rows)>=40 else None,
             'mean_actual_acceleration_mps2':statistics.mean(float(r['longitudinal_acceleration_mps2']) for r in rows),
             'final_wheel_mean_deg':statistics.mean(wheels[-5:]),'requested_angle_rad':spec['angle_rad'],
             'final_wheel_error_rad':math.radians(statistics.mean(wheels[-5:]))-spec['angle_rad'],
             'saturated_ticks':len(saturated)})
     pos=[m['mean_actual_acceleration_mps2'] for m in metrics if m['name']=='正加速度']
     neg=[m['mean_actual_acceleration_mps2'] for m in metrics if m['name']=='负加速度']
-    record('正负加速度响应符号',len(pos)==config['repetitions'] and len(neg)==config['repetitions'] and min(pos)>0 and max(neg)<0,
-           {'positive_mps2':pos,'negative_mps2':neg})
+    names={x['name'] for x in config['controller_checks']}
+    if names & {'正加速度','负加速度'}:
+        record('正负加速度响应符号',len(pos)==config['repetitions'] and len(neg)==config['repetitions'] and min(pos)>0 and max(neg)<0,
+               {'positive_mps2':pos,'negative_mps2':neg})
     result={'passed':sum(x['passed'] for x in checks),'failed':sum(not x['passed'] for x in checks),
         'checks':checks,'metrics':metrics,'raw_sha256':hashlib.sha256(raw.read_bytes()).hexdigest(),
         'limitations':'仅检查配置所列工况；轮角对应相邻帧区间，数值不能代表整条路或其他附着条件。'}
