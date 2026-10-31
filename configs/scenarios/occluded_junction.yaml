@@ -1058,8 +1058,8 @@ target_route:
   lane_width: 3.5
 occluder_blueprint: vehicle.carlamotors.carlacola
 occluder:
-  x: -33.73736398739298
-  y: 24.590158011861334
+  x: -29.72612332543284
+  y: 28.60125606391286
   z: 0.3
   yaw: 180.15919494628906
 roadside_camera:
