@@ -93,6 +93,8 @@ def analyze(folder,encode=True):
             check('协同停车避撞及道路边界',not collisions and not geo and speed(truth[-1]['ego'])<.1 and max_lateral<=lane_half and -projection(truth[-1]['ego'])>3.,result)
             check('实测标定停车空间',first_brake is not None and result['available_distance_m']>result['stopping_budget_with_margin_m'],result)
             check('路侧先见且到达后干预',road_first is not None and first_usable is not None and first_brake>=first_usable and (local_first is None or first_brake<local_first),result)
+            check('协同触发时确有相机物理遮挡',first_brake is not None and triggered['target_pixels']['车端']==0 and triggered['target_pixels']['路侧']>0,
+                  {'time_s':first_brake,'pixels':triggered['target_pixels'] if first_brake is not None else None})
     check('初始哈希一致',len(set(initial))==1,initial)
     differences=[];tolerance=config['pairing_tolerance'];base=data['reference']
     for name in STRATEGIES[1:]:

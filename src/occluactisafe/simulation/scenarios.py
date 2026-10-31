@@ -184,7 +184,10 @@ def run_episode(client,output,config):
         if target.id>=65536:raise RuntimeError('实例相机16位ID范围不足，拒绝混淆实例')
         (output/'评测对象身份.json').write_text(json.dumps({'ego_actor_id':ego.id,'target_actor_id':target.id,
             'occluder_actor_id':obstacle.id,'origin_frame':runner.frame,'origin_sim_time_s':runner.sim_time,
-            'instance_decoder':'官方bounding_boxes.py: G + (B << 8)'},ensure_ascii=False,indent=2),encoding='utf-8')
+            'instance_decoder':'官方bounding_boxes.py: G + (B << 8)',
+            'camera_calibration':{name:{'width':1280,'height':720,'horizontal_fov_deg':90,
+                'K':[[640.,0.,640.],[0.,640.,360.],[0.,0.,1.]],'camera_to_carla_world':camera.get_transform().get_matrix()}
+                for name,camera in cameras.items()}},ensure_ascii=False,indent=2),encoding='utf-8')
         target_actuator=CalibratedActuator(config['calibration'],kp=.05,ki=.02,steering_rate_per_s=1.)
         def lane_angle(s,spawn):
             yaw=-math.radians(spawn['yaw']);dx=s['x']-spawn['x'];dy=s['y']+spawn['y']
