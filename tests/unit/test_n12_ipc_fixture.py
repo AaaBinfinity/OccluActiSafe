@@ -49,8 +49,14 @@ class BridgeIPCTests(unittest.TestCase):
     def test_socket_whitelist_truth_side_channel_and_cleanup(self):
         world=World(); client=SimpleNamespace(set_timeout=lambda _:None,get_client_version=lambda:'0.9.16',
              get_server_version=lambda:'0.9.16',get_world=lambda:world)
+        def destroy_batch(commands, do_tick):
+            self.assertFalse(do_tick)
+            for actor_id in commands:
+                next(actor for actor in world.actors if actor.id == actor_id).destroy()
+            return [SimpleNamespace(error='') for _ in commands]
+        client.apply_batch_sync=destroy_batch
         carla=SimpleNamespace(Client=lambda *args:client,Transform=lambda *args:object(),Location=lambda **kwargs:object(),
-                              VehicleControl=lambda **kwargs:object())
+                              VehicleControl=lambda **kwargs:object(), command=SimpleNamespace(DestroyActor=lambda actor_id:actor_id))
         with tempfile.TemporaryDirectory() as directory, Listener(('127.0.0.1',0),authkey=b'test-key') as listener:
             config={'host':'127.0.0.1','port':2000,'output':directory,'run_id':'run','sensor_timeout_s':.1}
             env={'OAS_IPC_PORT':str(listener.address[1]),'OAS_IPC_AUTH':b'test-key'.hex(), 'OAS_BRIDGE_CONFIG':json.dumps(config)}

@@ -4,11 +4,12 @@ from occluactisafe.common.schemas import AdvanceRequest, TickEvent
 
 
 class SynchronousRunner:
-    def __init__(self, world, *, run_id, episode_id, generation, clock_domain, fixed_delta=.05):
+    def __init__(self, world, *, run_id, episode_id, generation, clock_domain, fixed_delta=.05, destroy_owned=None):
         if not all(isinstance(s,str) and s.strip() for s in (run_id,episode_id,clock_domain)): raise ValueError('身份不能为空')
         if type(generation) is not int or generation < 0 or fixed_delta != .05: raise ValueError('generation或固定步长非法')
         self._world=world; self.run_id=run_id; self.episode_id=episode_id; self.generation=generation; self.clock_domain=clock_domain
         self._original=world.get_settings(); self._owned=[]; self._lock=Lock(); self._closed=False; self._failed=False
+        self._destroy_owned=destroy_owned
         snapshot=world.get_snapshot(); self.frame=snapshot.frame; self.sim_time=snapshot.timestamp.elapsed_seconds
         settings=world.get_settings(); settings.synchronous_mode=True; settings.fixed_delta_seconds=fixed_delta
         if hasattr(settings,'substepping'):
@@ -68,7 +69,8 @@ class SynchronousRunner:
                     if hasattr(actor,'stop'): actor.stop()
                 except Exception as exc: failures.append(str(exc))
                 try:
-                    if actor.destroy() is False: failures.append('actor 销毁返回失败')
+                    destroyed = self._destroy_owned(actor) if self._destroy_owned is not None else actor.destroy()
+                    if destroyed is False: failures.append('actor 销毁返回失败')
                 except Exception as exc: failures.append(str(exc))
             try: self._world.apply_settings(self._original)
             except Exception as exc: failures.append(str(exc))

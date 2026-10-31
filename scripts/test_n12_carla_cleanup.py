@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -42,7 +43,11 @@ def main():
         env = os.environ.copy(); env['PYTHONUTF8'] = '1'
         result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=130,
                                 env=env, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+        # 异步世界恢复后，客户端快照可能在短时间内仍包含已销毁 actor。
+        deadline = time.monotonic() + 5
         after = snapshot(client)
+        while before != after and time.monotonic() < deadline:
+            time.sleep(.1); after = snapshot(client)
         entry = {'fault': fault, 'exit_code': result.returncode, 'before': before, 'after': after,
                  'passed': result.returncode == 0 and before == after, 'stdout': result.stdout, 'stderr': result.stderr}
         results.append(entry)

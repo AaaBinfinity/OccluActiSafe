@@ -27,8 +27,13 @@ def main():
             raise RuntimeError(f'CARLA 版本不匹配：{client_version}/{server_version}')
         frames = FrameBuffer(); truth = TruthLogger(Path(config['output']) / '评测真值.jsonl')
         try:
+            def destroy_owned(actor):
+                # 刚生成且尚未 tick 的 actor 可能不在客户端快照中；按本次持有的 ID 发不推进帧的销毁命令。
+                response = client.apply_batch_sync([carla.command.DestroyActor(actor.id)], False)[0]
+                if response.error: raise RuntimeError(f'actor {actor.id} 销毁失败：{response.error}')
+                return True
             with SynchronousRunner(client.get_world(), run_id=config['run_id'], episode_id='episode-1',
-                                   generation=1, clock_domain='carla') as runner:
+                                   generation=1, clock_domain='carla', destroy_owned=destroy_owned) as runner:
                 ego = runner.spawn_ego_and_camera(carla, frames)
                 send(conn, {'kind': 'ready', 'client_version': client_version, 'server_version': server_version,
                             'frame': runner.frame, 'sim_time': runner.sim_time})
