@@ -11,10 +11,13 @@ class SynchronousRunner:
         self._original=world.get_settings(); self._owned=[]; self._lock=Lock(); self._closed=False; self._failed=False
         snapshot=world.get_snapshot(); self.frame=snapshot.frame; self.sim_time=snapshot.timestamp.elapsed_seconds
         settings=world.get_settings(); settings.synchronous_mode=True; settings.fixed_delta_seconds=fixed_delta
-        try: world.apply_settings(settings)
+        if hasattr(settings,'substepping'):
+            settings.substepping=True; settings.max_substeps=10; settings.max_substep_delta_time=.01
+        try:
+            world.apply_settings(settings)
+            snapshot=world.get_snapshot(); self.frame=snapshot.frame; self.sim_time=snapshot.timestamp.elapsed_seconds
         except BaseException:
             world.apply_settings(self._original); raise
-        snapshot=world.get_snapshot(); self.frame=snapshot.frame; self.sim_time=snapshot.timestamp.elapsed_seconds
 
     def spawn_ego_and_camera(self, carla, frames):
         """只创建并登记本运行的车辆和摄像头，失败时由 close 回收。"""
