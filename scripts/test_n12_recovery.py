@@ -90,16 +90,19 @@ def suite(args,output):
     log=(output/'服务端日志.txt').open('wb')
     server=subprocess.Popen([str(args.server),'-RenderOffScreen','-nosound','-quality-level=Low'],cwd=args.server.parent,
             stdout=log,stderr=subprocess.STDOUT,startupinfo=startup,creationflags=subprocess.CREATE_NO_WINDOW)
-    client=carla.Client('127.0.0.1',2000);client.set_timeout(2)
+    client=None
     sentinel=None;results=[]
     env=os.environ.copy();env['PYTHONUTF8']='1'
     try:
         deadline=time.monotonic()+90
         while True:
             try:
+                with socket.create_connection(('127.0.0.1',2000),timeout=.5):pass
+                client=carla.Client('127.0.0.1',2000);client.set_timeout(5)
                 if client.get_server_version()!='0.9.16':raise RuntimeError('服务端版本不符')
                 world=client.get_world();world.get_settings();break
-            except RuntimeError:
+            except (OSError,RuntimeError) as exc:
+                write(output/'服务启动等待.json',{'error':str(exc),'server_exit':server.poll()})
                 if server.poll() is not None or time.monotonic()>deadline:raise
                 time.sleep(.5)
         client.set_timeout(5)
@@ -206,7 +209,10 @@ def main():
     command=[str(args.bridge_python),str(Path(__file__).resolve()),'--suite-worker',str(output),
              '--server',str(args.server),'--core-python',str(args.core_python),'--bridge-python',str(args.bridge_python)]
     env=os.environ.copy();env['PYTHONUTF8']='1'
-    result=subprocess.run(command,env=env,creationflags=subprocess.CREATE_NO_WINDOW)
+    with (output/'验收进程日志.txt').open('wb') as log:
+        result=subprocess.run(command,env=env,stdout=log,stderr=subprocess.STDOUT,creationflags=subprocess.CREATE_NO_WINDOW)
+    write(output/'验收进程退出.json',{'exit_code':result.returncode,'exit_hex':f'0x{result.returncode & 0xffffffff:08X}'})
+    print((output/'验收进程日志.txt').read_text(encoding='utf-8',errors='replace')[-3000:])
     if (output/'恢复验收.json').exists():
         import matplotlib
         matplotlib.use('Agg')
