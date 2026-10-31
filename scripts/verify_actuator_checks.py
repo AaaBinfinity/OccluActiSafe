@@ -57,7 +57,7 @@ def verify(folder):
             'saturated_ticks':len(saturated)})
     pos=[m['mean_actual_acceleration_mps2'] for m in metrics if m['name']=='正加速度']
     neg=[m['mean_actual_acceleration_mps2'] for m in metrics if m['name']=='负加速度']
-    record('正负加速度响应可区分',len(pos)==config['repetitions'] and len(neg)==config['repetitions'] and min(pos)>max(neg),
+    record('正负加速度响应符号',len(pos)==config['repetitions'] and len(neg)==config['repetitions'] and min(pos)>0 and max(neg)<0,
            {'positive_mps2':pos,'negative_mps2':neg})
     result={'passed':sum(x['passed'] for x in checks),'failed':sum(not x['passed'] for x in checks),
         'checks':checks,'metrics':metrics,'raw_sha256':hashlib.sha256(raw.read_bytes()).hexdigest(),
