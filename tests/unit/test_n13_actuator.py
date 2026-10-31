@@ -28,5 +28,15 @@ class ActuatorTests(unittest.TestCase):
             with self.assertRaises(ValueError):self.a.step(**values)
             self.assertEqual(self.a.integral,0);self.assertEqual(self.a.steer,0)
 
+    def test_speed_slice_interpolation_and_no_extrapolation(self):
+        a=CalibratedActuator({'acceleration_by_speed':[{'speed_mps':4,'points':[[-2,-1],[2,1]]},
+            {'speed_mps':12,'points':[[-1,-1],[1,1]]}], 'angle_to_steer':[[-.4,-1],[.4,1]],
+            'speed_min_mps':4,'speed_max_mps':12,'vehicle_blueprint':'v','surface_id':'dry'},
+            kp=0,ki=0,steering_rate_per_s=2)
+        out=a.step(speed_mps=8,target_speed_mps=8,acceleration_mps2=.5,angle_rad=0,dt_s=.1,vehicle_blueprint='v',surface_id='dry')
+        self.assertAlmostEqual(out['throttle'],.375)
+        with self.assertRaises(ValueError):
+            a.step(speed_mps=8,target_speed_mps=8,acceleration_mps2=1.5,angle_rad=0,dt_s=.1,vehicle_blueprint='v',surface_id='dry')
+
 
 if __name__=='__main__':unittest.main()
