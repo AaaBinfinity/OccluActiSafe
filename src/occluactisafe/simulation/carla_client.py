@@ -1,0 +1,65 @@
+"""独立桥接进程入口；仅此进程导入 CARLA 和评测旁路。"""
+import base64
+import json
+import os
+from multiprocessing.connection import Client
+from pathlib import Path
+import sys
+
+from occluactisafe.simulation.runner import SynchronousRunner
+from occluactisafe.simulation.sensors import FrameBuffer
+from occluactisafe.simulation.truth_logger import TruthLogger
+
+
+def send(conn, data):
+    conn.send_bytes(json.dumps(data, ensure_ascii=False, allow_nan=False).encode('utf-8'))
+
+
+def main():
+    import carla
+    port = int(os.environ['OAS_IPC_PORT'])
+    auth = bytes.fromhex(os.environ.pop('OAS_IPC_AUTH'))
+    config = json.loads(os.environ.pop('OAS_BRIDGE_CONFIG'))
+    with Client(('127.0.0.1', port), authkey=auth) as conn:
+        client = carla.Client(config['host'], config['port']); client.set_timeout(15.0)
+        client_version = client.get_client_version(); server_version = client.get_server_version()
+        if client_version != '0.9.16' or server_version != client_version:
+            raise RuntimeError(f'CARLA 版本不匹配：{client_version}/{server_version}')
+        frames = FrameBuffer(); truth = TruthLogger(Path(config['output']) / '评测真值.jsonl')
+        try:
+            with SynchronousRunner(client.get_world(), run_id=config['run_id'], episode_id='episode-1',
+                                   generation=1, clock_domain='carla') as runner:
+                ego = runner.spawn_ego_and_camera(carla, frames)
+                send(conn, {'kind': 'ready', 'client_version': client_version, 'server_version': server_version,
+                            'frame': runner.frame, 'sim_time': runner.sim_time})
+                while True:
+                    if not conn.poll(30): raise TimeoutError('核心请求超时')
+                    try: message = json.loads(conn.recv_bytes(maxlength=2_000_000))
+                    except EOFError: break
+                    if message == {'kind': 'close'}: break
+                    if not isinstance(message, dict) or set(message) != {'kind', 'request'} or message['kind'] != 'advance':
+                        raise ValueError('未知 IPC 请求')
+                    def apply_control(control):
+                        ego.apply_control(carla.VehicleControl(throttle=control.throttle, brake=control.brake, steer=control.steer))
+                    try:
+                        event_json = runner.advance(json.dumps(message['request'], allow_nan=False), apply_control=apply_control)
+                    except ValueError as exc:
+                        send(conn, {'kind': 'rejected', 'frame': runner.frame, 'reason': str(exc)})
+                        continue
+                    event = json.loads(event_json); sensor = frames.get(event['frame_id'], config['sensor_timeout_s'])
+                    if sensor['valid']:
+                        image = sensor['value']
+                        camera = {'frame': image.frame, 'valid': True, 'width': image.width, 'height': image.height,
+                                  'bgra': base64.b64encode(image.raw_data).decode('ascii'), 'reason': None}
+                    else:
+                        camera = {'frame': sensor['frame'], 'valid': False, 'width': None, 'height': None,
+                                  'bgra': None, 'reason': sensor['reason']}
+                    truth.log_ego(event['frame_id'], ego)
+                    send(conn, {'event': event, 'camera': camera})
+            send(conn, {'kind': 'closed'})
+        finally:
+            frames.close(); truth.close()
+
+
+if __name__ == '__main__':
+    main()

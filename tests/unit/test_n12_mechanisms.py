@@ -5,6 +5,7 @@ import unittest
 from occluactisafe.common.schemas import AdvanceRequest, ControlResult, TickEvent
 from occluactisafe.simulation.sensors import FrameBuffer
 from occluactisafe.simulation.runner import SynchronousRunner
+from occluactisafe.simulation.observation_adapter import decode_tick
 
 
 @dataclass
@@ -54,6 +55,13 @@ class BridgeMechanismTests(unittest.TestCase):
         self.assertEqual(b.get(3,0)['value'],'future')
         b.put(4,'first');self.assertFalse(b.put(4,'duplicate'));self.assertEqual(b.get(4,0)['value'],'first')
         b.close();self.assertEqual(b.get(5,0)['reason'],'closed')
+
+    def test_core_rejects_truth_and_future_frame(self):
+        event=TickEvent('1.0','run','episode',1,11,'sim-n12',.55,()).to_dict()
+        camera={'frame':11,'valid':False,'width':None,'height':None,'bgra':None,'reason':'timeout'}
+        self.assertEqual(decode_tick({'event':event,'camera':camera})[0].frame_id,11)
+        with self.assertRaises(ValueError): decode_tick({'event':event,'camera':camera,'truth':{'hidden':True}})
+        with self.assertRaises(ValueError): decode_tick({'event':event,'camera':dict(camera,frame=12)})
 
 
 if __name__=='__main__':unittest.main()

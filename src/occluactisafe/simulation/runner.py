@@ -14,6 +14,25 @@ class SynchronousRunner:
         try: world.apply_settings(settings)
         except BaseException:
             world.apply_settings(self._original); raise
+        snapshot=world.get_snapshot(); self.frame=snapshot.frame; self.sim_time=snapshot.timestamp.elapsed_seconds
+
+    def spawn_ego_and_camera(self, carla, frames):
+        """只创建并登记本运行的车辆和摄像头，失败时由 close 回收。"""
+        blueprints=self._world.get_blueprint_library()
+        candidates=blueprints.filter('vehicle.*')
+        if not candidates: raise RuntimeError('地图没有车辆蓝图')
+        ego=None
+        for transform in self._world.get_map().get_spawn_points():
+            ego=self._world.try_spawn_actor(candidates[0],transform)
+            if ego is not None: break
+        if ego is None: raise RuntimeError('没有可用的车辆生成点')
+        self.register_owned(ego); ego.set_autopilot(False)
+        camera_bp=blueprints.find('sensor.camera.rgb')
+        camera_bp.set_attribute('image_size_x','320'); camera_bp.set_attribute('image_size_y','180')
+        camera_bp.set_attribute('sensor_tick','0.05')
+        camera=self._world.spawn_actor(camera_bp,carla.Transform(carla.Location(x=1.5,z=2.4)),attach_to=ego)
+        self.register_owned(camera); camera.listen(lambda image: frames.put(image.frame,image))
+        return ego
 
     def register_owned(self, actor):
         if self._closed: raise RuntimeError('runner已关闭')
@@ -42,7 +61,9 @@ class SynchronousRunner:
             if self._closed: return
             failures=[]
             for actor in reversed(self._owned):
-                try: actor.destroy()
+                try:
+                    if hasattr(actor,'stop'): actor.stop()
+                    actor.destroy()
                 except Exception as exc: failures.append(str(exc))
             try: self._world.apply_settings(self._original)
             except Exception as exc: failures.append(str(exc))
