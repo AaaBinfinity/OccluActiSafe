@@ -127,7 +127,8 @@ def run_episode(client,output,config):
             if bp.has_attribute('color'):bp.set_attribute('color','168,0,27')
             actor=world.spawn_actor(bp,transform(pose));runner.register_owned(actor);return actor
         ego=spawn('vehicle.audi.a2',config['ego_spawn']);target=spawn('vehicle.audi.a2',config['target_spawn'])
-        obstacle=spawn(config['occluder_blueprint'],config['occluder']);obstacle.set_simulate_physics(moving)
+        settle_probe=bool(config.get('probe_static') and config.get('probe_settle_occluder'))
+        obstacle=spawn(config['occluder_blueprint'],config['occluder']);obstacle.set_simulate_physics(moving or settle_probe)
         truck_driver=OccluderDriver(config['occluder'],config['conflict_xy'],**config['occluder_motion']) if moving else None
         sensor_bp=world.get_blueprint_library().find('sensor.other.collision')
         sensor_bp.set_attribute('role_name','oas:'+run_id)
@@ -160,12 +161,13 @@ def run_episode(client,output,config):
             def apply(c):
                 commands=[carla.command.ApplyVehicleControl(ego.id,carla.VehicleControl(throttle=c.throttle,brake=c.brake,steer=c.steer)),
                           carla.command.ApplyVehicleControl(target.id,carla.VehicleControl(**target_action))]
-                if moving:commands.append(carla.command.ApplyVehicleControl(obstacle.id,carla.VehicleControl(**(occluder_action or {'throttle':0.,'brake':1.,'steer':0.}))))
+                if moving or settle_probe:commands.append(carla.command.ApplyVehicleControl(obstacle.id,carla.VehicleControl(**(occluder_action or {'throttle':0.,'brake':1.,'steer':0.}))))
                 responses=client.apply_batch_sync(commands,False)
                 if any(r.error for r in responses):raise RuntimeError('车辆控制批次失败：'+str([r.error for r in responses]))
             runner.advance(json.dumps(request),apply_control=apply)
         held={'throttle':0.,'brake':1.,'steer':0.}
         for _ in range(30):advance(held,held)
+        if settle_probe:obstacle.set_simulate_physics(False)
         settled={'ego':ego.get_transform(),'target':target.get_transform(),'occluder':obstacle.get_transform()}
         if moving:
             # 三车均位于同向合法驾驶车道；只在初始化阶段预热大车动力。
