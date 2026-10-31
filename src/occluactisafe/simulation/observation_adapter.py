@@ -1,6 +1,7 @@
 """核心端的显式白名单：不会接收真值或未来帧。"""
 import base64
-from occluactisafe.common.schemas import TickEvent
+from occluactisafe.common.schemas import ControlResult, TickEvent
+from occluactisafe.core.safety_monitor import check_control
 
 
 def decode_tick(message):
@@ -20,3 +21,12 @@ def decode_tick(message):
     elif any(camera[k] is not None for k in ('width', 'height', 'bgra')) or camera['reason'] not in ('timeout', 'closed'):
         raise ValueError('无效帧必须明确原因且不携带图像')
     return event, camera
+
+
+def stationary_control(event, index):
+    """N12 静止同步测试的安全复核控制；不是碰撞规避策略。"""
+    if not isinstance(event, TickEvent): raise TypeError('只接受已校验的合法 tick')
+    action = {'throttle': 0.0, 'brake': 1.0, 'steer': 0.0}
+    check_control(action)
+    return ControlResult(str(index), 'stationary', 'success', True, event.clock_domain,
+                         event.sim_time, event.sim_time + 1.0, **action, fallback_reason=None)

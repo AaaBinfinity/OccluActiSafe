@@ -8,14 +8,14 @@ from pathlib import Path
 import secrets
 import subprocess
 import sys
+import time
 from datetime import datetime
 from multiprocessing.connection import Listener
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from occluactisafe.common.schemas import AdvanceRequest, ControlResult
-from occluactisafe.core.safety_monitor import check_control
-from occluactisafe.simulation.observation_adapter import decode_tick
+from occluactisafe.common.schemas import AdvanceRequest, TickEvent
+from occluactisafe.simulation.observation_adapter import decode_tick, stationary_control
 
 
 def main():
@@ -24,6 +24,8 @@ def main():
     parser.add_argument('--output-root', type=Path, default=Path('H:/OccluActiSafeDataset/artifacts/n12'))
     parser.add_argument('--host', default='127.0.0.1'); parser.add_argument('--port', type=int, default=2000)
     parser.add_argument('--ticks', type=int, default=200); parser.add_argument('--sensor-timeout', type=float, default=0.5)
+    parser.add_argument('--fault-test', choices=('disconnect', 'timeout', 'exception'), default=None,
+                        help='仅供真实服务的清理验证使用')
     args = parser.parse_args()
     if not args.bridge_python.is_file(): raise FileNotFoundError(f'桥接 Python 不存在：{args.bridge_python}')
     if args.ticks < 1 or not 0 <= args.sensor_timeout <= 10: raise ValueError('tick 数或传感器等待非法')
@@ -47,10 +49,18 @@ def main():
                 if set(ready) != {'kind', 'client_version', 'server_version', 'frame', 'sim_time'} or ready['kind'] != 'ready':
                     raise ValueError('桥接握手非法')
                 (output / '握手.json').write_text(json.dumps(ready, ensure_ascii=False, indent=2), encoding='utf-8')
+                if args.fault_test:
+                    if args.fault_test == 'disconnect': conn.close()
+                    elif args.fault_test == 'exception': conn.send_bytes(b'{"kind":"invalid"}')
+                    else: time.sleep(32)
+                    process.wait(timeout=40)
+                    (output / '故障注入.json').write_text(json.dumps({'fault': args.fault_test, 'child_exit_code': process.returncode}, ensure_ascii=False), encoding='utf-8')
+                    print(f'故障注入完成，清理效果须由独立监视进程核对：{output}')
+                    return
                 frame, sim_time = ready['frame'], ready['sim_time']
                 for index in range(args.ticks):
-                    action = {'throttle': 0.0, 'brake': 1.0, 'steer': 0.0}; check_control(action)
-                    control = ControlResult(str(index), 'stationary', 'success', True, 'carla', sim_time, sim_time + 1.0, **action, fallback_reason=None)
+                    prior = TickEvent('1.0', run_id, 'episode-1', 1, frame, 'carla', sim_time, ())
+                    control = stationary_control(prior, index)
                     request = AdvanceRequest('1.0', run_id, 'episode-1', 1, frame + 1, 'carla', sim_time, sim_time + 1.0, control)
                     conn.send_bytes(json.dumps({'kind': 'advance', 'request': request.to_dict()}, allow_nan=False).encode())
                     if not conn.poll(30): raise TimeoutError('等待 tick 超时')
@@ -83,6 +93,20 @@ def main():
                 process.terminate(); process.wait(timeout=10)
             if process.returncode: print(f'桥接进程退出码 {process.returncode}，详见 {output / "桥接日志.txt"}', file=sys.stderr)
     if process.returncode: raise RuntimeError('桥接进程异常退出')
+    # 原始逐帧记录为依据；图表只保存至移动硬盘，不能替代 JSONL。
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    timeline = output / '时序.jsonl'
+    rows = [json.loads(line) for line in timeline.read_text(encoding='utf-8').splitlines()]
+    figure, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+    axes[0].plot([row['frame'] for row in rows], [row['sim_time'] for row in rows], linewidth=1)
+    axes[0].set_ylabel('simulation time (s)')
+    axes[1].step([row['frame'] for row in rows], [int(row['camera_valid']) for row in rows], where='mid')
+    axes[1].set_ylabel('camera valid'); axes[1].set_xlabel('frame'); axes[1].set_ylim(-0.1, 1.1)
+    figure.tight_layout(); picture = output / '帧时序与传感器有效性.png'; figure.savefig(picture, dpi=150); plt.close(figure)
+    (output / '图表来源.json').write_text(json.dumps({'source': timeline.name, 'source_sha256': hashlib.sha256(timeline.read_bytes()).hexdigest(),
+                                                   'image': picture.name, 'image_sha256': hashlib.sha256(picture.read_bytes()).hexdigest()}, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'运行完成：{output}')
 
 
