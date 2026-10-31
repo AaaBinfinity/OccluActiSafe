@@ -176,7 +176,7 @@ def run_episode(client,output,config):
             full={'throttle':1.,'brake':0.,'steer':0.};advance(full,full)
         else:raise RuntimeError('动力预热未达到初速')
         for actor,name in ((ego,'ego'),(target,'target')):
-            actor.set_transform(transform(config[name+'_spawn']))
+            if not config.get('probe_static',False):actor.set_transform(transform(config[name+'_spawn']))
             yaw=math.radians(config[name+'_spawn']['yaw']);initial_speed=0. if config.get('probe_static',False) else config['speed_mps']
             actor.set_target_velocity(carla.Vector3D(x=initial_speed*math.cos(yaw),y=initial_speed*math.sin(yaw)))
             actor.set_target_angular_velocity(carla.Vector3D())
