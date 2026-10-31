@@ -65,6 +65,11 @@ def main():
                     elif args.fault_test == 'exception': conn.send_bytes(b'{"kind":"invalid"}')
                     else: time.sleep(32)
                     process.wait(timeout=40)
+                    log.flush()
+                    bridge_log = (output / '桥接日志.txt').read_text(encoding='utf-8')
+                    expected = {'timeout': '核心请求超时', 'exception': '未知 IPC 请求'}.get(args.fault_test)
+                    if expected and (process.returncode == 0 or expected not in bridge_log):
+                        raise RuntimeError(f'故障注入未观察到预期异常：{args.fault_test}')
                     (output / '故障注入.json').write_text(json.dumps({'fault': args.fault_test, 'child_exit_code': process.returncode}, ensure_ascii=False), encoding='utf-8')
                     print(f'故障注入完成，清理效果须由独立监视进程核对：{output}')
                     return
