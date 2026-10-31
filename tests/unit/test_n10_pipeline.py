@@ -42,7 +42,7 @@ class RiskPipelineTests(unittest.TestCase):
                 runs = list(output.iterdir()); self.assertEqual(len(runs), 1); run = runs[0]
                 result = json.loads((run / "result.json").read_text(encoding="utf-8"))
                 self.assertEqual(result["status"], "passed")
-                self.assertEqual(result["checks_passed"], 23)
+                self.assertEqual(result["checks_passed"], 25)
                 self.assertEqual(result["risk_scenarios"], 13)
                 self.assertEqual(result["candidate_rows"], 14)
                 manifest = json.loads((run / "plot_manifest.json").read_text(encoding="utf-8"))

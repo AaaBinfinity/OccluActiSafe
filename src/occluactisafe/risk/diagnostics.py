@@ -209,8 +209,14 @@ def run_diagnostics(config):
         bodies = {"vehicle": ParticipantGeometry("vehicle", 4, 2), "pedestrian": ParticipantGeometry("pedestrian", radius=.3),
                   "cyclist": ParticipantGeometry("cyclist", 1.8, .6),
                   "vehicle_rear_axle": ParticipantGeometry("vehicle", 4, 2, reference_point="rear_axle", center_offset_m=1.5)}
-        _json(directory / "geometry_by_type.json", {name: {"declaration": asdict(g), "at_pose": {"x": 0, "y": 0, "yaw": math.pi / 2},
-                                                           "shape": asdict(g.at(Pose2D(0, 0, math.pi / 2)))} for name, g in bodies.items()})
+        by_type = {name: {"declaration": asdict(g), "at_pose": {"x": 0, "y": 0, "yaw": math.pi / 2},
+                          "shape": asdict(g.at(Pose2D(0, 0, math.pi / 2)))} for name, g in bodies.items()}
+        for name, half in (("pedestrian", .3), ("cyclist", .9)):
+            conflict = first_conflict_time(a, bodies["vehicle"], b, bodies[name], 0., .5, IntervalConfig(**config["interval"]))
+            analytic = (5. - 2. - half) / 20.
+            by_type[name]["crossing"] = {"stationary_path": asdict(a), "crossing_path": asdict(b), "analytic_entry_s": analytic, **asdict(conflict)}
+            check(f"B05_{name}_crossing", conflict.event is not None and conflict.event["interval_start"] <= analytic <= conflict.event["interval_end"], conflict.event)
+        _json(directory / "geometry_by_type.json", by_type)
         geometry_cases = []
         box = OBB((0, 0), 0, 4, 2)
         for identity, other, expected in (("G01_same", box, True), ("G02_separate", OBB((4.1, 0), 0, 4, 2), False),

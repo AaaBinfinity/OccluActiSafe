@@ -62,6 +62,17 @@ class GeometryTests(unittest.TestCase):
         cyclist = ParticipantGeometry("cyclist", length=1.8, width=.6)
         self.assertIsInstance(cyclist.at(Pose2D(0, 0, 0)), OBB)
         self.assertIsInstance(ParticipantGeometry("pedestrian", radius=.3).at(Pose2D(0, 0, 0)), Circle)
+        still = path(((0, 0, 0),) * 2, (0., .5))
+        crossing = path(((-5, 0, 0), (5, 0, 0)), (0., .5))
+        for geometry, half in ((cyclist, .9), (ParticipantGeometry("pedestrian", radius=.3), .3)):
+            with self.subTest(category=geometry.category):
+                self.assertFalse(intersects(CAR.at(still.at(0)), geometry.at(crossing.at(0))))
+                self.assertFalse(intersects(CAR.at(still.at(.5)), geometry.at(crossing.at(.5))))
+                event = first_conflict_time(still, CAR, crossing, geometry, 0., .5).event
+                analytic = (5. - 2. - half) / 20.
+                self.assertLessEqual(event["interval_start"], analytic)
+                self.assertGreaterEqual(event["interval_end"], analytic)
+                self.assertIsNone(event["actual_collision"])
 
     def test_b05_explicit_reference_offset(self):
         rear = ParticipantGeometry("vehicle", 4, 2, reference_point="rear_axle", center_offset_m=1.5)
