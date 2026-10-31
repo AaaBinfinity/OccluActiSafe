@@ -9,27 +9,30 @@ from PIL import Image, ImageDraw
 
 
 class FrameArchive:
-    def __init__(self, output, *, interval=50):
+    def __init__(self, output, *, interval=50,native_resolution=(320,180)):
         if type(interval) is not int or interval<1: raise ValueError('截图间隔须为正整数')
         self.output=Path(output); self.interval=interval
         self.records=(self.output/'预览帧记录.jsonl').open('x',encoding='utf-8')
         self.images=[];self.last=None;self.count=0;self.valid=0;self._invalid_saved=False;self._first_valid=False
         self.started=time.monotonic()
+        self.native_resolution=tuple(native_resolution)
 
     def update(self,event,camera,control):
         # 输入来自 decode_tick，仍检查帧号，防止把旧画面标为当前帧。
         if camera['frame']!=event.frame_id:raise ValueError('预览帧不一致')
         self.count+=1;raw=None
         if camera['valid']:
-            raw=base64.b64decode(camera['bgra'],validate=True)
-            if len(raw)!=320*180*4:raise ValueError('图像长度异常')
-            picture=Image.frombytes('RGBA',(320,180),raw,'raw','BGRA').convert('RGB');self.valid+=1
+            raw=camera.get('raw_bgra')
+            if raw is None:raw=base64.b64decode(camera['bgra'],validate=True)
+            if (camera['width'],camera['height'])!=self.native_resolution or len(raw)!=self.native_resolution[0]*self.native_resolution[1]*4:raise ValueError('图像尺寸或长度异常')
+            picture=Image.frombytes('RGBA',self.native_resolution,raw,'raw','BGRA').convert('RGB');self.valid+=1
         else:
-            picture=Image.new('RGB',(320,180),'#252b36')
+            picture=Image.new('RGB',self.native_resolution,'#252b36')
             ImageDraw.Draw(picture).text((20,75),'INVALID FRAME: '+str(camera['reason']),fill='white')
         row={'frame':event.frame_id,'sim_time':event.sim_time,'valid':camera['valid'],'reason':camera['reason'],
              'wall_elapsed_s':time.monotonic()-self.started,'raw_bgra_sha256':hashlib.sha256(raw).hexdigest() if raw else None,
-             'camera_base64_sha256':hashlib.sha256(camera['bgra'].encode()).hexdigest() if raw else None,
+             'camera_base64_sha256':(camera.get('transport_sha256') or hashlib.sha256(camera['bgra'].encode()).hexdigest()) if raw else None,
+             'encoding':camera.get('encoding','base64_bgra'),'native_resolution':self.native_resolution,
              'control':{key:getattr(control,key) for key in ('throttle','brake','steer')}}
         self.records.write(json.dumps(row,ensure_ascii=False,allow_nan=False)+'\n');self.records.flush()
         self.last=(picture,row)
@@ -47,7 +50,7 @@ class FrameArchive:
         self.images.append({**row,'image':name,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
                             'save_reason':reason,'kind':'camera_rgb' if row['valid'] else 'invalid_placeholder'})
         manifest={'source':'预览帧记录.jsonl','source_sha256':hashlib.sha256((self.output/'预览帧记录.jsonl').read_bytes()).hexdigest(),
-                  'images':self.images,'native_resolution':[320,180],'smoothing':False}
+                  'images':self.images,'native_resolution':self.native_resolution,'smoothing':False}
         (self.output/'预览图片来源.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
 
     def close(self):
@@ -64,7 +67,7 @@ class LivePreview:
         self.root.configure(bg='#111827');self.root.resizable(False,False)
         self.root.protocol('WM_DELETE_WINDOW',self.request_stop)
         tk.Label(self.root,text='OccluActiSafe  仿真观察',font=('Microsoft YaHei UI',18,'bold'),bg='#111827',fg='white').pack(pady=(12,4))
-        tk.Label(self.root,text='N12 同步诊断 · 车辆保持制动 · 相机原始分辨率 320×180',bg='#111827',fg='#a7b4c9').pack()
+        tk.Label(self.root,text='N12 同步诊断 · 车辆保持制动 · 独立跟车相机 1280×720',bg='#111827',fg='#a7b4c9').pack()
         self.photo=ImageTk.PhotoImage(Image.new('RGB',(960,540),'#252b36'))
         self.image_label=tk.Label(self.root,bg='#252b36',image=self.photo,width=960,height=540);self.image_label.pack(padx=16,pady=10)
         self.status=tk.Label(self.root,text='正在连接 CARLA…',font=('Microsoft YaHei UI',11),bg='#111827',fg='#a7b4c9')
@@ -72,7 +75,7 @@ class LivePreview:
         buttons=tk.Frame(self.root,bg='#111827');buttons.pack(pady=(4,12))
         tk.Button(buttons,text='保存画面 (F12)',command=lambda:self.archive.save(),width=18).pack(side='left',padx=8)
         self.stop=tk.Button(buttons,text='停止并清理 (Esc)',command=self.request_stop,width=18);self.stop.pack(side='left',padx=8)
-        self.archive=FrameArchive(output,interval=interval);self.stop_requested=False;self.destroyed=False;self.complete=False
+        self.archive=FrameArchive(output,interval=interval,native_resolution=(1280,720));self.stop_requested=False;self.destroyed=False;self.complete=False
         self.next_frame=time.monotonic();self.render_count=0;self.pump()
         self.root.bind('<F12>',lambda _:self.archive.save());self.root.bind('<Escape>',lambda _:self.request_stop())
         (self.output/'预览窗口.json').write_text(json.dumps({'title':title,'window_id':self.root.winfo_id(),'pid':os.getpid()},ensure_ascii=False),encoding='utf-8')
@@ -96,7 +99,7 @@ class LivePreview:
     def update(self,event,camera,control,total):
         picture,row=self.archive.update(event,camera,control)
         if self.destroyed:return
-        self.photo=self.ImageTk.PhotoImage(picture.resize((960,540),Image.Resampling.NEAREST))
+        self.photo=self.ImageTk.PhotoImage(picture.resize((960,540),Image.Resampling.LANCZOS))
         self.image_label.configure(image=self.photo,width=960,height=540)
         state='图像有效' if row['valid'] else '图像无效：'+str(row['reason'])
         self.status.configure(text=f'帧 {event.frame_id}  |  仿真 {event.sim_time:.2f} s  |  {self.archive.count}/{total}  |  {state}',

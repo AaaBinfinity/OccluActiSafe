@@ -1,5 +1,7 @@
 """核心端的显式白名单：不会接收真值或未来帧。"""
 import base64
+import hashlib
+import zlib
 from occluactisafe.common.schemas import ControlResult, TickEvent
 from occluactisafe.core.safety_monitor import check_control
 
@@ -30,3 +32,24 @@ def stationary_control(event, index):
     check_control(action)
     return ControlResult(str(index), 'stationary', 'success', True, event.clock_domain,
                          event.sim_time, event.sim_time + 1.0, **action, fallback_reason=None)
+
+
+def decode_preview_tick(message):
+    """可视诊断传输层解复用；核心观测仍经过原始严格白名单。"""
+    if not isinstance(message,dict) or set(message)!={'observation','display'}:raise ValueError('可视传输字段非法')
+    event,camera=decode_tick(message['observation'])
+    display=message['display']
+    if not isinstance(display,dict) or set(display)!={'frame','valid','width','height','encoding','data','reason'}:
+        raise ValueError('显示相机字段非法')
+    if type(display['frame']) is not int or display['frame']!=event.frame_id or type(display['valid']) is not bool or display['encoding']!='zlib_bgra':
+        raise ValueError('显示相机帧或编码非法')
+    raw=None;digest=None
+    if display['valid']:
+        if (display['width'],display['height'])!=(1280,720) or display['reason'] is not None:raise ValueError('显示相机尺寸非法')
+        compressed=base64.b64decode(display['data'],validate=True);decoder=zlib.decompressobj()
+        raw=decoder.decompress(compressed,1280*720*4+1)
+        if len(raw)!=1280*720*4 or not decoder.eof or decoder.unconsumed_tail or decoder.unused_data:raise ValueError('显示相机解压长度非法')
+        digest=hashlib.sha256(display['data'].encode()).hexdigest()
+    elif any(display[key] is not None for key in ('data','width','height')) or display['reason'] not in ('timeout','closed'):
+        raise ValueError('显示无效帧携带数据')
+    return event,camera,{**display,'raw_bgra':raw,'transport_sha256':digest}

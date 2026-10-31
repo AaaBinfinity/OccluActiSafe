@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from occluactisafe.common.schemas import AdvanceRequest, TickEvent
 from occluactisafe.common.run_manifest import _source_identity
-from occluactisafe.simulation.observation_adapter import decode_tick, stationary_control
+from occluactisafe.simulation.observation_adapter import decode_tick, decode_preview_tick, stationary_control
 
 
 def poll_message(conn,timeout,preview):
@@ -74,6 +74,7 @@ def run(args):
               'rpc_timeout_s': 5.0,
               'recovery_budget_s': 12.0, 'cleanup_rpc_s': .5,
               'visualize':args.visualize,'snapshot_every':args.snapshot_every,'preview_hz':20 if args.visualize else None,
+              'display_resolution':[1280,720] if args.visualize else None,'display_transport':'zlib_bgra' if args.visualize else None,
               'bridge_python': str(args.bridge_python.resolve()), 'core_python': str(Path(sys.executable).resolve()),
               'fault_test': args.fault_test}
     (output / '运行配置.json').write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -136,7 +137,9 @@ def run(args):
                     request = AdvanceRequest('1.0', run_id, 'episode-1', 1, frame + 1, 'carla', sim_time, sim_time + 1.0, control)
                     conn.send_bytes(json.dumps({'kind': 'advance', 'request': request.to_dict()}, allow_nan=False).encode())
                     if not poll_message(conn,30,preview): raise TimeoutError('等待 tick 超时')
-                    event, camera = decode_tick(json.loads(conn.recv_bytes(maxlength=2_000_000)))
+                    message=json.loads(conn.recv_bytes(maxlength=8_000_000 if preview else 2_000_000))
+                    if preview:event,camera,display=decode_preview_tick(message)
+                    else:event,camera=decode_tick(message)
                     if (event.run_id, event.episode_id, event.generation, event.clock_domain, event.frame_id) != (run_id, 'episode-1', 1, 'carla', frame + 1):
                         raise RuntimeError('tick 身份或帧号错误')
                     if abs((event.sim_time - sim_time) - .05) > 1e-4: raise RuntimeError('仿真步长异常')
@@ -144,7 +147,7 @@ def run(args):
                     records.write(json.dumps({'frame': event.frame_id, 'sim_time': event.sim_time, 'camera_valid': camera['valid'],
                                               'camera_reason': camera['reason'], 'camera_base64_sha256': hashlib.sha256(raw).hexdigest() if raw else None,
                                               'control':{key:getattr(request.control,key) for key in ('throttle','brake','steer')}}) + '\n'); records.flush()
-                    if preview:preview.update(event,camera,request.control,args.ticks)
+                    if preview:preview.update(event,display,request.control,args.ticks)
                     frame, sim_time = event.frame_id, event.sim_time
                     if index == 0:
                         rejected = []

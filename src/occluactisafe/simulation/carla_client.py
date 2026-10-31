@@ -5,6 +5,7 @@ import os
 from multiprocessing.connection import Client
 from pathlib import Path
 import sys
+import zlib
 
 from occluactisafe.simulation.runner import SynchronousRunner
 from occluactisafe.simulation.sensors import FrameBuffer
@@ -25,7 +26,7 @@ def main():
         client_version = client.get_client_version(); server_version = client.get_server_version()
         if client_version != '0.9.16' or server_version != client_version:
             raise RuntimeError(f'CARLA 版本不匹配：{client_version}/{server_version}')
-        frames = FrameBuffer(); truth = TruthLogger(Path(config['output']) / '评测真值.jsonl')
+        frames = FrameBuffer();display_frames=FrameBuffer(); truth = TruthLogger(Path(config['output']) / '评测真值.jsonl')
         try:
             def destroy_owned(actor):
                 # 刚生成且尚未 tick 的 actor 可能不在客户端快照中；按本次持有的 ID 发不推进帧的销毁命令。
@@ -48,7 +49,8 @@ def main():
                                    prepare_cleanup=client.set_timeout,
                                    recovery_budget_s=config.get('recovery_budget_s',12.),cleanup_rpc_s=.5) as runner:
                 ego = runner.spawn_ego_and_camera(carla, frames)
-                if config.get('visualize',False):runner.follow_ego(carla,ego)
+                if config.get('visualize',False):
+                    runner.spawn_preview_camera(carla,ego,display_frames);runner.follow_ego(carla,ego)
                 client.set_timeout(config.get('rpc_timeout_s', 5.0))
                 send(conn, {'kind': 'ready', 'client_version': client_version, 'server_version': server_version,
                             'frame': runner.frame, 'sim_time': runner.sim_time})
@@ -79,10 +81,21 @@ def main():
                         camera = {'frame': sensor['frame'], 'valid': False, 'width': None, 'height': None,
                                   'bgra': None, 'reason': sensor['reason']}
                     truth.log_ego(event['frame_id'], ego)
-                    send(conn, {'event': event, 'camera': camera})
+                    observation={'event':event,'camera':camera}
+                    if config.get('visualize',False):
+                        display=display_frames.get(event['frame_id'],config['sensor_timeout_s'])
+                        if display['valid']:
+                            image=display['value']
+                            picture={'frame':image.frame,'valid':True,'width':image.width,'height':image.height,
+                                     'encoding':'zlib_bgra','data':base64.b64encode(zlib.compress(image.raw_data,1)).decode('ascii'),'reason':None}
+                        else:
+                            picture={'frame':display['frame'],'valid':False,'width':None,'height':None,
+                                     'encoding':'zlib_bgra','data':None,'reason':display['reason']}
+                        send(conn,{'observation':observation,'display':picture})
+                    else:send(conn,observation)
             send(conn, {'kind': 'closed'})
         finally:
-            frames.close(); truth.close()
+            frames.close();display_frames.close(); truth.close()
 
 
 if __name__ == '__main__':

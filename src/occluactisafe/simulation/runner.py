@@ -59,6 +59,14 @@ class SynchronousRunner:
         if self._closed: raise RuntimeError('runner已关闭')
         self._owned.append(actor)
 
+    def spawn_preview_camera(self,carla,ego,frames):
+        """独立720p跟车显示相机，核心320×180相机保持原配置。"""
+        blueprint=self._world.get_blueprint_library().find('sensor.camera.rgb')
+        for name,value in {'role_name':self._role,'image_size_x':'1280','image_size_y':'720','sensor_tick':'0.05'}.items():
+            blueprint.set_attribute(name,value)
+        camera=self._world.spawn_actor(blueprint,carla.Transform(carla.Location(x=-7,z=4),carla.Rotation(pitch=-18)),attach_to=ego)
+        self.register_owned(camera);camera.listen(lambda image:frames.put(image.frame,image))
+
     def follow_ego(self,carla,ego):
         """仅供可视诊断；自车位姿不送入核心，旁观者不推进世界。"""
         spectator=self._world.get_spectator()

@@ -121,7 +121,9 @@ def suite(args,output):
                                 assert any(item['save_reason']=='手动' for item in archive['images'])
                                 timing=[json.loads(line) for line in (run/'预览帧记录.jsonl').read_text(encoding='utf-8').splitlines()]
                                 assert timing[-1]['wall_elapsed_s']-timing[0]['wall_elapsed_s']>=19.8
-                                assert any(not row['valid'] for row in timing)
+                                for row in timing:
+                                    if not row['valid']:assert row['raw_bgra_sha256'] is None
+                                assert archive['native_resolution']==[1280,720]
                             else:assert 30<=len(rows)<400 and preview['stopped_by_user']
                         entry['passed']=True
                     except Exception as exc:entry.update(passed=False,error=repr(exc))
