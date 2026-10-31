@@ -158,12 +158,15 @@ def run_episode(client,output,config):
             request={'schema_version':'1.0','run_id':run_id,'episode_id':config['scenario_id'],'generation':1,
                 'target_frame_id':runner.frame+1,'clock_domain':'carla-n14','request_time':now,'valid_until':now+1,'control':control}
             def apply(c):
-                ego.apply_control(carla.VehicleControl(throttle=c.throttle,brake=c.brake,steer=c.steer))
-                target.apply_control(carla.VehicleControl(**target_action))
-                if moving:obstacle.apply_control(carla.VehicleControl(**(occluder_action or {'throttle':0.,'brake':1.,'steer':0.})))
+                commands=[carla.command.ApplyVehicleControl(ego.id,carla.VehicleControl(throttle=c.throttle,brake=c.brake,steer=c.steer)),
+                          carla.command.ApplyVehicleControl(target.id,carla.VehicleControl(**target_action))]
+                if moving:commands.append(carla.command.ApplyVehicleControl(obstacle.id,carla.VehicleControl(**(occluder_action or {'throttle':0.,'brake':1.,'steer':0.}))))
+                responses=client.apply_batch_sync(commands,False)
+                if any(r.error for r in responses):raise RuntimeError('车辆控制批次失败：'+str([r.error for r in responses]))
             runner.advance(json.dumps(request),apply_control=apply)
         held={'throttle':0.,'brake':1.,'steer':0.}
         for _ in range(30):advance(held,held)
+        settled={'ego':ego.get_transform(),'target':target.get_transform(),'occluder':obstacle.get_transform()}
         if moving:
             # 三车均位于同向合法驾驶车道；只在初始化阶段预热大车动力。
             lane_metadata={}
@@ -198,15 +201,18 @@ def run_episode(client,output,config):
             if min(math.hypot(a.get_velocity().x,a.get_velocity().y) for a in (ego,target))>=config['speed_mps']:break
             full={'throttle':1.,'brake':0.,'steer':0.};advance(full,full,truck_driver.step(state(obstacle),initializing=True) if moving else None)
         else:raise RuntimeError('动力预热未达到初速')
+        initial_commands=[]
         for actor,name in ((ego,'ego'),(target,'target')):
-            if not config.get('probe_static',False):actor.set_transform(transform(config[name+'_spawn']))
+            if not config.get('probe_static',False):initial_commands.append(carla.command.ApplyTransform(actor.id,settled[name]))
             yaw=math.radians(config[name+'_spawn']['yaw']);initial_speed=0. if config.get('probe_static',False) else config['speed_mps']
-            actor.set_target_velocity(carla.Vector3D(x=initial_speed*math.cos(yaw),y=initial_speed*math.sin(yaw)))
-            actor.set_target_angular_velocity(carla.Vector3D())
+            initial_commands.append(carla.command.ApplyTargetVelocity(actor.id,carla.Vector3D(x=initial_speed*math.cos(yaw),y=initial_speed*math.sin(yaw))))
+            initial_commands.append(carla.command.ApplyTargetAngularVelocity(actor.id,carla.Vector3D()))
         if moving:
-            obstacle.set_transform(transform(config['occluder']));yaw=math.radians(config['occluder']['yaw'])
-            obstacle.set_target_velocity(carla.Vector3D(x=config['speed_mps']*math.cos(yaw),y=config['speed_mps']*math.sin(yaw)))
-            obstacle.set_target_angular_velocity(carla.Vector3D())
+            initial_commands.append(carla.command.ApplyTransform(obstacle.id,settled['occluder']));yaw=math.radians(config['occluder']['yaw'])
+            initial_commands.append(carla.command.ApplyTargetVelocity(obstacle.id,carla.Vector3D(x=config['speed_mps']*math.cos(yaw),y=config['speed_mps']*math.sin(yaw))))
+            initial_commands.append(carla.command.ApplyTargetAngularVelocity(obstacle.id,carla.Vector3D()))
+            truck_driver=OccluderDriver(config['occluder'],config['conflict_xy'],**config['occluder_motion'])
+        if any(r.error for r in client.apply_batch_sync(initial_commands,False)):raise RuntimeError('初始化复位批次失败')
         normal=held if config.get('probe_static',False) else {'throttle':.53,'brake':0.,'steer':0.};advance(normal,normal,truck_driver.step(state(obstacle),initializing=True) if moving else None)
         if target.id>=65536:raise RuntimeError('实例相机16位ID范围不足，拒绝混淆实例')
         (output/'评测对象身份.json').write_text(json.dumps({'ego_actor_id':ego.id,'target_actor_id':target.id,
