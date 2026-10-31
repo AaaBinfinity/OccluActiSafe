@@ -2502,6 +2502,34 @@
       "bytes": 56507,
       "plot_manifest_original_path": "n11_pipeline_checks/d588f3a7eb5b4481b291770bc3cb88a2/plot_rebuild/plot_manifest.json",
       "plot_manifest_sha256": "39a770d3afccb71164bfdcfbc0c6f2eae3c22caa4fb89effb3d8a469fbc67c43"
+    },
+    {
+      "original_artifact_path": "n12/n12_20261031_135820_823953/帧时序与传感器有效性.png",
+      "artifact_path": "n12/n12_20261031_135820_823953/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12/n12_20261031_135820_823953/帧时序与传感器有效性.png",
+      "sha256": "367890c62061760c5ec5291fd84bc6d758a8a4ae55f92d3b732ad00af7f5b8f5",
+      "bytes": 47534
+    },
+    {
+      "original_artifact_path": "n12/n12_20261031_135820_823953/帧时序与传感器有效性.svg",
+      "artifact_path": "n12/n12_20261031_135820_823953/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12/n12_20261031_135820_823953/帧时序与传感器有效性.svg",
+      "sha256": "ee05830e697a05a735eda3aaf3bdb731027fcd8afe17054ef55ac8406db4897d",
+      "bytes": 32027
+    },
+    {
+      "original_artifact_path": "n12/n12_20261031_140112_164740/帧时序与传感器有效性.png",
+      "artifact_path": "n12/n12_20261031_140112_164740/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12/n12_20261031_140112_164740/帧时序与传感器有效性.png",
+      "sha256": "5fe4d02fca09dd2288f1aea051a155d2c4cc92e5f0383d0d9ddc8f9341bd425a",
+      "bytes": 48802
+    },
+    {
+      "original_artifact_path": "n12/n12_20261031_140112_164740/帧时序与传感器有效性.svg",
+      "artifact_path": "n12/n12_20261031_140112_164740/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12/n12_20261031_140112_164740/帧时序与传感器有效性.svg",
+      "sha256": "43ee359023e4c54b99c11b60d2c0cb6b8f4004a8fc360c767d584c24dba6785f",
+      "bytes": 32158
     }
   ]
 }
