@@ -234,6 +234,15 @@ __marimo__/
 /outputs/
 /checkpoints/
 
+# 过程图保存在移动硬盘，仓库仅留说明与位置/哈希摘要。
+/docs/过程图/**/*.png
+/docs/过程图/**/*.svg
+/docs/过程图/**/*.jpg
+/docs/过程图/**/*.jpeg
+/docs/过程图/**/*.webp
+/docs/过程图/**/*.gif
+/docs/过程图/**/.图片清单-*.tmp
+
 # 图形工具与后续前端的本地依赖
 node_modules/
 npm-debug.log*
