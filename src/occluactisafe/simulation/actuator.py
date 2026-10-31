@@ -128,7 +128,8 @@ def run(output):
                             check=case['check']; actuator=CalibratedActuator(config['calibration'],**config['controller_parameters'])
                             if ego.type_id != config['calibration']['vehicle_blueprint']:
                                 raise ValueError('实际蓝图与标定表不一致')
-                        for i in range(config['response_ticks']):
+                        response_ticks=case['check'].get('response_ticks',config['response_ticks']) if case['kind']=='controller' else config['response_ticks']
+                        for i in range(response_ticks):
                             value=case['value']; kind=case['kind']
                             controller=None
                             if kind=='controller':
