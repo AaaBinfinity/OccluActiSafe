@@ -88,6 +88,8 @@ class FusionHistory:
     def begin_episode(self, episode_id, clock_domain, *, receiver_policy=None):
         for value in (episode_id, clock_domain):
             if not isinstance(value, str) or not value.strip(): raise ValueError("episode/时钟域不能为空")
+        if hasattr(self, "episode_id") and (episode_id == self.episode_id or clock_domain == self.clock_domain):
+            raise ValueError("新episode必须使用不同的episode_id和clock_domain，防止旧包跨episode重放")
         if receiver_policy is not None:
             if (not isinstance(receiver_policy, ReceiverPolicy) or receiver_policy.clock_domain != clock_domain
                     or receiver_policy.map_id != self.map_id or receiver_policy.map_version != self.map_version

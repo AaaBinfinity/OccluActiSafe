@@ -35,7 +35,8 @@ def packet(tracks, *, at=None, available=None):
     tracks = tuple(tracks)
     observed = max((t.observation_time for t in tracks), default=1.) if at is None else at
     ready = max([observed, *(t.source_available_time for t in tracks)]) if available is None else available
-    return ObservationPacket("map-A", "1", "map-right-handed", 0, DOMAIN, observed, ready, tracks)
+    domain = tracks[0].clock_domain if tracks else DOMAIN
+    return ObservationPacket("map-A", "1", "map-right-handed", 0, domain, observed, ready, tracks)
 
 
 def engine(**kwargs):
@@ -190,9 +191,14 @@ class CausalHistoryTests(unittest.TestCase):
         a = e.step(now(1), [packet(records)])
         self.assertEqual(len(a.agents), 3)
         self.assertEqual(len({tuple(s["key"]) for s in flattened(a)}), 3)
-        e.begin_episode("episode-2", DOMAIN)
-        self.assertEqual(e.step(now(0)).agents, ())
-        b = e.step(now(1), [packet([records[0]])])
+        with self.assertRaises(ValueError): e.begin_episode("episode-2", DOMAIN)
+        new_domain = DOMAIN + "-episode-2"
+        e.begin_episode("episode-2", new_domain)
+        self.assertEqual(e.step(Timestamp(0, new_domain)).agents, ())
+        old = e.step(Timestamp(1, new_domain), [packet(records)])
+        self.assertFalse(old.agents)
+        self.assertTrue(any(v["reason"] == "packet_clock_mismatch" for v in old.events))
+        b = e.step(Timestamp(1, new_domain), [packet([replace(records[0], clock_domain=new_domain)])])
         self.assertTrue(b.agents[0]["unified_id"].startswith("episode-2/"))
         self.assertEqual(len(flattened(b)[0]["history"]), 1)
 
@@ -282,8 +288,15 @@ class CausalHistoryTests(unittest.TestCase):
         repeated = e.step(now(1.3), received=[record])
         self.assertEqual(flattened(repeated)[0]["measurement_updates"], 1)
         self.assertTrue(any(v["reason"] == "receive_duplicate_or_out_of_order" for v in repeated.events))
-        e.begin_episode("episode-2", DOMAIN, receiver_policy=policy)
-        self.assertEqual(len(e.step(now(1.2), received=[record]).agents), 1)
+        new_domain = DOMAIN + "-episode-2"
+        new_policy = ReceiverPolicy("edge", "map-A", "1", "map-right-handed", new_domain, {"vehicle": "session-1"})
+        e.begin_episode("episode-2", new_domain, receiver_policy=new_policy)
+        old = e.step(Timestamp(1.2, new_domain), received=[record])
+        self.assertFalse(old.agents)
+        self.assertTrue(any(v["reason"] == "receive_clock_domain_mismatch" for v in old.events))
+        fresh = replace(msg, clock_domain=new_domain, tracks=(replace(tr, clock_domain=new_domain),))
+        new_record = ReceivedMessage(fresh, 1.1, 1.2, new_domain)
+        self.assertEqual(len(e.step(Timestamp(1.2, new_domain), received=[new_record]).agents), 1)
 
     def test_conflicting_received_replays_reject_all_independent_of_order(self):
         policy = ReceiverPolicy("edge", "map-A", "1", "map-right-handed", DOMAIN, {"vehicle": "session-1"})

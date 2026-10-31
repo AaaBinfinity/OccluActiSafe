@@ -238,8 +238,11 @@ def run_diagnostics(config):
         _json(directory / "duplicate_case.json", duplicate.to_dict())
         check("duplicates_no_new_history", all(v["measurement_updates"] == 1 and len(v["history"]) == 1 for a in duplicate.agents for v in a["sources"]),
               {"duplicate_events": sum(e["reason"] == "duplicate_or_out_of_order" for e in duplicate.events)})
-        repeat.begin_episode(config["episode_id"] + "-new", config["clock_domain"])
-        check("episode_reset", not repeat.step(stamp(0)).agents, "empty new episode")
+        new_domain = config["clock_domain"] + "-new"
+        repeat.begin_episode(config["episode_id"] + "-new", new_domain)
+        reset_result = repeat.step(Timestamp(1.02, new_domain), base)
+        check("episode_reset", not reset_result.agents and all(e["reason"] == "packet_clock_mismatch" for e in reset_result.events),
+              {"new_episode_empty": not reset_result.agents, "old_packets_rejected": len(reset_result.events)})
         expired = engine.step(stamp(6.02)); _json(directory / "retention_expiry.json", expired.to_dict())
         check("memory_expiry_explicit", not expired.agents and any(e["reason"] == "retention_expired" for e in expired.events), "expired state is not a safety claim")
         stationary = _track(config, "vehicle", "low-speed", 1., 0., 0., 0., 0.)
