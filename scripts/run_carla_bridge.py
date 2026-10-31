@@ -31,7 +31,10 @@ def main():
     if args.ticks < 1 or not 0 <= args.sensor_timeout <= 10: raise ValueError('tick 数或传感器等待非法')
     run_id = datetime.now().strftime('n12_%Y%m%d_%H%M%S_%f')
     output = args.output_root.resolve() / run_id; output.mkdir(parents=True, exist_ok=False)
-    config = {'host': args.host, 'port': args.port, 'run_id': run_id, 'output': str(output), 'sensor_timeout_s': args.sensor_timeout}
+    config = {'host': args.host, 'port': args.port, 'run_id': run_id, 'output': str(output),
+              'sensor_timeout_s': args.sensor_timeout, 'ticks': args.ticks, 'fixed_delta_s': .05,
+              'bridge_python': str(args.bridge_python.resolve()), 'core_python': str(Path(sys.executable).resolve()),
+              'fault_test': args.fault_test}
     (output / '运行配置.json').write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
     auth = secrets.token_bytes(32)
     listener = Listener(('127.0.0.1', 0), authkey=auth)
@@ -45,7 +48,9 @@ def main():
         try:
             with listener.accept() as conn, (output / '时序.jsonl').open('x', encoding='utf-8') as records:
                 if not conn.poll(45): raise TimeoutError('CARLA 握手超时')
-                ready = json.loads(conn.recv_bytes());
+                try: ready = json.loads(conn.recv_bytes())
+                except EOFError as exc:
+                    raise RuntimeError(f'桥接在握手前退出；确认服务端可用并检查 {output / "桥接日志.txt"}') from exc
                 if set(ready) != {'kind', 'client_version', 'server_version', 'frame', 'sim_time'} or ready['kind'] != 'ready':
                     raise ValueError('桥接握手非法')
                 (output / '握手.json').write_text(json.dumps(ready, ensure_ascii=False, indent=2), encoding='utf-8')

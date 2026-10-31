@@ -51,6 +51,16 @@ class BridgeMechanismTests(unittest.TestCase):
             self.assertEqual(world.calls,0)
         self.assertTrue(own.destroyed);self.assertFalse(other.destroyed);self.assertFalse(world.current.synchronous_mode)
 
+    def test_stop_failure_still_attempts_destroy_and_restore(self):
+        world=FixtureWorld(); own=SimpleNamespace(destroyed=False)
+        def stop(): raise RuntimeError('stop failed')
+        def destroy(): own.destroyed=True
+        own.stop=stop; own.destroy=destroy
+        runner=SynchronousRunner(world,run_id='run',episode_id='episode',generation=1,clock_domain='sim-n12')
+        runner.register_owned(own)
+        with self.assertRaisesRegex(RuntimeError,'stop failed'): runner.close()
+        self.assertTrue(own.destroyed); self.assertFalse(world.current.synchronous_mode)
+
     def test_future_frame_never_fills_missing_current(self):
         b=FrameBuffer(capacity=2);b.put(3,'future')
         result=b.get(2,.001);self.assertFalse(result['valid']);self.assertEqual(result['reason'],'timeout')
