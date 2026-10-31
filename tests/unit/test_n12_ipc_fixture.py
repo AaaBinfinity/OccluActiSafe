@@ -77,6 +77,8 @@ class BridgeIPCTests(unittest.TestCase):
                 thread.join(timeout=5); self.assertFalse(thread.is_alive()); self.assertEqual(errors,[])
             truth=json.loads((Path(directory)/'评测真值.jsonl').read_text(encoding='utf-8'))
             self.assertEqual(truth['frame'],11); self.assertTrue(all(actor.destroyed for actor in world.actors))
+            cleanup=json.loads((Path(directory)/'清理报告.json').read_text(encoding='utf-8'))
+            self.assertEqual(cleanup['status'],'completed'); self.assertTrue(cleanup['settings_restored'])
             self.assertFalse(world.settings.synchronous_mode); self.assertIsNone(world.settings.fixed_delta_seconds)
 
 

@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--output-root', type=Path, default=Path('H:/OccluActiSafeDataset/artifacts/n12'))
     parser.add_argument('--host', default='127.0.0.1'); parser.add_argument('--port', type=int, default=2000)
     parser.add_argument('--ticks', type=int, default=200); parser.add_argument('--sensor-timeout', type=float, default=0.5)
-    parser.add_argument('--fault-test', choices=('disconnect', 'timeout', 'exception'), default=None,
+    parser.add_argument('--fault-test', choices=('disconnect', 'timeout', 'exception', 'server_loss'), default=None,
                         help='仅供真实服务的清理验证使用')
     args = parser.parse_args()
     if not args.bridge_python.is_file(): raise FileNotFoundError(f'桥接 Python 不存在：{args.bridge_python}')
@@ -35,6 +35,7 @@ def main():
     output = args.output_root.resolve() / run_id; output.mkdir(parents=True, exist_ok=False)
     config = {'host': args.host, 'port': args.port, 'run_id': run_id, 'output': str(output),
               'sensor_timeout_s': args.sensor_timeout, 'ticks': args.ticks, 'fixed_delta_s': .05,
+              'rpc_timeout_s': 5.0,
               'bridge_python': str(args.bridge_python.resolve()), 'core_python': str(Path(sys.executable).resolve()),
               'fault_test': args.fault_test}
     (output / '运行配置.json').write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -61,6 +62,16 @@ def main():
                     raise ValueError('桥接握手非法')
                 (output / '握手.json').write_text(json.dumps(ready, ensure_ascii=False, indent=2), encoding='utf-8')
                 if args.fault_test:
+                    if args.fault_test == 'server_loss':
+                        deadline=time.monotonic()+30
+                        while time.monotonic() < deadline:
+                            conn.send_bytes(b'{"kind":"probe_server"}')
+                            if not conn.poll(20): raise TimeoutError('服务端探测未返回')
+                            try: alive=json.loads(conn.recv_bytes())
+                            except EOFError as exc: raise RuntimeError('服务端探测失败，详见清理报告和桥接日志') from exc
+                            if alive != {'kind':'server_alive','version':'0.9.16'}: raise RuntimeError('服务端探测响应非法')
+                            time.sleep(.2)
+                        raise RuntimeError('未观察到服务端失联，故障注入未完成')
                     if args.fault_test == 'disconnect': conn.close()
                     elif args.fault_test == 'exception': conn.send_bytes(b'{"kind":"invalid"}')
                     else: time.sleep(32)
@@ -107,6 +118,8 @@ def main():
             try: process.wait(timeout=40)
             except subprocess.TimeoutExpired:
                 process.terminate(); process.wait(timeout=10)
+            (output / '进程退出.json').write_text(json.dumps({'bridge_exit_code':process.returncode,
+                'bridge_exit_hex':f'0x{process.returncode & 0xffffffff:08X}'},ensure_ascii=False,indent=2),encoding='utf-8')
             if process.returncode: print(f'桥接进程退出码 {process.returncode}，详见 {output / "桥接日志.txt"}', file=sys.stderr)
     if process.returncode: raise RuntimeError('桥接进程异常退出')
     # 原始逐帧记录为依据；图表只保存至移动硬盘，不能替代 JSONL。

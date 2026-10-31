@@ -1,7 +1,9 @@
 """N12独立同步机制夹具；不替代真实CARLA 200 tick验收。"""
 from dataclasses import dataclass
 import ast
+import json
 from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 import unittest
 from occluactisafe.common.schemas import AdvanceRequest, ControlResult, TickEvent
@@ -60,6 +62,21 @@ class BridgeMechanismTests(unittest.TestCase):
         runner.register_owned(own)
         with self.assertRaisesRegex(RuntimeError,'stop failed'): runner.close()
         self.assertTrue(own.destroyed); self.assertFalse(world.current.synchronous_mode)
+
+    def test_unavailable_server_persists_failed_cleanup_without_claiming_restore(self):
+        world=FixtureWorld()
+        def unavailable(*args): raise RuntimeError('server unavailable')
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'清理报告.json'
+            runner=SynchronousRunner(world,run_id='run',episode_id='episode',generation=1,
+                                     clock_domain='sim-n12',cleanup_path=path)
+            runner.register_owned(SimpleNamespace(id=42,destroy=unavailable))
+            world.apply_settings=unavailable
+            with self.assertRaisesRegex(RuntimeError,'server unavailable'): runner.close()
+            report=json.loads(path.read_text(encoding='utf-8'))
+            self.assertEqual(report['status'],'failed'); self.assertFalse(report['settings_restored'])
+            self.assertEqual(report['actors'][0]['actor_id'],42)
+            self.assertFalse(report['actors'][0]['destroyed']); self.assertEqual(len(report['errors']),2)
 
     def test_future_frame_never_fills_missing_current(self):
         b=FrameBuffer(capacity=2);b.put(3,'future')

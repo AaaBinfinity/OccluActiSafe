@@ -33,8 +33,10 @@ def main():
                 if response.error: raise RuntimeError(f'actor {actor.id} 销毁失败：{response.error}')
                 return True
             with SynchronousRunner(client.get_world(), run_id=config['run_id'], episode_id='episode-1',
-                                   generation=1, clock_domain='carla', destroy_owned=destroy_owned) as runner:
+                                   generation=1, clock_domain='carla', destroy_owned=destroy_owned,
+                                   cleanup_path=Path(config['output']) / '清理报告.json') as runner:
                 ego = runner.spawn_ego_and_camera(carla, frames)
+                client.set_timeout(config.get('rpc_timeout_s', 5.0))
                 send(conn, {'kind': 'ready', 'client_version': client_version, 'server_version': server_version,
                             'frame': runner.frame, 'sim_time': runner.sim_time})
                 while True:
@@ -42,6 +44,9 @@ def main():
                     try: message = json.loads(conn.recv_bytes(maxlength=2_000_000))
                     except EOFError: break
                     if message == {'kind': 'close'}: break
+                    if message == {'kind': 'probe_server'}:
+                        send(conn, {'kind': 'server_alive', 'version': client.get_server_version()})
+                        continue
                     if not isinstance(message, dict) or set(message) != {'kind', 'request'} or message['kind'] != 'advance':
                         raise ValueError('未知 IPC 请求')
                     def apply_control(control):
