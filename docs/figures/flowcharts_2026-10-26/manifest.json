@@ -6,32 +6,32 @@
   ],
   "figures": [
     {
-      "id": "01_overall",
+      "id": "01_总体技术路线",
       "title": "总体技术路线",
       "svg_sha256": "c8e20db89aa77d648bb7207d9756eeded6b8fb5b564cbd4bff2392494ad3bd66"
     },
     {
-      "id": "02_cooperative_perception",
+      "id": "02_车路协同感知",
       "title": "车路感知与通信流程",
       "svg_sha256": "f52b211a53c5a7a35a32207626906a99cc2e241849bdf45bd7e4aa24740e0859"
     },
     {
-      "id": "03_transformer",
+      "id": "03_轨迹预测模型",
       "title": "RC-STGT 多模态预测结构",
       "svg_sha256": "57e7872fd685841e4c0a9f30047e1569b832d84cf4567e7f249723d5fdd50bfd"
     },
     {
-      "id": "04_risk_decision",
+      "id": "04_风险评估与避撞决策",
       "title": "碰撞风险与主动避撞决策",
       "svg_sha256": "8ea52069b39bd580dd5469d954ffd60d7eb5c35ec2daf663bf3b90416c12bcf3"
     },
     {
-      "id": "05_mpc",
+      "id": "05_预测控制与执行",
       "title": "MPC 跟踪与失效回退闭环",
       "svg_sha256": "6c339938c214836be9e18d528569683b022e067a2afa4fe31c5b64c14a00ca36"
     },
     {
-      "id": "06_testing",
+      "id": "06_实验与测试",
       "title": "实现测试与研究验证流程",
       "svg_sha256": "3aa335326c6811881fe230e2ef05dfac8bbd38e4439c59e99d2b811771415651"
     }

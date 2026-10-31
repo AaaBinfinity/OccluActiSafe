@@ -2,3 +2,5 @@
 *.pdf binary
 # SVG 清单按仓库原始字节校验，跨平台检出统一保留 LF。
 *.svg text eol=lf
+# 过程图保留运行生成的原始字节及既有哈希，不转换 Windows SVG 行尾。
+docs/过程图/**/*.svg binary

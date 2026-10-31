@@ -6,17 +6,17 @@
     {
       "id": 1,
       "source_path": "/Users/binfinity/.codex/generated_images/01a137f5-41e8-7511-8abe-2bfdc44ef52b/exec-d74d5cdb-52aa-4a73-88b3-2351fa660530.png",
-      "filename": "01_simulation_overview.png"
+      "filename": "01_仿真总览概念图.png"
     },
     {
       "id": 2,
       "source_path": "/Users/binfinity/.codex/generated_images/01a137f5-41e8-7511-8abe-2bfdc44ef52b/exec-fe7e0704-7e2a-4a8b-a1de-79a4c9af1b73.png",
-      "filename": "02_trajectory_decision.png"
+      "filename": "02_轨迹与决策概念图.png"
     },
     {
       "id": 3,
       "source_path": "/Users/binfinity/.codex/generated_images/01a137f5-41e8-7511-8abe-2bfdc44ef52b/exec-0cc61e7f-2d12-4aa3-b5f3-a78339563d69.png",
-      "filename": "03_experiment_evaluation.png"
+      "filename": "03_实验评估概念图.png"
     }
   ],
   "prompts": [

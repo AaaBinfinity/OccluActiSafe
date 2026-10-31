@@ -5,7 +5,7 @@
   "status": "拟议研究方案；流程图不表示模型、控制器或实验已经实现",
   "graphs": [
     {
-      "id": "01_overall",
+      "id": "01_总体技术路线",
       "title": "总体技术路线",
       "subtitle": "公开轨迹验证 + CARLA 视频闭环",
       "caption": "真实轨迹与仿真视频分别提供证据。在线避撞只使用已可用观测；仿真真值进入训练标签与独立评测。",
@@ -38,7 +38,7 @@
       "ranks":[["real","sim"],["freeze","observe"],["step","truth"]]
     },
     {
-      "id": "02_cooperative_perception",
+      "id": "02_车路协同感知",
       "title": "车路感知与通信流程",
       "subtitle": "路侧形成超视野信息，车端保留决策权",
       "caption": "V2I 上传与 I2V 下发分别模拟时延。目标暂时失联时保留有限风险记忆；本地回退无法凭空恢复从未观测到的盲区目标。",
@@ -79,7 +79,7 @@
       "ranks":[["v_sensor","r_sensor"],["v_track","r_track"],["v_ground","r_ground"],["v_filter","r_filter"],["fuse","fallback"]]
     },
     {
-      "id": "03_transformer",
+      "id": "03_轨迹预测模型",
       "title": "RC-STGT 多模态预测结构",
       "subtitle": "拟研究模型：可靠性感知车路协同时空图 Transformer",
       "caption": "形状以仿真起步配置表示，N 为可变车辆数。RC-STGT 为本项目工作名；HiVT 保留为独立基线。未来真值只监督训练损失。",
@@ -109,7 +109,7 @@
       "ranks":[["x","mask"],["spatial","map"],["traj","prob"],["gt","loss"]]
     },
     {
-      "id": "04_risk_decision",
+      "id": "04_风险评估与避撞决策",
       "title": "碰撞风险与主动避撞决策",
       "subtitle": "先检查信息与动作可行性，再选择制动或转向",
       "caption": "不同动作使用同一有效时域。离散车对风险按模式权重求和，多车 max/sum 为评分；不能把它们当作已校准的真实联合概率。",
@@ -142,7 +142,7 @@
       "ranks":[["normal","aeb","aes"]]
     },
     {
-      "id":"05_mpc",
+      "id":"05_预测控制与执行",
       "title":"MPC 跟踪与失效回退闭环",
       "subtitle":"10 Hz 优化 · 20 Hz 执行与本地安全复核",
       "caption":"六状态为 [x,y,ψ,v,a,δ]，控制为 [jerk,转角速率]。外层截止、节点间约束和求解后风险复核均需实现；MPC 本身不保证必然避撞。",
@@ -171,7 +171,7 @@
       ]
     },
     {
-      "id":"06_testing",
+      "id":"06_实验与测试",
       "feedback_side":"w",
       "title":"实现测试与研究验证流程",
       "subtitle":"53 个测试规格是计划，不是已通过的系统结果",

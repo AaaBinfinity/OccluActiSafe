@@ -1,0 +1,87 @@
+[
+  {
+    "original_repo_path": "docs/figures/driver_view_2026-10-26/images/01_incar_blind_junction.png",
+    "path": "docs/figures/driver_view_2026-10-26/images/01_车内视角遮挡路口.png",
+    "sha256": "87d65a6a2a827658df50216c6ac28b1513b8450c15ad0ac5585f90e9965f5aa6"
+  },
+  {
+    "original_repo_path": "docs/figures/driver_view_2026-10-26/images/02_incar_pedestrian_emergence.png",
+    "path": "docs/figures/driver_view_2026-10-26/images/02_车内视角行人鬼探头.png",
+    "sha256": "bb69d156fb1b61ddf51d6140533831e1b334c60288bfc1e5aa181d7bbdd64f82"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_2026-10-26/images/01_overall.svg",
+    "path": "docs/figures/flowcharts_2026-10-26/images/01_总体技术路线.svg",
+    "sha256": "c8e20db89aa77d648bb7207d9756eeded6b8fb5b564cbd4bff2392494ad3bd66"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_2026-10-26/images/02_cooperative_perception.svg",
+    "path": "docs/figures/flowcharts_2026-10-26/images/02_车路协同感知.svg",
+    "sha256": "f52b211a53c5a7a35a32207626906a99cc2e241849bdf45bd7e4aa24740e0859"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_2026-10-26/images/03_transformer.svg",
+    "path": "docs/figures/flowcharts_2026-10-26/images/03_轨迹预测模型.svg",
+    "sha256": "57e7872fd685841e4c0a9f30047e1569b832d84cf4567e7f249723d5fdd50bfd"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_2026-10-26/images/04_risk_decision.svg",
+    "path": "docs/figures/flowcharts_2026-10-26/images/04_风险评估与避撞决策.svg",
+    "sha256": "8ea52069b39bd580dd5469d954ffd60d7eb5c35ec2daf663bf3b90416c12bcf3"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_2026-10-26/images/05_mpc.svg",
+    "path": "docs/figures/flowcharts_2026-10-26/images/05_预测控制与执行.svg",
+    "sha256": "6c339938c214836be9e18d528569683b022e067a2afa4fe31c5b64c14a00ca36"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_2026-10-26/images/06_testing.svg",
+    "path": "docs/figures/flowcharts_2026-10-26/images/06_实验与测试.svg",
+    "sha256": "3aa335326c6811881fe230e2ef05dfac8bbd38e4439c59e99d2b811771415651"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_paper_2026-10-26/images/01_overall.svg",
+    "path": "docs/figures/flowcharts_paper_2026-10-26/images/01_总体技术路线.svg",
+    "sha256": "731463c3b2d6961091369a0e96e071745157c4acf718405605c4eea749515392"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_paper_2026-10-26/images/02_cooperative_perception.svg",
+    "path": "docs/figures/flowcharts_paper_2026-10-26/images/02_车路协同感知.svg",
+    "sha256": "7622a04fdc71122632edcf32f1f24233ea929e89f0c42e0bbf705d909863c069"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_paper_2026-10-26/images/03_transformer.svg",
+    "path": "docs/figures/flowcharts_paper_2026-10-26/images/03_轨迹预测模型.svg",
+    "sha256": "1e27cd9b37af650c16ffeb781dabcbfae13e7aae6e2409a0b923b3ab9cd9e984"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_paper_2026-10-26/images/04_risk_decision.svg",
+    "path": "docs/figures/flowcharts_paper_2026-10-26/images/04_风险评估与避撞决策.svg",
+    "sha256": "839283d498b162277ae95347fc252dffd7b681a5fe0d48561b60c2d6edf9351c"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_paper_2026-10-26/images/05_mpc.svg",
+    "path": "docs/figures/flowcharts_paper_2026-10-26/images/05_预测控制与执行.svg",
+    "sha256": "062284351c7a9c67da086453bd9c34ecaca85f41aee65d8635f52a97d91c4316"
+  },
+  {
+    "original_repo_path": "docs/figures/flowcharts_paper_2026-10-26/images/06_testing.svg",
+    "path": "docs/figures/flowcharts_paper_2026-10-26/images/06_实验与测试.svg",
+    "sha256": "aa5b6712b589b30a67110e9dbf659707f1be498d39d029c5ad2734fe12f815c1"
+  },
+  {
+    "original_repo_path": "docs/figures/product_mockups_2026-10-26/images/01_simulation_overview.png",
+    "path": "docs/figures/product_mockups_2026-10-26/images/01_仿真总览概念图.png",
+    "sha256": "d016e4ff8ed9df0366606a7d756785cea1851a0bf9c85269b916ebe764189ac5"
+  },
+  {
+    "original_repo_path": "docs/figures/product_mockups_2026-10-26/images/02_trajectory_decision.png",
+    "path": "docs/figures/product_mockups_2026-10-26/images/02_轨迹与决策概念图.png",
+    "sha256": "9938e6314ea1c0b55c323fd77e759321fff97c8f360edd3498ccd2c07f06b60f"
+  },
+  {
+    "original_repo_path": "docs/figures/product_mockups_2026-10-26/images/03_experiment_evaluation.png",
+    "path": "docs/figures/product_mockups_2026-10-26/images/03_实验评估概念图.png",
+    "sha256": "dd68fda53eb25d5943de85c8d6f2cea6f3acff0a79eaafcdc3cc4d87d9cfae69"
+  }
+]
