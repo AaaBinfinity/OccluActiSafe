@@ -132,7 +132,7 @@ def run_episode(client,output,config):
         sensor.listen(lambda event:collisions.append({'frame':event.frame,'other_id':event.other_actor.id,'other_type':event.other_actor.type_id,
             'impulse':math.sqrt(event.normal_impulse.x**2+event.normal_impulse.y**2+event.normal_impulse.z**2)}))
         cameras={}
-        for name,pose in [('车端',{'x':1.5,'y':0.,'z':1.6,'yaw':0.}),('路侧',config['roadside_camera'])]:
+        for name,pose in [('车端',{'x':1.5,'y':0.,'z':1.6,'yaw':config.get('ego_camera_yaw_deg',0.)}),('路侧',config['roadside_camera'])]:
             bp=world.get_blueprint_library().find('sensor.camera.rgb')
             bp.set_attribute('role_name','oas:'+run_id)
             for key,value in {'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():bp.set_attribute(key,value)

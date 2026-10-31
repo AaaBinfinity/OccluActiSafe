@@ -1085,3 +1085,4 @@ pairing_tolerance:
   yaw_rad: 0.001
   control: 0.01
 pairing_approval: 2026-10-31 用户同意按四项容差复核并重跑，保留原始哈希及全部差异
+ego_camera_yaw_deg: -12.0
