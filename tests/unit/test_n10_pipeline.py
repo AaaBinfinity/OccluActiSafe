@@ -42,7 +42,7 @@ class RiskPipelineTests(unittest.TestCase):
                 runs = list(output.iterdir()); self.assertEqual(len(runs), 1); run = runs[0]
                 result = json.loads((run / "result.json").read_text(encoding="utf-8"))
                 self.assertEqual(result["status"], "passed")
-                self.assertEqual(result["checks_passed"], 22)
+                self.assertEqual(result["checks_passed"], 23)
                 self.assertEqual(result["risk_scenarios"], 13)
                 self.assertEqual(result["candidate_rows"], 14)
                 manifest = json.loads((run / "plot_manifest.json").read_text(encoding="utf-8"))
@@ -53,6 +53,10 @@ class RiskPipelineTests(unittest.TestCase):
                 original = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
                 self.assertIsNone(original["data"]); self.assertIsNone(original["weights"])
                 self.assertFalse(original["cuda_used"])
+                audit = json.loads((run / "visibility_audit.json").read_text(encoding="utf-8"))
+                self.assertTrue(all(v["current_input_output_sha256"] == audit["baseline_sha256"] for v in audit["future_variants"]))
+                grid = json.loads((run / "grids.json").read_text(encoding="utf-8"))
+                self.assertEqual(grid["known_wall"]["accepted_views"][0]["quality"], 1)
                 if index == 0:
                     with warnings.catch_warnings():
                         warnings.simplefilter("error")

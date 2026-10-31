@@ -141,6 +141,8 @@ class VisibilityGrid:
     obstacles: tuple
     regions: tuple
     accepted_sources: tuple
+    accepted_views: tuple
+    accepted_free_evidence: tuple
     closed_domain: bool
 
 
@@ -173,11 +175,13 @@ def build_visibility(spec, *, now, clock_domain, coordinate_frame_id, views=(), 
             if blocked: occluded[row, col] = True
             else: current[row, col] = True
         source_masks[view.source_id] = (current, view.observation_time); visible |= current
+    accepted_proofs = []
     for proof in free_evidence:
         if legal(proof) and proof.source_id in source_masks:
             current, observed_at = source_masks[proof.source_id]
             if proof.observation_time == observed_at:
                 free |= _mask(proof.mask, spec, "free_evidence") & current
+                accepted_proofs.append(proof)
     free &= ~occupied
     grid = np.where(visible, 1, np.where(occluded, 2, 0)).astype(np.uint8)
     # 部分占用单元仍可包含未知空间，故不能将整格从未知区中删除。
@@ -187,7 +191,7 @@ def build_visibility(spec, *, now, clock_domain, coordinate_frame_id, views=(), 
                     for r, c in np.ndindex(spec.shape) if not free[r, c] for category, v, a, radius in hypotheses)
     for array in (grid, occupied, free, drive): array.setflags(write=False)
     return VisibilityGrid(spec, now, clock_domain, coordinate_frame_id, grid, occupied, free, drive,
-                          obs, regions, tuple(sorted(source_masks)), closed_domain)
+                          obs, regions, tuple(sorted(source_masks)), usable, tuple(accepted_proofs), closed_domain)
 
 
 def _distance_to_segment(point, a, b):

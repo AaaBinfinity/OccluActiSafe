@@ -32,6 +32,12 @@ def _json(path, value):
 def _sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _grid_digest(grid):
+    payload = {"visibility": grid.visibility.tolist(), "occupied": grid.occupied.tolist(), "free": grid.certified_free.tolist(),
+               "regions": [asdict(r) for r in grid.regions], "sources": grid.accepted_sources}
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
+
+
 def validate_config(config):
     config = deepcopy(config)
     if set(config) != {"schema_version", "episode_id", "clock_domain", "coordinate_frame_id", "output_root", "interval", "grid"}:
@@ -124,7 +130,7 @@ def render_diagnostic_plots(run_dir, *, output_dir=None):
         axes[0].plot([-5, 5], [0, 0], "--", label="declared interpolation")
         event = crossing["crossing"]["event"]
         axes[0].set_title(f"Potential contact interval [{event['interval_start']:.4f}, {event['interval_end']:.4f}] s")
-        axes[0].set(xlabel="x (m)", ylabel="y (m)", ylim=(-2, 2), aspect="equal"); axes[0].legend(fontsize=8)
+        axes[0].set(xlabel="x (m)", ylabel="y (m)", ylim=(-2, 3), aspect="equal"); axes[0].legend(fontsize=7, loc="upper center", ncol=2)
         for key, label in (("crossing", "crossing"), ("near_miss", "conservative near miss")):
             trace = crossing[key]["trace"]
             axes[1].plot(range(1, len(trace) + 1), [t["interval_end"] - t["interval_start"] for t in trace], "o-", label=label)
@@ -133,10 +139,14 @@ def render_diagnostic_plots(run_dir, *, output_dir=None):
         axes[1].legend(fontsize=8); save(fig, "geometry_intervals")
         fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
         labels = [f"{r['case_id']}/{r['candidate_id']}" for r in rows]; x = np.arange(len(rows))
-        for field, dx in (("R_max", -.18), ("R_sum", .18)):
+        for field, dx, color in (("R_max", -.18, "tab:blue"), ("R_sum", .18, "tab:orange")):
             positions = [i for i, row in enumerate(rows) if row[field] != ""]
-            axes[0].bar(np.array(positions) + dx, [float(rows[i][field]) for i in positions], width=.35, label=field)
-        axes[0].set(ylabel="uncalibrated score", ylim=(0, 1.15), title="Missing bars = unavailable; no joint probability")
+            axes[0].bar(np.array(positions) + dx, [float(rows[i][field]) for i in positions], width=.35, label=field, color=color)
+            zero = [i for i in positions if float(rows[i][field]) == 0]
+            axes[0].plot(np.array(zero) + dx, [0.] * len(zero), "o", color=color, markersize=4)
+        missing = [i for i, row in enumerate(rows) if row["R_max"] == ""]
+        axes[0].plot(missing, [-.05] * len(missing), "x", color="gray", label="NA (not scored)")
+        axes[0].set(ylabel="uncalibrated score", ylim=(-.1, 1.15), title="Zero = circle; NA = cross; no joint probability or action approval")
         axes[0].legend()
         axes[1].bar(x, [float(r["effective_horizon_s"]) for r in rows], label="common window")
         axes[1].axhline(3, linestyle=":", color="black", label="requested 3 s")
@@ -181,8 +191,26 @@ def run_diagnostics(config):
         _json(directory / "grids.json", {name: {"bounds": k.spec.bounds, "resolution_m": k.spec.resolution_m,
               "now": k.now, "visibility": k.visibility.tolist(), "occupied": k.occupied.tolist(), "certified_free": k.certified_free.tolist(),
               "drivable": k.drivable.tolist(), "closed_domain": k.closed_domain, "accepted_sources": k.accepted_sources,
+              "accepted_views": [asdict(v) for v in k.accepted_views],
+              "accepted_free_evidence": [{**{key: value for key, value in asdict(p).items() if key != "mask"}, "mask": p.mask.tolist()}
+                                         for p in k.accepted_free_evidence],
               "known_obstacles": [asdict(o) for o in k.obstacles]} for name, k in grids.items()})
         _json(directory / "unknown_regions.json", {name: [asdict(r) for r in k.regions] for name, k in grids.items()})
+        baseline = grids["known_wall"]; causal = []
+        for x in (-1e9, 1e9):
+            future = SensorView("future", Pose2D(x, x, 0), 2 * math.pi, 30, 1, 2, 2, 3, config["clock_domain"], config["coordinate_frame_id"])
+            altered = build_visibility(baseline.spec, now=0, clock_domain=config["clock_domain"], coordinate_frame_id=config["coordinate_frame_id"],
+                                       views=(*baseline.accepted_views, future), obstacles=baseline.obstacles,
+                                       drivable=baseline.drivable, closed_domain=baseline.closed_domain)
+            causal.append({"unavailable_view": asdict(future), "current_input_output_sha256": _grid_digest(altered)})
+        _json(directory / "visibility_audit.json", {"baseline_sha256": _grid_digest(baseline), "future_variants": causal,
+                                                   "hidden_gt_input": "not_exposed_by_core_api", "model": "2d_grid_center_ray_not_pixel_perception"})
+        check("B02_future_exclusion", all(c["current_input_output_sha256"] == _grid_digest(baseline) for c in causal), causal)
+        bodies = {"vehicle": ParticipantGeometry("vehicle", 4, 2), "pedestrian": ParticipantGeometry("pedestrian", radius=.3),
+                  "cyclist": ParticipantGeometry("cyclist", 1.8, .6),
+                  "vehicle_rear_axle": ParticipantGeometry("vehicle", 4, 2, reference_point="rear_axle", center_offset_m=1.5)}
+        _json(directory / "geometry_by_type.json", {name: {"declaration": asdict(g), "at_pose": {"x": 0, "y": 0, "yaw": math.pi / 2},
+                                                           "shape": asdict(g.at(Pose2D(0, 0, math.pi / 2)))} for name, g in bodies.items()})
         geometry_cases = []
         box = OBB((0, 0), 0, 4, 2)
         for identity, other, expected in (("G01_same", box, True), ("G02_separate", OBB((4.1, 0), 0, 4, 2), False),
