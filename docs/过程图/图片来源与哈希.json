@@ -3020,6 +3020,202 @@
       "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145240_448303/断连恢复与限时收尾.svg",
       "sha256": "c899dd6a302236cbf25f8883fba9dc89de918a48daed8c14e222a7169075c173",
       "bytes": 27883
+    },
+    {
+      "original_artifact_path": "n13_22a088c161e94e7cada654e60fd0b100/车辆画面_工况0.png",
+      "artifact_path": "n13_22a088c161e94e7cada654e60fd0b100/车辆画面_工况0.png",
+      "legacy_repository_path": "docs/过程图/n13_22a088c161e94e7cada654e60fd0b100/车辆画面_工况0.png",
+      "sha256": "efbe99122b6e64ca5574d4588a041ddce55f9aafb634ea6b5662bc3b430f1531",
+      "bytes": 2205203
+    },
+    {
+      "original_artifact_path": "n13_22a088c161e94e7cada654e60fd0b100/车辆画面_工况1.png",
+      "artifact_path": "n13_22a088c161e94e7cada654e60fd0b100/车辆画面_工况1.png",
+      "legacy_repository_path": "docs/过程图/n13_22a088c161e94e7cada654e60fd0b100/车辆画面_工况1.png",
+      "sha256": "8f297e6b1a535f01d6b786fd26426cde6286c2d2b964a9a3258c4c0234c76ad6",
+      "bytes": 2224713
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/执行器响应曲线.png",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/执行器响应曲线.png",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/执行器响应曲线.png",
+      "sha256": "b82707060e2a7d48be8734f23027f0c7e6b1a676afa8b781251086ab8765502f",
+      "bytes": 330091
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/执行器响应曲线.svg",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/执行器响应曲线.svg",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/执行器响应曲线.svg",
+      "sha256": "e2d80b39c86db901c70ae316f8e6c635a0acced837c9a375f6c0f6a0cdf8acfc",
+      "bytes": 174682
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/踏板与加速度重复散点.png",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/踏板与加速度重复散点.png",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/踏板与加速度重复散点.png",
+      "sha256": "6b42d053050473577ab6e26cf20c8037a2708012fa9e957d600bf6ef15aba078",
+      "bytes": 64280
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/踏板与加速度重复散点.svg",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/踏板与加速度重复散点.svg",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/踏板与加速度重复散点.svg",
+      "sha256": "d7102d26cad8fff3aede4ad64a519c47e79ed15552ae7821b0d3f24cfd8be85a",
+      "bytes": 61007
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况0.png",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况0.png",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况0.png",
+      "sha256": "d669e082698d6ffabb69def6fd11676e6b7fc9e5ff8eeac1fdcde8a29c2e18d3",
+      "bytes": 2245893
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况1.png",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况1.png",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况1.png",
+      "sha256": "ef3894a2851024212ecc37751f8ab4eb9b24950021ad34f1a2406c7cba2bc5aa",
+      "bytes": 2246350
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况8.png",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况8.png",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况8.png",
+      "sha256": "1828e71acb314045924db83d9f10fc79a84b4a5ea1658dff0156ece8782e778e",
+      "bytes": 1997697
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况9.png",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况9.png",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/车辆画面_工况9.png",
+      "sha256": "49ddf981ea21deec651e849ee5be410b196fdca485f157717e98bec4626e5545",
+      "bytes": 2138820
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/转向轨迹与横向加速度.png",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/转向轨迹与横向加速度.png",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/转向轨迹与横向加速度.png",
+      "sha256": "1a35c1d1cd6aede48982a57b99ac413722cbc44d569b2543d7dec1390d2a509f",
+      "bytes": 225033
+    },
+    {
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/转向轨迹与横向加速度.svg",
+      "artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897/转向轨迹与横向加速度.svg",
+      "legacy_repository_path": "docs/过程图/n13_7f739c23ba824498b891dbfc0a8e5897/转向轨迹与横向加速度.svg",
+      "sha256": "ce0af8296af0b86a44b9b14a94a1508354ca21113476b41b7f5bfaeaa046a26f",
+      "bytes": 145841
+    },
+    {
+      "original_artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7/执行器响应曲线.png",
+      "artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7/执行器响应曲线.png",
+      "legacy_repository_path": "docs/过程图/n13_a2d3ebe9016349ee95d0a082b1921ca7/执行器响应曲线.png",
+      "sha256": "ce44ee73033f58ffc03d421c71073d583cd230f8ff2f487a011438d20172a826",
+      "bytes": 156983
+    },
+    {
+      "original_artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7/执行器响应曲线.svg",
+      "artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7/执行器响应曲线.svg",
+      "legacy_repository_path": "docs/过程图/n13_a2d3ebe9016349ee95d0a082b1921ca7/执行器响应曲线.svg",
+      "sha256": "7a4645d737485cdd07cd99b061899e30ad5c502c0d253e0117ba85b76834c992",
+      "bytes": 70652
+    },
+    {
+      "original_artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7/车辆画面_工况0.png",
+      "artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7/车辆画面_工况0.png",
+      "legacy_repository_path": "docs/过程图/n13_a2d3ebe9016349ee95d0a082b1921ca7/车辆画面_工况0.png",
+      "sha256": "6616303bddf4a3329e6488b9288c1913bb7d85ea69458450f9ffe0ad844ab8f9",
+      "bytes": 2187095
+    },
+    {
+      "original_artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7/车辆画面_工况1.png",
+      "artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7/车辆画面_工况1.png",
+      "legacy_repository_path": "docs/过程图/n13_a2d3ebe9016349ee95d0a082b1921ca7/车辆画面_工况1.png",
+      "sha256": "6fe667c5330d042172bd0edb6247b0138273ebc7d4f2d91a22956d61ce427e11",
+      "bytes": 2187285
+    },
+    {
+      "original_artifact_path": "n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况0.png",
+      "artifact_path": "n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况0.png",
+      "legacy_repository_path": "docs/过程图/n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况0.png",
+      "sha256": "3eff755b46c353f928a735f6b516e6a19060dd55ab14203bdf719ed8f5d778be",
+      "bytes": 2203914
+    },
+    {
+      "original_artifact_path": "n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况1.png",
+      "artifact_path": "n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况1.png",
+      "legacy_repository_path": "docs/过程图/n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况1.png",
+      "sha256": "3c7b6d15fda27c0fe0f91b263e98f8971edd450d924e047c5486e1e55d1ea56f",
+      "bytes": 2213370
+    },
+    {
+      "original_artifact_path": "n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况8.png",
+      "artifact_path": "n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况8.png",
+      "legacy_repository_path": "docs/过程图/n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况8.png",
+      "sha256": "f5ac0eef5e0de992c80c6867cd4e0784974965a0428a41798376752e05fcabff",
+      "bytes": 2098816
+    },
+    {
+      "original_artifact_path": "n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况9.png",
+      "artifact_path": "n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况9.png",
+      "legacy_repository_path": "docs/过程图/n13_cdb2c9af4d1d48f185472e108710a6fe/车辆画面_工况9.png",
+      "sha256": "0f7219fb5267dfd84bcb4435bad4af7c0917a3a214134396cdbb2c1e615a1566",
+      "bytes": 2156560
+    },
+    {
+      "original_artifact_path": "n13_cdf9aefeba9b49099689d91c943a9a6e/执行器响应曲线.png",
+      "artifact_path": "n13_cdf9aefeba9b49099689d91c943a9a6e/执行器响应曲线.png",
+      "legacy_repository_path": "docs/过程图/n13_cdf9aefeba9b49099689d91c943a9a6e/执行器响应曲线.png",
+      "sha256": "670319ac0f9f80db1efae490a7c9af634f7bd11219773dc5a5bf0affcf421b06",
+      "bytes": 338026
+    },
+    {
+      "original_artifact_path": "n13_cdf9aefeba9b49099689d91c943a9a6e/执行器响应曲线.svg",
+      "artifact_path": "n13_cdf9aefeba9b49099689d91c943a9a6e/执行器响应曲线.svg",
+      "legacy_repository_path": "docs/过程图/n13_cdf9aefeba9b49099689d91c943a9a6e/执行器响应曲线.svg",
+      "sha256": "2a5145f8191659217d01808e4721c70d6107aacd8cb54aaa42b8d51e0026ce84",
+      "bytes": 95902
+    },
+    {
+      "original_artifact_path": "n13_d48a5b3893924a979dd930a646477fc0/执行器响应曲线.png",
+      "artifact_path": "n13_d48a5b3893924a979dd930a646477fc0/执行器响应曲线.png",
+      "legacy_repository_path": "docs/过程图/n13_d48a5b3893924a979dd930a646477fc0/执行器响应曲线.png",
+      "sha256": "f1374f8d2f151957af6461576b0e3da7de61aa7737bdf5bba1f6ccc92ff37f17",
+      "bytes": 305773
+    },
+    {
+      "original_artifact_path": "n13_d48a5b3893924a979dd930a646477fc0/执行器响应曲线.svg",
+      "artifact_path": "n13_d48a5b3893924a979dd930a646477fc0/执行器响应曲线.svg",
+      "legacy_repository_path": "docs/过程图/n13_d48a5b3893924a979dd930a646477fc0/执行器响应曲线.svg",
+      "sha256": "07281e4a2c4c9a7975ebf34bb61e164484ead03bc9ffbea8443ef91edfd2a4f8",
+      "bytes": 119823
+    },
+    {
+      "original_artifact_path": "n13_d8333a6601824f37a5c4077bf6844e6a/执行器响应曲线.png",
+      "artifact_path": "n13_d8333a6601824f37a5c4077bf6844e6a/执行器响应曲线.png",
+      "legacy_repository_path": "docs/过程图/n13_d8333a6601824f37a5c4077bf6844e6a/执行器响应曲线.png",
+      "sha256": "cf896aa89fad2cc3a268bd5f232f220fd75822fad80896fe52844ba48f6c84e5",
+      "bytes": 360893
+    },
+    {
+      "original_artifact_path": "n13_d8333a6601824f37a5c4077bf6844e6a/执行器响应曲线.svg",
+      "artifact_path": "n13_d8333a6601824f37a5c4077bf6844e6a/执行器响应曲线.svg",
+      "legacy_repository_path": "docs/过程图/n13_d8333a6601824f37a5c4077bf6844e6a/执行器响应曲线.svg",
+      "sha256": "b1db41899b576d50b662b946bcf5bd4f2c26fbf96a83b6e7d928f06cd193ab62",
+      "bytes": 95895
+    },
+    {
+      "original_artifact_path": "n13_f6599e43a8284cd1a13b4da960ee30f3/执行器响应曲线.png",
+      "artifact_path": "n13_f6599e43a8284cd1a13b4da960ee30f3/执行器响应曲线.png",
+      "legacy_repository_path": "docs/过程图/n13_f6599e43a8284cd1a13b4da960ee30f3/执行器响应曲线.png",
+      "sha256": "971a24462ecc3a5877ccf1540a759b175dca6e36c372a52710415f02364db81c",
+      "bytes": 350422
+    },
+    {
+      "original_artifact_path": "n13_f6599e43a8284cd1a13b4da960ee30f3/执行器响应曲线.svg",
+      "artifact_path": "n13_f6599e43a8284cd1a13b4da960ee30f3/执行器响应曲线.svg",
+      "legacy_repository_path": "docs/过程图/n13_f6599e43a8284cd1a13b4da960ee30f3/执行器响应曲线.svg",
+      "sha256": "ab72c54fd0b65a7385416438fadb4951d96f2d269466261979eacf0f3aedf0ea",
+      "bytes": 99055
     }
   ]
 }
