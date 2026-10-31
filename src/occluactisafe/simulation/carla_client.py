@@ -32,7 +32,13 @@ def main():
                 response = client.apply_batch_sync([carla.command.DestroyActor(actor.id)], False)[0]
                 if response.error: raise RuntimeError(f'actor {actor.id} 销毁失败：{response.error}')
                 return True
+            cleanup_connections=0
             def reconnect(timeout):
+                nonlocal cleanup_connections
+                cleanup_connections+=1
+                if cleanup_connections==1:
+                    client.set_timeout(timeout)
+                    return client
                 connected=carla.Client(config['host'],config['port']); connected.set_timeout(timeout)
                 return connected
             with SynchronousRunner(client.get_world(), run_id=config['run_id'], episode_id='episode-1',
