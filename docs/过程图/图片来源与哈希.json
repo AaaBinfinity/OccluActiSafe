@@ -2532,6 +2532,20 @@
       "bytes": 32158
     },
     {
+      "original_artifact_path": "n12/n12_20261031_152941_792736/帧时序与传感器有效性.png",
+      "artifact_path": "n12/n12_20261031_152941_792736/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12/n12_20261031_152941_792736/帧时序与传感器有效性.png",
+      "sha256": "45aa18fc3bf322d2c0986e6ffe416b0b5c3912c6fd39b894f86b908ab3d95eea",
+      "bytes": 51665
+    },
+    {
+      "original_artifact_path": "n12/n12_20261031_152941_792736/帧时序与传感器有效性.svg",
+      "artifact_path": "n12/n12_20261031_152941_792736/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12/n12_20261031_152941_792736/帧时序与传感器有效性.svg",
+      "sha256": "2d6bfcff872157e2f16498f034316826d0d6fb297dec762f33c3f56d0ef16747",
+      "bytes": 33367
+    },
+    {
       "original_artifact_path": "n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.png",
       "artifact_path": "n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.png",
       "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.png",
@@ -2572,6 +2586,370 @@
       "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/正常回归/n12_20261031_142019_404675/帧时序与传感器有效性.svg",
       "sha256": "2febdced15af0d19e73e00becfa79cd42e68e956c1b29fc8d6e172367a44e98c",
       "bytes": 32544
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/帧时序与传感器有效性.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/帧时序与传感器有效性.png",
+      "sha256": "c787d9b30ce3f277f85fe18c5724441028c0b08dfbf3845276b39545e4520086",
+      "bytes": 51384
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/帧时序与传感器有效性.svg",
+      "sha256": "6d374883f0b4db8d92c0ca0cd4bcc19c31ccb62784b5711ed0c3310a2470f077",
+      "bytes": 36193
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002021帧_自动_001.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002021帧_自动_001.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002021帧_自动_001.png",
+      "sha256": "a3a490233962af7f1ec6ac9daa3520e3439616a078a786be9e5fafa2b01cc59d",
+      "bytes": 127812
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002022帧_自动_002.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002022帧_自动_002.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002022帧_自动_002.png",
+      "sha256": "6731085ea322ec8624e87d8baf3afdbbd72e449732908148a5b7e3dc4856f93e",
+      "bytes": 2012
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002051帧_结束_003.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002051帧_结束_003.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/close_window/n12_20261031_154637_314698/相机画面_第00002051帧_结束_003.png",
+      "sha256": "a38a5beaab93fe23cb96df85f3adbdb674a4a53dc41b7501ab65fb27afa42f89",
+      "bytes": 126975
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/headless/n12_20261031_154559_703994/帧时序与传感器有效性.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/headless/n12_20261031_154559_703994/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/headless/n12_20261031_154559_703994/帧时序与传感器有效性.png",
+      "sha256": "9fcd4c229a5ec18a061e267e4a4341b4df471660c1ea93b90faafc866334f7ad",
+      "bytes": 49803
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/headless/n12_20261031_154559_703994/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/headless/n12_20261031_154559_703994/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/headless/n12_20261031_154559_703994/帧时序与传感器有效性.svg",
+      "sha256": "2a6a1bc6dc248d850138552b9670c94867b5fc1bf74136773070a167a2aba509",
+      "bytes": 34338
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/实时预览窗口实测.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/实时预览窗口实测.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/实时预览窗口实测.png",
+      "sha256": "b9115789bd2bc072596a2eb074a6340f825567f526dc03fcf07cd267413a3fd9",
+      "bytes": 213074
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/帧时序与传感器有效性.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/帧时序与传感器有效性.png",
+      "sha256": "5b16f83f5bd770bb5a599157df45fb0d7d4e49e04f0b045a13f6a48d897e39d7",
+      "bytes": 51693
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/帧时序与传感器有效性.svg",
+      "sha256": "57fba19e7019072f8bc379cf9a98a4182e11bece78d0f3c7cee8f19fa025466a",
+      "bytes": 34421
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001081帧_自动_001.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001081帧_自动_001.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001081帧_自动_001.png",
+      "sha256": "3b50d0c8341e8d84efa7821b17677d4bc903e8de5683101c38fce7359704ead8",
+      "bytes": 127704
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001082帧_自动_002.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001082帧_自动_002.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001082帧_自动_002.png",
+      "sha256": "6731085ea322ec8624e87d8baf3afdbbd72e449732908148a5b7e3dc4856f93e",
+      "bytes": 2012
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001120帧_手动_003.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001120帧_手动_003.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001120帧_手动_003.png",
+      "sha256": "5bfeaba0e62b4d5dd37ce3d855929007ca54620cb17c1ac82d0384f095fd9d49",
+      "bytes": 126671
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001130帧_自动_004.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001130帧_自动_004.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001130帧_自动_004.png",
+      "sha256": "ba4e62f5f2a89f6148657f14481b9bf3f41fff1cdba76f182da58c9e9e269606",
+      "bytes": 126761
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001180帧_自动_005.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001180帧_自动_005.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001180帧_自动_005.png",
+      "sha256": "7a6997439aa5210055c31f0f8cd9470ca10f2c36f8dcc13a9a42f83828df7b07",
+      "bytes": 126765
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001230帧_自动_006.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001230帧_自动_006.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001230帧_自动_006.png",
+      "sha256": "8d1dd0dac46a3527abcb88cc0f9f1539bfb96e2893a6f55932c0f89b7d487355",
+      "bytes": 126876
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001280帧_自动_007.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001280帧_自动_007.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001280帧_自动_007.png",
+      "sha256": "d693a00bf70967298580e04d83024869c6c05238789c5c7f8a41e6a83e6b6303",
+      "bytes": 126831
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001330帧_自动_008.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001330帧_自动_008.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001330帧_自动_008.png",
+      "sha256": "fc552e0b85960c7fc5bd0e6b3a1d72c889555f84d390e0dde8bf5d651f17fdc5",
+      "bytes": 126799
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001380帧_自动_009.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001380帧_自动_009.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001380帧_自动_009.png",
+      "sha256": "e3a60e181236df8b08278abfb97630f247c6918599eb158ac4cd1ee4afb55f25",
+      "bytes": 126662
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001430帧_自动_010.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001430帧_自动_010.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001430帧_自动_010.png",
+      "sha256": "80c5c33570119b3919d94b5b57727e92dfebf1bad18358d354bf9775802a9f9b",
+      "bytes": 126736
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001480帧_结束_012.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001480帧_结束_012.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001480帧_结束_012.png",
+      "sha256": "d783b5a5d9921504a188b31bc2210429404104e6a81211d419882f757c34e713",
+      "bytes": 126748
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001480帧_自动_011.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001480帧_自动_011.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_154546_618732/visual/n12_20261031_154608_552806/相机画面_第00001480帧_自动_011.png",
+      "sha256": "d783b5a5d9921504a188b31bc2210429404104e6a81211d419882f757c34e713",
+      "bytes": 126748
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/帧时序与传感器有效性.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/帧时序与传感器有效性.png",
+      "sha256": "d4c348f941a2c62f090d72630517935248653a6928ba6d8ba0b978a23a409d93",
+      "bytes": 49542
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/帧时序与传感器有效性.svg",
+      "sha256": "8232ffdfb7cec9ed6d1e54f9341f20827fd9e6f7dda3569f569721795aa52b14",
+      "bytes": 34685
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002232帧_自动_001.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002232帧_自动_001.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002232帧_自动_001.png",
+      "sha256": "6fc9f89797f6d4f48c0b0bd8cb3730204888584a8d4f65fedb3d1730aaa42b41",
+      "bytes": 1851348
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002233帧_自动_002.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002233帧_自动_002.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002233帧_自动_002.png",
+      "sha256": "44f4d1455ed13c0396b79fedce2198eafb8f1cd1d498b6562abd0d69bec32474",
+      "bytes": 5814
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002261帧_结束_003.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002261帧_结束_003.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/close_window/n12_20261031_155549_979028/相机画面_第00002261帧_结束_003.png",
+      "sha256": "11a1b54f0f14cdcd0d4813cf3f1012dfb2c98c15883a21538fa692bbf20f53f9",
+      "bytes": 1841768
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/headless/n12_20261031_155446_140119/帧时序与传感器有效性.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/headless/n12_20261031_155446_140119/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/headless/n12_20261031_155446_140119/帧时序与传感器有效性.png",
+      "sha256": "da88f508dd2668a655545be2a627155356cb37ed1d52e25dc04905b7bcd1ae94",
+      "bytes": 49898
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/headless/n12_20261031_155446_140119/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/headless/n12_20261031_155446_140119/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/headless/n12_20261031_155446_140119/帧时序与传感器有效性.svg",
+      "sha256": "3f61413b39f46eefb14820d830277a16792f097a44c68b6a51c0e9ee5f3856bf",
+      "bytes": 34345
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/实时预览窗口实测.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/实时预览窗口实测.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/实时预览窗口实测.png",
+      "sha256": "946ffedd74b05317648eec3e07f3bd7f818cdaa17fe33d491f6cdfdd231ef166",
+      "bytes": 1070095
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/帧时序与传感器有效性.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/帧时序与传感器有效性.png",
+      "sha256": "2e0f96fdf8b7d441eef1fa7d70e079fff447574d3c8996b944acb45d90c77b38",
+      "bytes": 52682
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/帧时序与传感器有效性.svg",
+      "sha256": "62069c5fd9ce73f93b824ae481038ede2fcec336ce543b1ba4d2c1f1bbbfe431",
+      "bytes": 35236
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001218帧_自动_001.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001218帧_自动_001.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001218帧_自动_001.png",
+      "sha256": "fb47052c2cfd0d102ef2447a1b785b07342f820e314768a2f6317cc676044ede",
+      "bytes": 1847247
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001219帧_自动_002.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001219帧_自动_002.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001219帧_自动_002.png",
+      "sha256": "44f4d1455ed13c0396b79fedce2198eafb8f1cd1d498b6562abd0d69bec32474",
+      "bytes": 5814
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001252帧_手动_003.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001252帧_手动_003.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001252帧_手动_003.png",
+      "sha256": "68dcb784d49a7a2cd89a78ba05597309e1b7ce396906d0a6cc8ae7f276e7e6e6",
+      "bytes": 1836551
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001267帧_自动_004.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001267帧_自动_004.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001267帧_自动_004.png",
+      "sha256": "2ee935d9dd9fa8d7dfd9d23c3c25ec553b1ae9fded4b7f458849236fb46a5265",
+      "bytes": 1836362
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001317帧_自动_005.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001317帧_自动_005.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001317帧_自动_005.png",
+      "sha256": "200d87da84adb146e7264ccef62745079bcc7722bce108363e1f4758c7ec9afe",
+      "bytes": 1840965
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001367帧_自动_006.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001367帧_自动_006.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001367帧_自动_006.png",
+      "sha256": "ab781d1ea40e0caa21060a72352de0fa9471ee3f50e253661abd5082efc6b194",
+      "bytes": 1840454
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001417帧_自动_007.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001417帧_自动_007.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001417帧_自动_007.png",
+      "sha256": "f3c4b3eebd680cb023ebdb1a43fb93c3e1024575d46b3463fb2627e85e3c0789",
+      "bytes": 1840634
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001467帧_自动_008.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001467帧_自动_008.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001467帧_自动_008.png",
+      "sha256": "d9c6fe17f517759f2f5f97565a69e9f2fd284f6b7c11e8c962e93f7fd4fc9f22",
+      "bytes": 1840899
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001517帧_自动_009.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001517帧_自动_009.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001517帧_自动_009.png",
+      "sha256": "5dbd3ca18e8afe8a6fde87b9951c7e782a8445a3e02ef6b26a1d089f862bf66f",
+      "bytes": 1840319
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001567帧_自动_010.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001567帧_自动_010.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001567帧_自动_010.png",
+      "sha256": "fc4a7d5301acec382cd988e9d3e15890ad63c027730be7d800f1f6b01b768a5d",
+      "bytes": 1840620
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001617帧_结束_012.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001617帧_结束_012.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001617帧_结束_012.png",
+      "sha256": "dea0336fa6fa5f56300783bc72f3528e1fa897676b15e808b7ff291ed8e2192e",
+      "bytes": 1840545
+    },
+    {
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001617帧_自动_011.png",
+      "artifact_path": "n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001617帧_自动_011.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/n12_preview_20261031_155432_916473/visual/n12_20261031_155454_790259/相机画面_第00001617帧_自动_011.png",
+      "sha256": "dea0336fa6fa5f56300783bc72f3528e1fa897676b15e808b7ff291ed8e2192e",
+      "bytes": 1840545
+    },
+    {
+      "original_artifact_path": "n12_preview/恢复回归/n12_recovery_20261031_154814_608697/normal/n12_20261031_154827_667114/帧时序与传感器有效性.png",
+      "artifact_path": "n12_preview/恢复回归/n12_recovery_20261031_154814_608697/normal/n12_20261031_154827_667114/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/恢复回归/n12_recovery_20261031_154814_608697/normal/n12_20261031_154827_667114/帧时序与传感器有效性.png",
+      "sha256": "be8e5f60f3f32fcc1b4cc10b14c2967331a5889be3576c433f2f09f63047a64d",
+      "bytes": 38681
+    },
+    {
+      "original_artifact_path": "n12_preview/恢复回归/n12_recovery_20261031_154814_608697/normal/n12_20261031_154827_667114/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_preview/恢复回归/n12_recovery_20261031_154814_608697/normal/n12_20261031_154827_667114/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/恢复回归/n12_recovery_20261031_154814_608697/normal/n12_20261031_154827_667114/帧时序与传感器有效性.svg",
+      "sha256": "aa2c260bd2ec72c36a03274fd3b303fd334d5e9e37bc6677fae79d416146cffe",
+      "bytes": 31583
+    },
+    {
+      "original_artifact_path": "n12_preview/恢复回归/n12_recovery_20261031_154814_608697/断连恢复与限时收尾.png",
+      "artifact_path": "n12_preview/恢复回归/n12_recovery_20261031_154814_608697/断连恢复与限时收尾.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/恢复回归/n12_recovery_20261031_154814_608697/断连恢复与限时收尾.png",
+      "sha256": "2a24142d7d3703d444338910114ccc77f960f65530caa40b2188948e7a4c1b6f",
+      "bytes": 35413
+    },
+    {
+      "original_artifact_path": "n12_preview/恢复回归/n12_recovery_20261031_154814_608697/断连恢复与限时收尾.svg",
+      "artifact_path": "n12_preview/恢复回归/n12_recovery_20261031_154814_608697/断连恢复与限时收尾.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/恢复回归/n12_recovery_20261031_154814_608697/断连恢复与限时收尾.svg",
+      "sha256": "f2f70ad5f7ea475920f3e99047c3033ce8161763708c3eb324bc366051d24218",
+      "bytes": 27885
+    },
+    {
+      "original_artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/normal/n12_20261031_155744_676834/帧时序与传感器有效性.png",
+      "artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/normal/n12_20261031_155744_676834/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/normal/n12_20261031_155744_676834/帧时序与传感器有效性.png",
+      "sha256": "6fc61d954bc41e27eb1785b1c876b3897bf5cfadbe41140b94b49493c366b24a",
+      "bytes": 45459
+    },
+    {
+      "original_artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/normal/n12_20261031_155744_676834/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/normal/n12_20261031_155744_676834/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/normal/n12_20261031_155744_676834/帧时序与传感器有效性.svg",
+      "sha256": "ef00692cd10b16237ce11d166464ff94dbebd64f0d5e36c6e2d5dce9dac7226d",
+      "bytes": 31582
+    },
+    {
+      "original_artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/断连恢复与限时收尾.png",
+      "artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/断连恢复与限时收尾.png",
+      "legacy_repository_path": "docs/过程图/n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/断连恢复与限时收尾.png",
+      "sha256": "ab0197a71bb8dd7f7a6703548aa45896db8cbe21b1d4191d56ca9c930838b025",
+      "bytes": 35402
+    },
+    {
+      "original_artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/断连恢复与限时收尾.svg",
+      "artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/断连恢复与限时收尾.svg",
+      "legacy_repository_path": "docs/过程图/n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065/断连恢复与限时收尾.svg",
+      "sha256": "2596c7cdf77d6924572f97be416c7a6ed1ffcb09072b9183c1fae4e669ee3705",
+      "bytes": 27881
     },
     {
       "original_artifact_path": "n12_recovery/n12_recovery_20261031_144902_248419/断连恢复与限时收尾.png",
