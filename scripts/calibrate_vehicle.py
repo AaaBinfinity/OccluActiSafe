@@ -23,6 +23,7 @@ def run(config_path=DEFAULT_CONFIG):
     (output / '运行配置.json').write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
     env = os.environ.copy()
     env['PYTHONPATH'] = str(ROOT / 'src') + os.pathsep + env.get('PYTHONPATH', '')
+    env['PYTHONIOENCODING'] = 'utf-8'
     command = [str(bridge), '-m', 'occluactisafe.simulation.actuator', str(output)]
     print(f'运行标识：{run_id}\n证据目录：{output}', flush=True)
     with (output / '运行日志.txt').open('w', encoding='utf-8') as log:

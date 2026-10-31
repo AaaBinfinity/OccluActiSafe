@@ -8,5 +8,6 @@
   "repetitions": 3,
   "fixed_delta_s": 0.05,
   "warmup_max_ticks": 800,
+  "warmup_throttle": 1.0,
   "response_ticks": 100
 }
