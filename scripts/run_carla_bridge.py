@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import secrets
 import subprocess
@@ -15,6 +16,7 @@ from multiprocessing.connection import Listener
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from occluactisafe.common.schemas import AdvanceRequest, TickEvent
+from occluactisafe.common.run_manifest import _source_identity
 from occluactisafe.simulation.observation_adapter import decode_tick, stationary_control
 
 
@@ -36,6 +38,10 @@ def main():
               'bridge_python': str(args.bridge_python.resolve()), 'core_python': str(Path(sys.executable).resolve()),
               'fault_test': args.fault_test}
     (output / '运行配置.json').write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
+    manifest = {'source': _source_identity(ROOT), 'platform': platform.platform(), 'core_python': sys.version,
+                'config_sha256': hashlib.sha256((output / '运行配置.json').read_bytes()).hexdigest(),
+                'input': 'real_carla_server', 'dataset': None, 'weights': None}
+    (output / '运行清单.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     auth = secrets.token_bytes(32)
     listener = Listener(('127.0.0.1', 0), authkey=auth)
     listener._listener._socket.settimeout(45)
@@ -109,9 +115,11 @@ def main():
     axes[0].set_ylabel('simulation time (s)')
     axes[1].step([row['frame'] for row in rows], [int(row['camera_valid']) for row in rows], where='mid')
     axes[1].set_ylabel('camera valid'); axes[1].set_xlabel('frame'); axes[1].set_ylim(-0.1, 1.1)
-    figure.tight_layout(); picture = output / '帧时序与传感器有效性.png'; figure.savefig(picture, dpi=150); plt.close(figure)
+    figure.tight_layout(); pictures = [output / ('帧时序与传感器有效性.' + suffix) for suffix in ('png', 'svg')]
+    for picture in pictures: figure.savefig(picture, dpi=150)
+    plt.close(figure)
     (output / '图表来源.json').write_text(json.dumps({'source': timeline.name, 'source_sha256': hashlib.sha256(timeline.read_bytes()).hexdigest(),
-                                                   'image': picture.name, 'image_sha256': hashlib.sha256(picture.read_bytes()).hexdigest()}, ensure_ascii=False, indent=2), encoding='utf-8')
+                                                   'images': {picture.name: hashlib.sha256(picture.read_bytes()).hexdigest() for picture in pictures}}, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'运行完成：{output}')
 
 
