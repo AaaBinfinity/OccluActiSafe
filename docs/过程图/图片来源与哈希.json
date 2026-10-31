@@ -2572,6 +2572,76 @@
       "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/正常回归/n12_20261031_142019_404675/帧时序与传感器有效性.svg",
       "sha256": "2febdced15af0d19e73e00becfa79cd42e68e956c1b29fc8d6e172367a44e98c",
       "bytes": 32544
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_144902_248419/断连恢复与限时收尾.png",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_144902_248419/断连恢复与限时收尾.png",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_144902_248419/断连恢复与限时收尾.png",
+      "sha256": "157d0bf8a8e168e94bb489a9b2d33b9708c6f1aece31431035b250b53ff5996e",
+      "bytes": 17029
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_144902_248419/断连恢复与限时收尾.svg",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_144902_248419/断连恢复与限时收尾.svg",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_144902_248419/断连恢复与限时收尾.svg",
+      "sha256": "f55fb313355aada086a92781a5fd4d6b70400eba02c369f614a79314b5efe53a",
+      "bytes": 18050
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145018_100853/normal/n12_20261031_145031_477540/帧时序与传感器有效性.png",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_145018_100853/normal/n12_20261031_145031_477540/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145018_100853/normal/n12_20261031_145031_477540/帧时序与传感器有效性.png",
+      "sha256": "8b1c38a9ada1d28a9cf34670517f3bc99260771017898de9e460b88ec8af324f",
+      "bytes": 44467
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145018_100853/normal/n12_20261031_145031_477540/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_145018_100853/normal/n12_20261031_145031_477540/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145018_100853/normal/n12_20261031_145031_477540/帧时序与传感器有效性.svg",
+      "sha256": "bab79a093d723ddfd6a8d42faffce3961fde5a3ff4af863afec2dcb909914e53",
+      "bytes": 30760
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145018_100853/断连恢复与限时收尾.png",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_145018_100853/断连恢复与限时收尾.png",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145018_100853/断连恢复与限时收尾.png",
+      "sha256": "16499973f3845c53d23b77575bfd51f43e280f2100ecf5190fd3e954d6d888e9",
+      "bytes": 20515
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145018_100853/断连恢复与限时收尾.svg",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_145018_100853/断连恢复与限时收尾.svg",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145018_100853/断连恢复与限时收尾.svg",
+      "sha256": "bd3a013b6bf861704d62b843e6f3644c8aa46e40e1d8cb13861bbcdca2a1cdde",
+      "bytes": 19928
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303/normal/n12_20261031_145253_869975/帧时序与传感器有效性.png",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303/normal/n12_20261031_145253_869975/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145240_448303/normal/n12_20261031_145253_869975/帧时序与传感器有效性.png",
+      "sha256": "8f0d11417a5aee854643defbcbb8caaa83b8da715a86b1de3a5efcf234e4cdac",
+      "bytes": 44657
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303/normal/n12_20261031_145253_869975/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303/normal/n12_20261031_145253_869975/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145240_448303/normal/n12_20261031_145253_869975/帧时序与传感器有效性.svg",
+      "sha256": "05d8f1d7dcffc3b50d5afe9f55fb7f8847ccb6cbb57de90f51fb83ad81bfbac7",
+      "bytes": 30760
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303/断连恢复与限时收尾.png",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303/断连恢复与限时收尾.png",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145240_448303/断连恢复与限时收尾.png",
+      "sha256": "ab0197a71bb8dd7f7a6703548aa45896db8cbe21b1d4191d56ca9c930838b025",
+      "bytes": 35402
+    },
+    {
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303/断连恢复与限时收尾.svg",
+      "artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303/断连恢复与限时收尾.svg",
+      "legacy_repository_path": "docs/过程图/n12_recovery/n12_recovery_20261031_145240_448303/断连恢复与限时收尾.svg",
+      "sha256": "c899dd6a302236cbf25f8883fba9dc89de918a48daed8c14e222a7169075c173",
+      "bytes": 27883
     }
   ]
 }
