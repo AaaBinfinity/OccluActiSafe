@@ -1,12 +1,15 @@
 """唯一同步世界持有者：严格顺序请求与本次actor清理。"""
 from threading import Lock
 import json
+import math
 from pathlib import Path
+import time
 from occluactisafe.common.schemas import AdvanceRequest, TickEvent
 
 
 class SynchronousRunner:
-    def __init__(self, world, *, run_id, episode_id, generation, clock_domain, fixed_delta=.05, destroy_owned=None, cleanup_path=None):
+    def __init__(self, world, *, run_id, episode_id, generation, clock_domain, fixed_delta=.05, destroy_owned=None, cleanup_path=None,
+                 reconnect=None, destroy_command=None, prepare_cleanup=None, recovery_budget_s=12., cleanup_rpc_s=.5):
         if not all(isinstance(s,str) and s.strip() for s in (run_id,episode_id,clock_domain)): raise ValueError('身份不能为空')
         if type(generation) is not int or generation < 0 or fixed_delta != .05: raise ValueError('generation或固定步长非法')
         self._world=world; self.run_id=run_id; self.episode_id=episode_id; self.generation=generation; self.clock_domain=clock_domain
@@ -14,6 +17,10 @@ class SynchronousRunner:
         self._destroy_owned=destroy_owned
         self._cleanup_path=Path(cleanup_path) if cleanup_path is not None else None
         self._cleanup_trigger=None
+        if not 0 < cleanup_rpc_s <= recovery_budget_s <= 12: raise ValueError('清理期限非法')
+        self._reconnect=reconnect; self._destroy_command=destroy_command; self._prepare_cleanup=prepare_cleanup
+        self._recovery_budget_s=recovery_budget_s; self._cleanup_rpc_s=cleanup_rpc_s
+        self._world_id=getattr(world,'id',None); self._role='oas:'+run_id
         snapshot=world.get_snapshot(); self.frame=snapshot.frame; self.sim_time=snapshot.timestamp.elapsed_seconds
         settings=world.get_settings(); settings.synchronous_mode=True; settings.fixed_delta_seconds=fixed_delta
         if hasattr(settings,'substepping'):
@@ -29,6 +36,7 @@ class SynchronousRunner:
         blueprints=self._world.get_blueprint_library()
         candidates=blueprints.filter('vehicle.*')
         if not candidates: raise RuntimeError('地图没有车辆蓝图')
+        candidates[0].set_attribute('role_name',self._role)
         ego=None
         for transform in self._world.get_map().get_spawn_points():
             ego=self._world.try_spawn_actor(candidates[0],transform)
@@ -38,6 +46,7 @@ class SynchronousRunner:
         # 其后台线程会在服务端失联时触发原生进程终止，因此此处保持默认手动控制。
         self.register_owned(ego)
         camera_bp=blueprints.find('sensor.camera.rgb')
+        camera_bp.set_attribute('role_name',self._role)
         camera_bp.set_attribute('image_size_x','320'); camera_bp.set_attribute('image_size_y','180')
         camera_bp.set_attribute('sensor_tick','0.05')
         camera=self._world.spawn_actor(camera_bp,carla.Transform(carla.Location(x=1.5,z=2.4)),attach_to=ego)
@@ -66,16 +75,88 @@ class SynchronousRunner:
                 self._failed=True; raise
             return TickEvent('1.0',self.run_id,self.episode_id,self.generation,self.frame,self.clock_domain,self.sim_time,()).to_json()
 
+    def _save_cleanup(self, report):
+        if self._cleanup_path is None: return
+        try:
+            temporary=self._cleanup_path.with_suffix('.tmp')
+            temporary.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+            temporary.replace(self._cleanup_path)
+        except OSError as exc:
+            # 证据盘写入故障不能阻止 actor 清理；最终仍明确报告失败。
+            report.setdefault('evidence_errors',[]).append(str(exc))
+
+    def _close_with_recovery(self):
+        started=time.monotonic(); deadline=started+self._recovery_budget_s
+        self._closed=True
+        report={'status':'in_progress','trigger':self._cleanup_trigger,'world_id':self._world_id,
+                'actors':[],'settings_restored':False,'attempts':[],'budget_s':self._recovery_budget_s}
+        report['owned']=[{'actor_id':a.id,'type_id':a.type_id,'role_name':self._role} for a in self._owned]
+        self._save_cleanup(report)
+        if self._prepare_cleanup: self._prepare_cleanup(self._cleanup_rpc_s)
+        for actor in reversed(self._owned):
+            try:
+                if hasattr(actor,'stop'): actor.stop()
+            except Exception as exc: report.setdefault('stop_errors',[]).append(str(exc))
+        settings_keys=('synchronous_mode','fixed_delta_seconds','substepping','max_substeps',
+                       'max_substep_delta_time','no_rendering_mode','max_culling_distance',
+                       'deterministic_ragdolls','tile_stream_distance','actor_active_distance','spectator_as_ego')
+        expected={key:getattr(self._original,key) for key in settings_keys if hasattr(self._original,key)}
+        completed=set()
+        while time.monotonic() < deadline:
+            attempt={'elapsed_s':time.monotonic()-started}; report['attempts'].append(attempt)
+            try:
+                client=self._reconnect(min(self._cleanup_rpc_s,deadline-time.monotonic()))
+                def check_time():
+                    left=deadline-time.monotonic()
+                    if left<=0: raise TimeoutError('恢复收尾期限已到')
+                    client.set_timeout(min(self._cleanup_rpc_s,left))
+                check_time(); world=client.get_world()
+                check_time(); world.get_settings()  # 强制真实 RPC，不能只使用缓存的世界 ID。
+                attempt['observed_world_id']=world.id
+                if self._world_id is None or world.id != self._world_id:
+                    report['reason']='world_changed'; break
+                pending=[]
+                for owned in reversed(self._owned):
+                    if owned.id in completed: continue
+                    check_time(); actor=world.get_actor(owned.id)
+                    if actor is not None and (actor.type_id != owned.type_id or actor.attributes.get('role_name') != self._role):
+                        report['reason']='ownership_mismatch'; break
+                    pending.append((owned.id,actor))
+                if report.get('reason'): break
+                # 全部对象归属预检完成后才允许修改服务端。
+                for actor_id,actor in pending:
+                    if actor is not None:
+                        check_time(); response=client.apply_batch_sync([self._destroy_command(actor_id)],False)[0]
+                        if response.error: raise RuntimeError(response.error)
+                    completed.add(actor_id)
+                    report['actors'].append({'actor_id':actor_id,'destroyed':True,'already_absent':actor is None})
+                    self._save_cleanup(report)
+                check_time(); world.apply_settings(self._original)
+                check_time(); actual=world.get_settings()
+                def equal(a,b):
+                    return math.isclose(a,b,rel_tol=0,abs_tol=1e-6) if type(a) is float and type(b) is float else a==b
+                if any(not equal(value,getattr(actual,key)) for key,value in expected.items()):
+                    raise RuntimeError('原设置恢复后复核不一致')
+                report['settings_restored']=True; report['status']='completed'; break
+            except Exception as exc:
+                attempt['error']=str(exc); self._save_cleanup(report)
+                left=deadline-time.monotonic()
+                if left>0: time.sleep(min(.25,left))
+        if report['status']!='completed':
+            report['status']='failed'; report.setdefault('reason','recovery_deadline')
+        report['elapsed_s']=time.monotonic()-started
+        self._save_cleanup(report)
+        if report.get('evidence_errors') or report['status']!='completed':
+            raise RuntimeError('清理收尾失败：'+report.get('reason','evidence_write_failed'))
+
     def close(self):
         with self._lock:
             if self._closed: return
+            if self._reconnect is not None: return self._close_with_recovery()
             failures=[]
             report={'status':'in_progress','trigger':self._cleanup_trigger,'actors':[], 'settings_restored':False}
             def save():
-                if self._cleanup_path is not None:
-                    temporary=self._cleanup_path.with_suffix('.tmp')
-                    temporary.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
-                    temporary.replace(self._cleanup_path)
+                self._save_cleanup(report)
             save()
             for actor in reversed(self._owned):
                 entry={'actor_id':getattr(actor,'id',None),'destroyed':False,'errors':[]}

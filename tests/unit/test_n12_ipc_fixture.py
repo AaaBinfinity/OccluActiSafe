@@ -17,8 +17,9 @@ from occluactisafe.simulation.observation_adapter import decode_tick
 
 class Actor:
     next_id = 0
-    def __init__(self):
+    def __init__(self, bp):
         Actor.next_id += 1; self.id = Actor.next_id; self.destroyed = False; self.callback = None
+        self.type_id='fixture.actor'; self.attributes=dict(bp.attributes)
     def set_autopilot(self, value): raise AssertionError('新生手动车辆不应初始化 Traffic Manager')
     def apply_control(self, value): pass
     def listen(self, callback): self.callback = callback
@@ -28,16 +29,18 @@ class Actor:
 
 
 class World:
-    def __init__(self): self.frame=10; self.settings=SimpleNamespace(synchronous_mode=False,fixed_delta_seconds=None); self.actors=[]
+    def __init__(self): self.id=123; self.frame=10; self.settings=SimpleNamespace(synchronous_mode=False,fixed_delta_seconds=None); self.actors=[]
     def get_settings(self): return SimpleNamespace(**vars(self.settings))
     def apply_settings(self, value): self.settings=value
     def get_snapshot(self): return SimpleNamespace(frame=self.frame,timestamp=SimpleNamespace(elapsed_seconds=self.frame*.05))
     def get_blueprint_library(self):
-        bp=SimpleNamespace(set_attribute=lambda *args:None)
+        bp=SimpleNamespace(attributes={})
+        bp.set_attribute=lambda k,v:bp.attributes.update({k:v})
         return SimpleNamespace(filter=lambda _: [bp],find=lambda _:bp)
     def get_map(self): return SimpleNamespace(get_spawn_points=lambda:[object()])
-    def try_spawn_actor(self,*args): self.actors.append(Actor()); return self.actors[-1]
-    def spawn_actor(self,*args,**kwargs): self.actors.append(Actor()); return self.actors[-1]
+    def try_spawn_actor(self,bp,*args): self.actors.append(Actor(bp)); return self.actors[-1]
+    def spawn_actor(self,bp,*args,**kwargs): self.actors.append(Actor(bp)); return self.actors[-1]
+    def get_actor(self,actor_id): return next((a for a in self.actors if a.id==actor_id and not a.destroyed),None)
     def tick(self):
         self.frame+=1
         image=SimpleNamespace(frame=self.frame,width=320,height=180,raw_data=bytes(320*180*4))

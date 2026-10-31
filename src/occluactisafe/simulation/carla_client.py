@@ -32,9 +32,15 @@ def main():
                 response = client.apply_batch_sync([carla.command.DestroyActor(actor.id)], False)[0]
                 if response.error: raise RuntimeError(f'actor {actor.id} 销毁失败：{response.error}')
                 return True
+            def reconnect(timeout):
+                connected=carla.Client(config['host'],config['port']); connected.set_timeout(timeout)
+                return connected
             with SynchronousRunner(client.get_world(), run_id=config['run_id'], episode_id='episode-1',
                                    generation=1, clock_domain='carla', destroy_owned=destroy_owned,
-                                   cleanup_path=Path(config['output']) / '清理报告.json') as runner:
+                                   cleanup_path=Path(config['output']) / '清理报告.json',
+                                   reconnect=reconnect,destroy_command=carla.command.DestroyActor,
+                                   prepare_cleanup=client.set_timeout,
+                                   recovery_budget_s=config.get('recovery_budget_s',12.),cleanup_rpc_s=.5) as runner:
                 ego = runner.spawn_ego_and_camera(carla, frames)
                 client.set_timeout(config.get('rpc_timeout_s', 5.0))
                 send(conn, {'kind': 'ready', 'client_version': client_version, 'server_version': server_version,

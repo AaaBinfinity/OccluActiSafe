@@ -36,6 +36,7 @@ def main():
     config = {'host': args.host, 'port': args.port, 'run_id': run_id, 'output': str(output),
               'sensor_timeout_s': args.sensor_timeout, 'ticks': args.ticks, 'fixed_delta_s': .05,
               'rpc_timeout_s': 5.0,
+              'recovery_budget_s': 12.0, 'cleanup_rpc_s': .5,
               'bridge_python': str(args.bridge_python.resolve()), 'core_python': str(Path(sys.executable).resolve()),
               'fault_test': args.fault_test}
     (output / '运行配置.json').write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
