@@ -179,13 +179,25 @@ def run_episode(client,output,config):
             yaw=math.radians(config[name+'_spawn']['yaw']);actor.set_target_velocity(carla.Vector3D(x=config['speed_mps']*math.cos(yaw),y=config['speed_mps']*math.sin(yaw)))
             actor.set_target_angular_velocity(carla.Vector3D())
         normal={'throttle':.53,'brake':0.,'steer':0.};advance(normal,normal)
+        if target.id>=65536:raise RuntimeError('实例相机16位ID范围不足，拒绝混淆实例')
+        (output/'评测对象身份.json').write_text(json.dumps({'ego_actor_id':ego.id,'target_actor_id':target.id,
+            'occluder_actor_id':obstacle.id,'origin_frame':runner.frame,'origin_sim_time_s':runner.sim_time,
+            'instance_decoder':'官方bounding_boxes.py: G + (B << 8)'},ensure_ascii=False,indent=2),encoding='utf-8')
         target_actuator=CalibratedActuator(config['calibration'],kp=.05,ki=.02,steering_rate_per_s=1.)
         def lane_angle(s,spawn):
             yaw=-math.radians(spawn['yaw']);dx=s['x']-spawn['x'];dy=s['y']+spawn['y']
             cross=-math.sin(yaw)*dx+math.cos(yaw)*dy;error=(yaw-s['yaw']+math.pi)%(2*math.pi)-math.pi
             return max(-.1,min(.1,error-.12*cross))
         for index in range(config['ticks']):
-            if collisions:break
+            if collisions:
+                # 保留触发传感器后的真实当前帧；不再向在线策略发送隐藏/碰撞真值。
+                for name,buffer in frames.items():
+                    frame=buffer.get(runner.frame,3.)
+                    if not frame['valid']:raise RuntimeError('碰撞关键帧缺失')
+                    temporary=output/f'collision_{0 if name=="车端" else 1}.png';frame['value'].save_to_disk(str(temporary))
+                    path=output/f'{name}碰撞画面_帧{index:04d}.png';temporary.replace(path)
+                    images.append({'image':path.name,'source':name,'frame':runner.frame,'time_s':index*.05,'index':index,'event':'collision_sensor'})
+                break
             now=index*.05;es=state(ego);ts=state(target)
             import numpy as np
             pixels={};mask_hashes={}
