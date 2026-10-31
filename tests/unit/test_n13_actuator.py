@@ -22,6 +22,14 @@ class ActuatorTests(unittest.TestCase):
             self.assertTrue(out['saturated']);self.assertEqual(out['throttle'],1);self.assertEqual(out['brake'],0)
         self.assertEqual(self.a.integral,0)
 
+    def test_steering_reaches_both_calibrated_limits(self):
+        values={'speed_mps':8,'target_speed_mps':8,'acceleration_mps2':0,'dt_s':.1,
+                'vehicle_blueprint':'fixture.vehicle','surface_id':'fixture.dry'}
+        for _ in range(6): out=self.a.step(angle_rad=.4,**values)
+        self.assertAlmostEqual(out['steer'],1.)
+        for _ in range(11): out=self.a.step(angle_rad=-.4,**values)
+        self.assertAlmostEqual(out['steer'],-1.)
+
     def test_outside_measured_range_rejected_without_state_change(self):
         for args in ({'speed_mps':16},{'acceleration_mps2':3},{'angle_rad':.5},{'dt_s':0},{'surface_id':'fixture.wet'},{'vehicle_blueprint':'fixture.other'}):
             values={'speed_mps':8,'target_speed_mps':8,'acceleration_mps2':0,'angle_rad':0,'dt_s':.1,'vehicle_blueprint':'fixture.vehicle','surface_id':'fixture.dry'};values.update(args)
