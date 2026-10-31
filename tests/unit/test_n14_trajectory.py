@@ -42,6 +42,8 @@ class TrajectoryTests(unittest.TestCase):
         for field in ('truth','future','target_hidden'):
             o=obs();o[field]={'x':0.}
             with self.assertRaises(ValueError):TrajectoryAEB('cooperative_aeb').step(o)
+        o=obs();o['ego']['vx']=float('nan')
+        with self.assertRaises(ValueError):TrajectoryAEB('cooperative_aeb').step(o)
 
     def test_geometry_and_prefix_identity(self):
         a=obs()['ego'];b=dict(a,x=20.)

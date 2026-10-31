@@ -12,6 +12,9 @@ class TrajectoryAEB:
         if set(observation)!={'time_s','ego','local','received'}:raise ValueError('在线输入含未知字段')
         now=observation['time_s'];ego=observation['ego'];targets=[];used=[]
         if set(ego)!={'x','y','vx','vy','yaw','length','width'}:raise ValueError('自车字段非法')
+        if any(isinstance(x,bool) or not isinstance(x,(int,float)) or not math.isfinite(x) for x in (now,*ego.values())):
+            raise ValueError('时刻或自车状态非有限数值')
+        if now<0 or min(ego['length'],ego['width'])<=0:raise ValueError('时刻或自车尺度非法')
         if observation['local'] is not None:
             packet=ObservationPacket.from_dict(observation['local'])
             if (packet.clock_domain,packet.coordinate_frame_id,packet.map_id)!=('carla-n14','map-right-handed','map-A'):raise ValueError('本地身份不匹配')

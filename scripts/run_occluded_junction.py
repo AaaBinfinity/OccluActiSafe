@@ -22,6 +22,10 @@ def run(config_path=DEFAULT_CONFIG):
     fitted=json.loads(calibration_path.read_text(encoding='utf-8'));config['calibration']=fitted['calibration'];config['calibration_context']=fitted['context']
     output=ARTIFACTS/('n14_'+uuid.uuid4().hex);output.mkdir();print(output,flush=True)
     (output/'冻结配置.json').write_text(json.dumps(config,ensure_ascii=False,indent=2),encoding='utf-8')
+    tracked=[ROOT/'src/occluactisafe/simulation'/n for n in ('scenarios.py','trajectory_input.py','runner.py')]
+    tracked.extend([Path(__file__),ROOT/'src/occluactisafe/control/actuator.py'])
+    (output/'源码版本.json').write_text(json.dumps({'commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),
+        'source_sha256':{str(p.relative_to(ROOT)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in tracked}},ensure_ascii=False,indent=2),encoding='utf-8')
     env=os.environ.copy();env['PYTHONPATH']=str(ROOT/'src');env['PYTHONIOENCODING']='utf-8'
     for strategy in config.get('strategies',['reference','local_aeb','cooperative_aeb']):
         folder=output/strategy;folder.mkdir();child=dict(config,strategy=strategy)
