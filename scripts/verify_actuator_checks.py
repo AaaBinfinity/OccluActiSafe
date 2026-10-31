@@ -40,6 +40,14 @@ def verify(folder):
         rate=all(abs(b-a)<=limit+1e-6 for a,b in zip([0.]+steer,steer))
         record(f'{case_id} 互斥及范围',mutual and bounds,{'mutual':mutual,'bounds':bounds})
         record(f'{case_id} 请求转向变化',rate,{'limit_per_tick':limit})
+        capability=config['calibration'].get('capabilities')
+        if capability:
+            limited=[float(r['limited_acceleration_mps2']) for r in rows]
+            jerk_step=capability['command_jerk_limit_mps3']*config['fixed_delta_s']
+            jerk_ok=all(abs(b-a)<=jerk_step+1e-6 for a,b in zip([0.]+limited,limited))
+            delay_ok=all(abs(float(r['estimated_response_delay_s'])-capability['observed_response_delay_s'])<1e-9 for r in rows)
+            record(f'{case_id} 请求jerk与延迟参数',jerk_ok and delay_ok,{'limit_per_tick_mps2':jerk_step,
+                   'observed_delay_s':capability['observed_response_delay_s']})
         saturated=[r for r in rows if r['controller_saturated']=='True']
         if name=='饱和抗积分':
             ints=[float(r['controller_integral']) for r in saturated]

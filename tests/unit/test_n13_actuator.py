@@ -38,5 +38,17 @@ class ActuatorTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             a.step(speed_mps=8,target_speed_mps=8,acceleration_mps2=1.5,angle_rad=0,dt_s=.1,vehicle_blueprint='v',surface_id='dry')
 
+    def test_calibrated_jerk_limits_request_and_exposes_delay(self):
+        a=CalibratedActuator({'acceleration_to_pedal':[[-3,-1],[0,0],[2,1]],'angle_to_steer':[[-.4,-1],[0,0],[.4,1]],
+            'speed_min_mps':0,'speed_max_mps':15,'vehicle_blueprint':'v','surface_id':'dry',
+            'capabilities':{'command_jerk_limit_mps3':1,'observed_response_delay_s':.15}},
+            kp=0,ki=0,steering_rate_per_s=2)
+        result=a.step(speed_mps=8,target_speed_mps=8,acceleration_mps2=1,angle_rad=0,dt_s=.1,vehicle_blueprint='v',surface_id='dry')
+        self.assertAlmostEqual(result['limited_acceleration_mps2'],.1)
+        self.assertEqual(result['estimated_response_delay_s'],.15)
+        with self.assertRaises(ValueError):
+            a.step(speed_mps=8,target_speed_mps=8,acceleration_mps2=3,angle_rad=0,dt_s=.1,vehicle_blueprint='v',surface_id='dry')
+        self.assertAlmostEqual(a.last_acceleration,.1)
+
 
 if __name__=='__main__':unittest.main()

@@ -42,7 +42,7 @@ def run(output):
               'x_m','y_m','yaw_deg','speed_mps','longitudinal_acceleration_mps2','lateral_acceleration_mps2',
               'wheel_angle_deg','wheel_query_frame_min','wheel_query_frame_max','requested_throttle','requested_brake','requested_steer',
               'actual_throttle','actual_brake','actual_steer','requested_acceleration_mps2','requested_angle_rad',
-              'target_speed_mps','controller_integral','controller_saturated']
+              'limited_acceleration_mps2','estimated_response_delay_s','target_speed_mps','controller_integral','controller_saturated']
     run_id = output.name
     def destroy(actor):
         result = client.apply_batch_sync([carla.command.DestroyActor(actor.id)], False)[0]
@@ -145,6 +145,8 @@ def run(output):
                                 throttle,brake,steer=(command[k] for k in ('throttle','brake','steer'))
                                 controller={'requested_acceleration_mps2':check['acceleration_mps2'],
                                     'requested_angle_rad':check['angle_rad'],'target_speed_mps':check['target_speed_mps'],
+                                    'limited_acceleration_mps2':command['limited_acceleration_mps2'],
+                                    'estimated_response_delay_s':command['estimated_response_delay_s'],
                                     'controller_integral':actuator.integral,'controller_saturated':command['saturated']}
                             else:
                                 throttle=value if kind=='throttle' else 0

@@ -68,7 +68,11 @@ class CalibratedActuator:
         for slices in (self.accel_slices,self.steering_slices):
             if slices and (self.speed_min<slices[0][0] or self.speed_max>slices[-1][0]):
                 raise ValueError('声明速度范围超出标定切片')
-        self.integral=0.;self.steer=0.
+        capabilities=calibration.get('capabilities')
+        self.jerk_limit=_number(capabilities['command_jerk_limit_mps3'],'加加速度限制') if capabilities else None
+        self.response_delay=_number(capabilities['observed_response_delay_s'],'响应延迟') if capabilities else None
+        if capabilities and (self.jerk_limit<=0 or self.response_delay<0): raise ValueError('标定能力参数非法')
+        self.integral=0.;self.steer=0.;self.last_acceleration=0.
 
     def step(self, *, speed_mps, target_speed_mps, acceleration_mps2, angle_rad, dt_s, vehicle_blueprint, surface_id):
         if vehicle_blueprint != self.vehicle_blueprint or surface_id != self.surface_id:
@@ -77,7 +81,13 @@ class CalibratedActuator:
         acceleration=_number(acceleration_mps2,'加速度');angle=_number(angle_rad,'转角');dt=_number(dt_s,'dt')
         if dt<=0 or not self.speed_min<=speed<=self.speed_max or not self.speed_min<=target<=self.speed_max:
             raise ValueError('速度或时间超出标定范围')
+        # 先拒绝超出表的原始请求，再限制请求变化，避免截断掩盖外推。
         feedforward=_speed_map(self.accel_slices,speed,acceleration) if self.accel_slices else _interpolate(self.accel,acceleration)
+        limited=acceleration
+        if self.jerk_limit is not None:
+            change=self.jerk_limit*dt
+            limited=max(self.last_acceleration-change,min(self.last_acceleration+change,acceleration))
+            feedforward=_speed_map(self.accel_slices,speed,limited) if self.accel_slices else _interpolate(self.accel,limited)
         requested_steer=_speed_map(self.steering_slices,speed,angle) if self.steering_slices else _interpolate(self.steering,angle)
         error=target-speed
         candidate=self.integral+error*dt
@@ -87,5 +97,7 @@ class CalibratedActuator:
         raw=feedforward+self.kp*error+self.ki*self.integral
         pedal=max(-1.,min(1.,raw));change=self.rate*dt
         self.steer=max(self.steer-change,min(self.steer+change,requested_steer))
+        self.last_acceleration=limited
         return {'throttle':max(0.,pedal),'brake':max(0.,-pedal),'steer':self.steer,
-                'saturated':abs(raw)>1.,'requested_acceleration_mps2':acceleration,'requested_angle_rad':angle}
+                'saturated':abs(raw)>1.,'requested_acceleration_mps2':acceleration,'limited_acceleration_mps2':limited,
+                'estimated_response_delay_s':self.response_delay,'requested_angle_rad':angle}
