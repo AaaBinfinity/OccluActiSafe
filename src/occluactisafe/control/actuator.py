@@ -28,6 +28,10 @@ def _interpolate(points, value):
 class CalibratedActuator:
     """输入加速度m/s²、转角rad和速度m/s；仅接受提供的实测表。"""
     def __init__(self, calibration, *, kp, ki, steering_rate_per_s):
+        self.vehicle_blueprint=calibration.get('vehicle_blueprint')
+        self.surface_id=calibration.get('surface_id')
+        if not all(isinstance(x,str) and x.strip() for x in (self.vehicle_blueprint,self.surface_id)):
+            raise ValueError('必须声明车辆蓝图与已标定附着条件')
         self.accel=_table(calibration['acceleration_to_pedal'],'加速度表')
         self.steering=_table(calibration['angle_to_steer'],'转向表')
         self.speed_min=_number(calibration['speed_min_mps'],'最小速度')
@@ -39,7 +43,9 @@ class CalibratedActuator:
             raise ValueError('标定输出超出归一化范围')
         self.integral=0.;self.steer=0.
 
-    def step(self, *, speed_mps, target_speed_mps, acceleration_mps2, angle_rad, dt_s):
+    def step(self, *, speed_mps, target_speed_mps, acceleration_mps2, angle_rad, dt_s, vehicle_blueprint, surface_id):
+        if vehicle_blueprint != self.vehicle_blueprint or surface_id != self.surface_id:
+            raise ValueError('车辆或附着条件超出标定范围')
         speed=_number(speed_mps,'速度');target=_number(target_speed_mps,'目标速度')
         acceleration=_number(acceleration_mps2,'加速度');angle=_number(angle_rad,'转角');dt=_number(dt_s,'dt')
         if dt<=0 or not self.speed_min<=speed<=self.speed_max or not self.speed_min<=target<=self.speed_max:
