@@ -57,7 +57,7 @@ def render_plots(directory,*,output_dir=None):
             for ext in ('png','svg'):
                 filename=name+'.'+ext;fig.savefig(out/filename,dpi=140,metadata={'Date':None} if ext=='svg' else None);figures[filename]=sha(out/filename)
         finally:plt.close(fig)
-    with plt.rc_context({'svg.hashsalt':'n11-1','font.family':'DejaVu Sans'}):
+    with plt.rc_context({'svg.hashsalt':'n11-1','font.family':'DejaVu Sans','path.simplify':False}):
         fig,axes=plt.subplots(2,2,figsize=(10,7))
         for ax,field,unit in zip(axes.flat,('s','v','a','j'),('m','m/s','m/s2','m/s3')):
             ax.plot([float(r['time']) for r in braking],[float(r[field]) for r in braking]);ax.set(xlabel='time (s)',ylabel=f'{field} ({unit})')
