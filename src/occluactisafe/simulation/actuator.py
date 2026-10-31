@@ -51,7 +51,7 @@ def run(output):
     def reconnect(timeout):
         client.set_timeout(timeout); return client
     try:
-        with rows_path.open('w', encoding='utf-8-sig', newline='') as stream, (output / '工况状态.jsonl').open('w', encoding='utf-8') as states:
+        with rows_path.open('w', encoding='utf-8-sig', newline='') as stream, (output / '工况状态.jsonl').open('w', encoding='utf-8') as states, (output / 'saturation_events.jsonl').open('w', encoding='utf-8') as saturations:
             writer = csv.DictWriter(stream, fieldnames=fields); writer.writeheader(); stream.flush()
             with ThreadPoolExecutor(max_workers=1) as wheel_executor, SynchronousRunner(client.get_world(),run_id=run_id,episode_id='calibration',generation=1,
                     clock_domain='carla',destroy_owned=destroy,cleanup_path=output/'清理报告.json',
@@ -106,6 +106,10 @@ def run(output):
                          'actual_throttle':actual.throttle,'actual_brake':actual.brake,'actual_steer':actual.steer}
                     if controller is not None: row.update(controller)
                     writer.writerow(row)
+                    if controller is not None and controller['controller_saturated']:
+                        saturations.write(json.dumps({'case_id':case_id,'frame':runner.frame,'sim_time_s':runner.sim_time,
+                            'throttle':throttle,'brake':brake,'steer':steer,'integral':controller['controller_integral']},
+                            ensure_ascii=False,allow_nan=False)+'\n');saturations.flush()
                     return row
                 for case_id,case in enumerate(cases(config)):
                     state={'case_id':case_id,**case,'status':'started'}
