@@ -1,0 +1,4 @@
+# CARLA独立Python 3.11环境；首次准备显式安装，日常入口不自动安装
+carla==0.9.16
+numpy==2.4.6
+networkx==3.6.1
