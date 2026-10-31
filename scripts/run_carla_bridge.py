@@ -37,7 +37,7 @@ def main():
     listener = Listener(('127.0.0.1', 0), authkey=auth)
     listener._listener._socket.settimeout(45)
     env = os.environ.copy(); env.update({'OAS_IPC_PORT': str(listener.address[1]), 'OAS_IPC_AUTH': auth.hex(),
-                                          'OAS_BRIDGE_CONFIG': json.dumps(config), 'PYTHONPATH': str(ROOT / 'src')})
+                                          'OAS_BRIDGE_CONFIG': json.dumps(config), 'PYTHONPATH': str(ROOT / 'src'), 'PYTHONUTF8': '1'})
     with (output / '桥接日志.txt').open('w', encoding='utf-8') as log:
         process = subprocess.Popen([str(args.bridge_python), '-m', 'occluactisafe.simulation.carla_client'],
                                    env=env, stdout=log, stderr=subprocess.STDOUT,

@@ -66,7 +66,9 @@ class SynchronousRunner:
             for actor in reversed(self._owned):
                 try:
                     if hasattr(actor,'stop'): actor.stop()
-                    actor.destroy()
+                except Exception as exc: failures.append(str(exc))
+                try:
+                    if actor.destroy() is False: failures.append('actor 销毁返回失败')
                 except Exception as exc: failures.append(str(exc))
             try: self._world.apply_settings(self._original)
             except Exception as exc: failures.append(str(exc))
