@@ -78,10 +78,24 @@ def analyze(folder):
         axes[-1].set_xlabel('响应时间 (s)');axes[0].legend(fontsize=7,ncol=3)
         for ext in ('png','svg'): fig.savefig(folder/f'执行器响应曲线.{ext}',dpi=180)
         plt.close(fig)
+    pedal_cases=[items for items in by_case.values() if items[0]['kind'] in ('throttle','brake') and len(items)>=15]
+    if pedal_cases:
+        fig,ax=plt.subplots(figsize=(9,5),constrained_layout=True)
+        speeds=sorted({float(items[0]['target_initial_speed_mps']) for items in pedal_cases})
+        for speed in speeds:
+            group=[items for items in pedal_cases if float(items[0]['target_initial_speed_mps'])==speed]
+            x=[float(items[0]['value'])*(1 if items[0]['kind']=='throttle' else -1) for items in group]
+            y=[statistics.mean(float(r['longitudinal_acceleration_mps2']) for r in items[5:15]) for items in group]
+            ax.scatter(x,y,s=20,label=f'{speed:g} m/s，各次重复')
+        ax.set_xlabel('踏板输入（负为制动，正为油门）');ax.set_ylabel('响应第5–14帧平均纵向加速度 (m/s²)')
+        ax.grid(alpha=.25);ax.legend()
+        for ext in ('png','svg'):fig.savefig(folder/f'踏板与加速度重复散点.{ext}',dpi=180)
+        plt.close(fig)
     files=[raw,summary,folder/'重复误差.json']
     for ext in ('png','svg'):
-        p=folder/f'执行器响应曲线.{ext}'
-        if p.exists(): files.append(p)
+        for stem in ('执行器响应曲线','踏板与加速度重复散点'):
+            p=folder/f'{stem}.{ext}'
+            if p.exists(): files.append(p)
     hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
     (folder/'图表来源与哈希.json').write_text(json.dumps({'raw':raw.name,'files':hashes,
         'limitations':'每个轮角RPC只知位于相邻帧区间；统计含未完成工况的部分响应，不代表通过。'},ensure_ascii=False,indent=2),encoding='utf-8')
