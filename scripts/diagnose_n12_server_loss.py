@@ -1,5 +1,6 @@
 """真实 CARLA 服务端中断 A/B 诊断；默认运行不带 Traffic Manager 和调用关闭自动驾驶两组。"""
 import argparse
+import hashlib
 from datetime import datetime
 import json
 import os
@@ -10,6 +11,25 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def plot_results(output, results):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    labels=[f"{item['mode']}\nrepeat {item['repeat']}" for item in results]
+    native=[int((item['exit_code'] & 0xffffffff) >= 0xC0000000) for item in results]
+    fig,ax=plt.subplots(figsize=(10,4))
+    ax.bar(range(len(results)),native)
+    for index,item in enumerate(results): ax.text(index,native[index]+.05,item['exit_hex'],ha='center')
+    ax.set(xticks=range(len(results)),xticklabels=labels,ylabel='native process abort (1=yes)',ylim=(0,1.3))
+    fig.tight_layout(); images={}
+    for suffix in ('png','svg'):
+        path=output/('服务端中断与客户端退出对比.'+suffix); fig.savefig(path,dpi=150)
+        images[path.name]=hashlib.sha256(path.read_bytes()).hexdigest()
+    plt.close(fig)
+    write(output/'图表来源.json',{'source':'诊断结果.json',
+          'source_sha256':hashlib.sha256((output/'诊断结果.json').read_bytes()).hexdigest(),'images':images})
 
 
 def write(path, value):
@@ -59,6 +79,10 @@ def main():
     if not 1 <= args.repeats <= 5: raise ValueError('repeats 必须为 1～5')
     if listening(): raise RuntimeError('2000 端口已占用，拒绝影响现有服务')
     output = args.output_root.resolve() / datetime.now().strftime('ab_%Y%m%d_%H%M%S_%f'); output.mkdir(parents=True)
+    sys.path.insert(0,str(ROOT/'src'))
+    from occluactisafe.common.run_manifest import _source_identity
+    write(output/'运行清单.json',{'source':_source_identity(ROOT),'repeats':args.repeats,
+          'bridge_only':args.bridge_only,'server':str(args.server.resolve()),'bridge_python':str(args.bridge_python.resolve())})
     env = os.environ.copy(); env['PYTHONUTF8'] = '1'
     startup = subprocess.STARTUPINFO(); startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW; startup.wShowWindow = 0
     results = []
@@ -105,6 +129,7 @@ def main():
             deadline = time.monotonic() + 10
             while listening() and time.monotonic() < deadline: time.sleep(.1)
             if listening(): raise RuntimeError('服务端端口未关闭，停止后续测试')
+    plot_results(output,results)
     print(output)
 
 
