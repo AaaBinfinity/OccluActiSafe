@@ -20,6 +20,10 @@ def run(config_path=DEFAULT_CONFIG):
     calibration_path=Path(config.pop('calibration_path'))
     if hashlib.sha256(calibration_path.read_bytes()).hexdigest()!=config['calibration_sha256']:raise ValueError('N13标定哈希不匹配')
     fitted=json.loads(calibration_path.read_text(encoding='utf-8'));config['calibration']=fitted['calibration'];config['calibration_context']=fitted['context']
+    capabilities=config['calibration']['capabilities']
+    config['braking']={'deceleration_mps2':capabilities['effective_deceleration_mps2'],
+        'response_delay_s':capabilities['observed_response_delay_s'],'control_period_s':.05,
+        'margin_m':config.get('aeb_margin_m',5.),'max_track_age_s':.5}
     output=ARTIFACTS/('n14_'+uuid.uuid4().hex);output.mkdir();print(output,flush=True)
     (output/'冻结配置.json').write_text(json.dumps(config,ensure_ascii=False,indent=2),encoding='utf-8')
     tracked=[ROOT/'src/occluactisafe/simulation'/n for n in ('scenarios.py','trajectory_input.py','runner.py')]
@@ -31,7 +35,7 @@ def run(config_path=DEFAULT_CONFIG):
     for strategy in config.get('strategies',['reference','local_aeb','cooperative_aeb']):
         folder=output/strategy;folder.mkdir();child=dict(config,strategy=strategy)
         task=folder/'运行配置.json';task.write_text(json.dumps(child,ensure_ascii=False,indent=2),encoding='utf-8')
-        policy=TrajectoryAEB(strategy,prefix_s=config['prefix_s'],horizon_s=config['horizon_s'])
+        policy=TrajectoryAEB(strategy,prefix_s=config['prefix_s'],horizon_s=config['horizon_s'],braking=config['braking'])
         actuator=CalibratedActuator(config['calibration'],kp=.05,ki=.02,steering_rate_per_s=1.)
         with (folder/'桥接日志.txt').open('w',encoding='utf-8') as log,(folder/'在线决策.jsonl').open('w',encoding='utf-8') as audit:
             process=subprocess.Popen([str(BRIDGE),'-m','occluactisafe.simulation.scenarios','run',str(folder),str(task)],
