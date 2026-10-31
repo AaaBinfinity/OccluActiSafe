@@ -39,6 +39,11 @@ class BrakingTests(unittest.TestCase):
         with self.assertRaises(ValueError): e.control(0)
         for i in range(4,201):
             c=e.control(i*.05);self.assertEqual(c['throttle']*c['brake'],0)
+        from occluactisafe.planning.candidates import longitudinal_candidates
+        candidate=longitudinal_candidates(e,.5,'sim','map')[0]
+        for i in range(1001):
+            t=.5 + 3.15*i/1000
+            self.assertLessEqual(abs(candidate.path.at(t).x-e.at(t).s),candidate.geometry.margin+1e-9)
 
 
 if __name__ == '__main__': unittest.main()

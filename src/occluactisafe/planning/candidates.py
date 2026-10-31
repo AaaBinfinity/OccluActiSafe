@@ -18,8 +18,14 @@ def longitudinal_candidates(executor, now, domain, frame, horizon=3.):
         times = [now + i * .05 for i in range(math.ceil(duration / .05))]
         times.append(now + duration)
         poses = tuple(Pose2D(profile.at(t - started).s, 0., 0.) for t in times)
+        acceleration = profile.initial.a; acceleration_bound = abs(acceleration)
+        for jerk, phase_duration in profile.phases:
+            acceleration += jerk * phase_duration
+            acceleration_bound = max(acceleration_bound, abs(acceleration))
+        # |s''|上界给出线性弦插值误差≤Amax*dt²/8，补入独立几何裕量。
+        interpolation_margin = acceleration_bound * max(b-a for a,b in zip(times,times[1:]))**2 / 8
         result.append(Candidate(name, "queued_longitudinal_" + name.lower(), PoseTrajectory(tuple(times), poses, domain, frame),
-                                ParticipantGeometry("vehicle", 4., 2.), feasible))
+                                ParticipantGeometry("vehicle", 4., 2., margin=interpolation_margin), feasible))
     return tuple(result)
 
 
