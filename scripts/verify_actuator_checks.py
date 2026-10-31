@@ -4,6 +4,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 from pathlib import Path
 import statistics
 
@@ -52,6 +53,7 @@ def verify(folder):
             'mean_speed_error_mps':statistics.mean(abs(float(r['speed_mps'])-spec['target_speed_mps']) for r in rows),
             'mean_actual_acceleration_mps2':statistics.mean(float(r['longitudinal_acceleration_mps2']) for r in rows),
             'final_wheel_mean_deg':statistics.mean(wheels[-5:]),'requested_angle_rad':spec['angle_rad'],
+            'final_wheel_error_rad':math.radians(statistics.mean(wheels[-5:]))-spec['angle_rad'],
             'saturated_ticks':len(saturated)})
     pos=[m['mean_actual_acceleration_mps2'] for m in metrics if m['name']=='正加速度']
     neg=[m['mean_actual_acceleration_mps2'] for m in metrics if m['name']=='负加速度']

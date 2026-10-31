@@ -64,14 +64,20 @@ def fit(folder):
         if any(a[1]>=b[1] for a,b in zip(wheel_points,wheel_points[1:])):
             raise ValueError(f'{speed} m/s 车轮角与转向命令非严格单调')
         steering.append({'speed_mps':speed,'points':wheel_points})
+    low=min(config['speeds_mps']); high=max(config['speeds_mps'])
+    low_observed=max(float(rows[0]['speed_mps']) for key,rows in groups.items() if key[0]==low and rows)
+    high_observed=min(float(rows[0]['speed_mps']) for key,rows in groups.items() if key[0]==high and rows)
+    # 收窄名义范围，避免把从未达到的最低/最高初速当作实测边界。
+    minimum=max(low,low_observed);maximum=min(high,high_observed)
+    if minimum>=maximum: raise ValueError('实际初速范围无法构成有效标定区间')
     calibration={'vehicle_blueprint':physics['vehicle_blueprint'],'surface_id':'Town10HD_Opt_default_dry',
-        'speed_min_mps':min(config['speeds_mps']),'speed_max_mps':max(config['speeds_mps']),
+        'speed_min_mps':minimum,'speed_max_mps':maximum,
         'acceleration_by_speed':acceleration,'steering_by_speed':steering}
     source=folder/'执行器原始采样.csv'
     result={'calibration':calibration,'uncertainty':uncertainty,'source':str(source),
         'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
         'method':f"每次响应的第5至14帧纵向加速度均值与第2至4帧左前轮角均值；{config['repetitions']}次重复取均值，轮角有相邻帧时序不确定性；零转向锚点来自零转向工况实测。",
-        'limitations':'速度分档之间仅线性插值，尚需闭环复核；场景身份由调用方提供，无法自动验证附着；不外推分档及表范围。'}
+        'limitations':'速度分档按名义初速线性插值，实际初速及其波动见原始记录；尚需闭环复核。场景身份由调用方提供，无法自动验证附着；不外推分档及表范围。'}
     out=folder/'候选执行器标定.json'
     out.write_text(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False),encoding='utf-8')
     print(f'候选标定已写入 {out}，尚需真实控制复核')

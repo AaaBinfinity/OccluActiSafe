@@ -60,12 +60,18 @@ def analyze(folder):
                            'range':max(vals)-min(vals) if vals else None,
                            'sample_sd':statistics.stdev(vals) if len(vals)>1 else None})
     (folder/'重复误差.json').write_text(json.dumps(repeat,ensure_ascii=False,indent=2,allow_nan=False),encoding='utf-8')
-    selected=sorted(by_case)[:12]
+    selected=[]
+    for speed in sorted({float(v[0]['target_initial_speed_mps']) for v in by_case.values()}):
+        for kind,value in (('throttle',1.),('brake',1.),('steer_step',-1.),('steer_step',1.)):
+            matches=[case_id for case_id,v in by_case.items() if float(v[0]['target_initial_speed_mps'])==speed
+                     and v[0]['kind']==kind and float(v[0]['value'])==value]
+            if matches: selected.append(min(matches))
+    if not selected: selected=sorted(by_case)[:12]
     if selected:
         fig,axes=plt.subplots(3,1,figsize=(11,10),sharex=True,constrained_layout=True)
         for case_id in selected:
             items=by_case[case_id]; x=[float(r['sim_time_s'])-float(items[0]['sim_time_s']) for r in items]
-            label=f"{case_id}: {items[0]['kind']} {items[0]['value']}"
+            label=f"{items[0]['target_initial_speed_mps']} m/s {items[0]['kind']} {items[0]['value']}"
             for ax,key in zip(axes,('speed_mps','longitudinal_acceleration_mps2','wheel_angle_deg')):
                 ax.plot(x,[float(r[key]) for r in items],label=label,linewidth=.8)
         for ax,label in zip(axes,('速度 (m/s)','纵向加速度 (m/s²)','左前轮角度 (°)')): ax.set_ylabel(label);ax.grid(alpha=.25)
