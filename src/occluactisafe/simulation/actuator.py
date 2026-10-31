@@ -119,7 +119,11 @@ def run(output):
                             row=tick(throttle,brake,steer,case,'response',i,case_id)
                             if case_id in (0, 1, 8, 9) and i == 40:
                                 preview=previews.get(runner.frame,2)
-                                if preview['valid']: preview['value'].save_to_disk(str(output / f'车辆画面_工况{case_id}.png'))
+                                if preview['valid']:
+                                    # CARLA Windows 原生接口不支持 Unicode 路径，先用 ASCII 文件名写入。
+                                    temporary=output / f'preview_{case_id}.png'
+                                    preview['value'].save_to_disk(str(temporary))
+                                    temporary.replace(output / f'车辆画面_工况{case_id}.png')
                         state['status']='completed'
                     except Exception as exc:
                         state['status']='failed';state['error']=repr(exc)
