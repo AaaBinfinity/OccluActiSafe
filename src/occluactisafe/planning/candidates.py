@@ -14,9 +14,11 @@ def longitudinal_candidates(executor, now, domain, frame, horizon=3.):
         try: profile, started = executor.preview(now, *(limits or (None, None)))
         except ValueError:
             profile, started = executor.preview(now); feasible = False
-        duration = horizon + executor.delay
+        end = (now + executor.delay) + horizon
+        duration = end - now
         times = [now + i * .05 for i in range(math.ceil(duration / .05))]
-        times.append(now + duration)
+        times = [t for t in times if t < end]
+        times.append(end)
         poses = tuple(Pose2D(profile.at(t - started).s, 0., 0.) for t in times)
         acceleration = profile.initial.a; acceleration_bound = abs(acceleration)
         for jerk, phase_duration in profile.phases:

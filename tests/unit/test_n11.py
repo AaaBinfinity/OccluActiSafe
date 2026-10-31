@@ -99,6 +99,8 @@ class AnalyticTests(unittest.TestCase):
                 self.assertEqual(row['control']['throttle']*row['control']['brake'],0)
                 if row['time']<.2 and not row['sensor_local_visible']:
                     self.assertNotEqual(row['audit']['decision']['action'],'AEB')
+            first_aeb=next(r['time'] for r in cooperative['rows'] if r['audit']['decision']['action']=='AEB')
+            self.assertTrue(all(r['audit']['decision']['action']=='AEB' for r in cooperative['rows'] if r['time']>=first_aeb))
             again=run_episode(x,'risk','cooperative',duration=4.)
             self.assertEqual(again['episode_replay_sha256'],cooperative['episode_replay_sha256'])
 
