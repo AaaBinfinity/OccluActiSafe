@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 import time
 from PIL import Image, ImageDraw
@@ -58,7 +59,8 @@ class LivePreview:
         import tkinter as tk
         from PIL import ImageTk
         self.tk=tk;self.ImageTk=ImageTk;self.output=Path(output)
-        self.root=tk.Tk();self.root.title('OccluActiSafe · N12 实时预览')
+        self.root=tk.Tk();title='OccluActiSafe · N12 实时预览 · '+self.output.name;self.root.title(title)
+        self.root.geometry('+40+40')
         self.root.configure(bg='#111827');self.root.resizable(False,False)
         self.root.protocol('WM_DELETE_WINDOW',self.request_stop)
         tk.Label(self.root,text='OccluActiSafe  仿真观察',font=('Microsoft YaHei UI',18,'bold'),bg='#111827',fg='white').pack(pady=(12,4))
@@ -68,10 +70,12 @@ class LivePreview:
         self.status=tk.Label(self.root,text='正在连接 CARLA…',font=('Microsoft YaHei UI',11),bg='#111827',fg='#a7b4c9')
         self.status.pack(pady=4)
         buttons=tk.Frame(self.root,bg='#111827');buttons.pack(pady=(4,12))
-        tk.Button(buttons,text='保存当前画面',command=lambda:self.archive.save(),width=18).pack(side='left',padx=8)
-        self.stop=tk.Button(buttons,text='停止并清理',command=self.request_stop,width=18);self.stop.pack(side='left',padx=8)
+        tk.Button(buttons,text='保存画面 (F12)',command=lambda:self.archive.save(),width=18).pack(side='left',padx=8)
+        self.stop=tk.Button(buttons,text='停止并清理 (Esc)',command=self.request_stop,width=18);self.stop.pack(side='left',padx=8)
         self.archive=FrameArchive(output,interval=interval);self.stop_requested=False;self.destroyed=False;self.complete=False
         self.next_frame=time.monotonic();self.render_count=0;self.pump()
+        self.root.bind('<F12>',lambda _:self.archive.save());self.root.bind('<Escape>',lambda _:self.request_stop())
+        (self.output/'预览窗口.json').write_text(json.dumps({'title':title,'window_id':self.root.winfo_id(),'pid':os.getpid()},ensure_ascii=False),encoding='utf-8')
 
     def pump(self):
         if self.destroyed:return
