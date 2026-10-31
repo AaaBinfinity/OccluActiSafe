@@ -171,14 +171,16 @@ def run_episode(client,output,config):
         (output/'初始状态.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
         # N13表来自真实加速后的动力状态。只赋速度会保留低转速/挡位而失配。
         for warmup in range(200):
+            if config.get('probe_static',False):break
             if min(math.hypot(a.get_velocity().x,a.get_velocity().y) for a in (ego,target))>=config['speed_mps']:break
             full={'throttle':1.,'brake':0.,'steer':0.};advance(full,full)
         else:raise RuntimeError('动力预热未达到初速')
         for actor,name in ((ego,'ego'),(target,'target')):
             actor.set_transform(transform(config[name+'_spawn']))
-            yaw=math.radians(config[name+'_spawn']['yaw']);actor.set_target_velocity(carla.Vector3D(x=config['speed_mps']*math.cos(yaw),y=config['speed_mps']*math.sin(yaw)))
+            yaw=math.radians(config[name+'_spawn']['yaw']);initial_speed=0. if config.get('probe_static',False) else config['speed_mps']
+            actor.set_target_velocity(carla.Vector3D(x=initial_speed*math.cos(yaw),y=initial_speed*math.sin(yaw)))
             actor.set_target_angular_velocity(carla.Vector3D())
-        normal={'throttle':.53,'brake':0.,'steer':0.};advance(normal,normal)
+        normal=held if config.get('probe_static',False) else {'throttle':.53,'brake':0.,'steer':0.};advance(normal,normal)
         if target.id>=65536:raise RuntimeError('实例相机16位ID范围不足，拒绝混淆实例')
         (output/'评测对象身份.json').write_text(json.dumps({'ego_actor_id':ego.id,'target_actor_id':target.id,
             'occluder_actor_id':obstacle.id,'origin_frame':runner.frame,'origin_sim_time_s':runner.sim_time,
@@ -226,7 +228,7 @@ def run_episode(client,output,config):
             response=json.loads(sys.stdin.readline())
             if set(response)!={'throttle','brake','steer'}:raise ValueError('控制字段非法')
             action=response
-            ta=target_actuator.step(speed_mps=math.hypot(ts['vx'],ts['vy']),target_speed_mps=config['speed_mps'],
+            ta=held if config.get('probe_static',False) else target_actuator.step(speed_mps=math.hypot(ts['vx'],ts['vy']),target_speed_mps=config['speed_mps'],
                 acceleration_mps2=0.,angle_rad=-lane_angle(ts,config['target_spawn']),dt_s=.05,
                 vehicle_blueprint='vehicle.audi.a2',surface_id=config['calibration']['surface_id'])
             target_action={k:ta[k] for k in ('throttle','brake','steer')}

@@ -41,7 +41,7 @@ def run(config_path=DEFAULT_CONFIG):
                     obs=message['observation'];decision=policy.step(obs);s=obs['ego'];spawn=config['ego_spawn']
                     yaw=-math.radians(spawn['yaw']);cross=-math.sin(yaw)*(s['x']-spawn['x'])+math.cos(yaw)*(s['y']+spawn['y'])
                     error=(yaw-s['yaw']+math.pi)%(2*math.pi)-math.pi
-                    if decision['brake']:
+                    if decision['brake'] or config.get('probe_static',False):
                         # N13实测全刹停车/停车保持；低于映射最低速度时不外推PID表。
                         control={'throttle':0.,'brake':1.,'steer':0.}
                     else:
