@@ -69,6 +69,10 @@ class AnalyticTests(unittest.TestCase):
         self.assertTrue(r['no_safe_candidate_found']); self.assertEqual(r['action'],'AEB')
         for row in table['candidates']: row['R_max']=0.
         self.assertEqual(decision.choose(table,{'ttc_s':None},unknown=False,prediction_missing=False)['action'],'AEB')
+        table['candidates'][2]['R_max']=1.
+        self.assertEqual(decision.choose(table,{'ttc_s':None},unknown=False,prediction_missing=False)['action'],'SLOW')
+        for row in table['candidates']:row['block_reasons']=['declared_physically_infeasible']
+        self.assertEqual(decision.choose(table,{'ttc_s':None},unknown=False,prediction_missing=False)['action'],'DEGRADED')
 
     def test_normal_slow_unknown_and_missing_coverage_states(self):
         table={'coverage':{'complete':True},'candidates':[{'candidate_id':name,'R_max':0.,'normal_blocked':False,'block_reasons':[]} for name in ('NORMAL','SLOW','AEB')]}

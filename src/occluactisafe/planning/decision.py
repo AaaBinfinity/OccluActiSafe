@@ -21,7 +21,14 @@ class AEBDecision:
         if high: self.latched = True
         no_safe = not any(not r["normal_blocked"] and r["R_max"] == 0 for r in rows.values())
         reasons = fallback_reason(unknown=unknown, coverage_complete=table["coverage"]["complete"], prediction_missing=prediction_missing)
-        if self.latched: return {"action": "AEB", "reason": "emergency_latched" + ("_mitigation" if no_safe else ""), "no_safe_candidate_found": no_safe}
+        if self.latched:
+            hard_invalid = {"declared_physically_infeasible", "candidate_path_incomplete"}
+            eligible = [r for r in rows.values() if r["candidate_id"] != "NORMAL" and not hard_invalid.intersection(r["block_reasons"])]
+            if not eligible:
+                return {"action": "DEGRADED", "reason": "no_feasible_new_braking_candidate_keep_verified_prefix", "no_safe_candidate_found": True}
+            # 风险相同优先更强制动；未知评分以未证安全处理，不能排在明确零风险前。
+            selected = min(eligible, key=lambda r: ((r["R_max"] if r["R_max"] is not None else 1.) if self.strategy == "risk" else 0., r["candidate_id"] != "AEB"))
+            return {"action": selected["candidate_id"], "reason": "emergency_latched" + ("_mitigation" if no_safe else ""), "no_safe_candidate_found": no_safe}
         if reasons or normal["normal_blocked"]:
             return {"action": "DEGRADED", "reason": "|".join(reasons or normal["block_reasons"]), "no_safe_candidate_found": no_safe}
         if normal["R_max"] and normal["R_max"] > .1:
