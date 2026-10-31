@@ -2530,6 +2530,48 @@
       "legacy_repository_path": "docs/过程图/n12/n12_20261031_140112_164740/帧时序与传感器有效性.svg",
       "sha256": "43ee359023e4c54b99c11b60d2c0cb6b8f4004a8fc360c767d584c24dba6785f",
       "bytes": 32158
+    },
+    {
+      "original_artifact_path": "n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.png",
+      "artifact_path": "n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.png",
+      "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.png",
+      "sha256": "5421df4c47f64e24016dc0fd6c1ddc75af28c194b2eb5d15f5976108f2c9d83a",
+      "bytes": 36549
+    },
+    {
+      "original_artifact_path": "n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.svg",
+      "artifact_path": "n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.svg",
+      "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/ab_20261031_142156_266637/服务端中断与客户端退出对比.svg",
+      "sha256": "3fc433db44ab8b92d215fa9183adada09b3806b0a215b5ccaac13ace78e97548",
+      "bytes": 34776
+    },
+    {
+      "original_artifact_path": "n12_disconnect_diagnosis/ab_20261031_142323_980391/服务端中断与客户端退出对比.png",
+      "artifact_path": "n12_disconnect_diagnosis/ab_20261031_142323_980391/服务端中断与客户端退出对比.png",
+      "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/ab_20261031_142323_980391/服务端中断与客户端退出对比.png",
+      "sha256": "646512db302914dd3ecd21aefdb876091464b7d41aeeb07f2d66b5d15bf18e49",
+      "bytes": 23265
+    },
+    {
+      "original_artifact_path": "n12_disconnect_diagnosis/ab_20261031_142323_980391/服务端中断与客户端退出对比.svg",
+      "artifact_path": "n12_disconnect_diagnosis/ab_20261031_142323_980391/服务端中断与客户端退出对比.svg",
+      "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/ab_20261031_142323_980391/服务端中断与客户端退出对比.svg",
+      "sha256": "c960bf6e8e74e7adcf183177561097c8fcc776dd5d8501648da175bb8c839e97",
+      "bytes": 23150
+    },
+    {
+      "original_artifact_path": "n12_disconnect_diagnosis/正常回归/n12_20261031_142019_404675/帧时序与传感器有效性.png",
+      "artifact_path": "n12_disconnect_diagnosis/正常回归/n12_20261031_142019_404675/帧时序与传感器有效性.png",
+      "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/正常回归/n12_20261031_142019_404675/帧时序与传感器有效性.png",
+      "sha256": "b2fbdadc5f78b489f199792e748b4ce53d5384717811560a56af9c94d6b63a31",
+      "bytes": 46647
+    },
+    {
+      "original_artifact_path": "n12_disconnect_diagnosis/正常回归/n12_20261031_142019_404675/帧时序与传感器有效性.svg",
+      "artifact_path": "n12_disconnect_diagnosis/正常回归/n12_20261031_142019_404675/帧时序与传感器有效性.svg",
+      "legacy_repository_path": "docs/过程图/n12_disconnect_diagnosis/正常回归/n12_20261031_142019_404675/帧时序与传感器有效性.svg",
+      "sha256": "2febdced15af0d19e73e00becfa79cd42e68e956c1b29fc8d6e172367a44e98c",
+      "bytes": 32544
     }
   ]
 }
