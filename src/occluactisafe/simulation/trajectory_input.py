@@ -15,7 +15,7 @@ class TrajectoryAEB:
         if any(isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) or v<0 for v in self.braking.values()):
             raise ValueError('制动预算参数非法')
         if min(self.braking[k] for k in ('deceleration_mps2','control_period_s','max_track_age_s'))<=0:raise ValueError('预算参数必须为正')
-        self.cached={};self.first_warning=None;self.first_emergency=None
+        self.cached={};self.first_warning=None;self.first_emergency=None;self.first_target_available=None
 
     def step(self,observation):
         if set(observation)!={'time_s','ego','local','received'}:raise ValueError('在线输入含未知字段')
@@ -44,6 +44,7 @@ class TrajectoryAEB:
             targets.extend(t for t,_ in self.cached.values())
             if self.cached:used.append('roadside-1')
         conflicts=[];known=[];speed=math.hypot(ego['vx'],ego['vy'])
+        if targets and self.first_target_available is None:self.first_target_available=now
         budget=speed*(self.braking['response_delay_s']+self.braking['control_period_s'])+speed*speed/(2*self.braking['deceleration_mps2'])+self.braking['margin_m']
         for t in targets:
             if t.state_time>now or not t.velocity_valid:raise ValueError('状态时刻或速度非法')
@@ -69,6 +70,7 @@ class TrajectoryAEB:
         return {'brake':self.latched,'used_sources':sorted(set(used)),
                 'warning':warning,'mode':('停车保持' if speed<.1 else '紧急制动') if self.latched else ('风险预警' if warning else '正常行驶'),
                 'first_warning_s':self.first_warning,'first_emergency_s':self.first_emergency,
+                'first_target_available_s':self.first_target_available,
                 'predicted_conflict_s':min(c['entry_s'] for c in conflicts) if conflicts else None,
                 'distance_to_conflict_envelope_m':distance,'stopping_budget_m':budget,
                 'stopping_margin_m':distance-budget if distance is not None else None,

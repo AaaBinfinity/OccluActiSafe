@@ -49,6 +49,17 @@ class TrajectoryTests(unittest.TestCase):
         self.assertAlmostEqual(d['known_targets'][0]['age_s'],.3)
         o['time_s']=3.4;self.assertEqual(p.step(o)['known_targets'],[])
 
+    def test_both_aeb_sources_have_identical_distance_threshold(self):
+        for distance in (24.,12.):
+            local=obs();local['ego']['x']=-distance
+            local['local']=ObservationPacket('map-A','1','map-right-handed',60,'carla-n14',3.,3.,(replace(track(),y=-distance),)).to_dict()
+            road=obs();road['ego']['x']=-distance
+            msg=make_prediction((replace(track(3.,'roadside-1'),y=-distance),),3.,0,domain='carla-n14')
+            road['received']=[ReceivedMessage(msg,3.,3.,'carla-n14').to_dict()]
+            a=TrajectoryAEB('local_aeb').step(local);b=TrajectoryAEB('cooperative_aeb').step(road)
+            for key in ('warning','brake','stopping_budget_m','distance_to_conflict_envelope_m'):
+                self.assertEqual(a[key],b[key])
+
     def test_hidden_and_reference_cannot_trigger(self):
         o=obs();self.assertFalse(TrajectoryAEB('local_aeb').step(o)['brake'])
         o['local']=ObservationPacket('map-A','1','map-right-handed',60,'carla-n14',3.,3.,(track(),)).to_dict()

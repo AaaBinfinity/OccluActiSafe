@@ -105,7 +105,8 @@ def run_episode(client,output,config):
     # 每分支完整重载，世界帧由一个runner推进。无背景交通，无TM。
     client.set_timeout(20)
     moving=bool(config.get('occluder_motion')) and not config.get('probe_static',False)
-    run_id=output.parent.name+'-'+output.name;frames={n:FrameBuffer(capacity=4) for n in ('车端','路侧','跟车')};images=[]
+    extra_cameras=config.get('extra_cameras',{})
+    run_id=output.parent.name+'-'+output.name;frames={n:FrameBuffer(capacity=4) for n in ('车端','路侧','跟车',*extra_cameras)};images=[]
     masks={'车端':FrameBuffer(capacity=4),'路侧':FrameBuffer(capacity=4)}
     channel=SimChannel(ChannelConfig('I2V','carla-n14',propagation_delay_s=config['delay_s'],processing_delay_s=config['processing_s'],seed=config['seed']))
     collisions=[];environment_collisions=[];prefix=[];pending=[];sequence=0;observations=[];truth=[]
@@ -141,11 +142,14 @@ def run_episode(client,output,config):
                 extra=world.spawn_actor(bp,carla.Transform(),attach_to=actor);runner.register_owned(extra)
                 extra.listen(lambda event,r=role:environment_collisions.append({'role':r,'frame':event.frame,'other_id':event.other_actor.id,'other_type':event.other_actor.type_id}))
         cameras={}
-        for name,pose in [('车端',{'x':1.5,'y':0.,'z':1.6,'yaw':config.get('ego_camera_yaw_deg',0.)}),('路侧',config['roadside_camera']),('跟车',{'x':-7.,'y':0.,'z':3.5,'yaw':0.,'pitch':-14.})]:
+        camera_specs=[('车端',{'x':1.5,'y':0.,'z':1.6,'yaw':config.get('ego_camera_yaw_deg',0.)},True),
+                      ('路侧',config['roadside_camera'],False),('跟车',{'x':-7.,'y':0.,'z':3.5,'yaw':0.,'pitch':-14.},True)]
+        camera_specs.extend((name,spec['pose'],spec['attach_to_ego']) for name,spec in extra_cameras.items())
+        for name,pose,attached in camera_specs:
             bp=world.get_blueprint_library().find('sensor.camera.rgb')
             bp.set_attribute('role_name','oas:'+run_id)
             for key,value in {'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():bp.set_attribute(key,value)
-            camera=world.spawn_actor(bp,transform(pose),attach_to=ego if name in ('车端','跟车') else None);runner.register_owned(camera)
+            camera=world.spawn_actor(bp,transform(pose),attach_to=ego if attached else None);runner.register_owned(camera)
             camera.listen(lambda image,n=name:frames[n].put(image.frame,image));cameras[name]=camera
             if name not in masks:continue
             label_bp=world.get_blueprint_library().find('sensor.camera.instance_segmentation')

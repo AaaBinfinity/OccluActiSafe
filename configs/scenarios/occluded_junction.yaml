@@ -1082,6 +1082,27 @@ ego_camera_yaw_deg: -12.0
 occluder_motion:
   speed_mps: 8.0
   brake_front_m: 7.0
-revision_request: 用户要求更大同向行驶大车近距离持续遮挡；寻找本地碰撞而协同避撞的真实例子
+revision_request: 2026-11-01用户授权先预警、按速度/延迟/实测制动力/余量判断紧急制动，重跑并增加俯瞰实景及在线预测示意
 require_local_collision: true
 occluder_min_front_clearance_m: 1.5
+aeb_margin_m: 5.0
+overview:
+  enabled: true
+  live_window: true
+extra_cameras:
+  俯瞰:
+    attach_to_ego: false
+    pose:
+      x: -23.76969456724354
+      y: 25.067920872135048
+      z: 70.0
+      yaw: 0.0
+      pitch: -90.0
+  前侧:
+    attach_to_ego: true
+    pose:
+      x: 6.0
+      y: 6.0
+      z: 5.0
+      yaw: -135.0
+      pitch: -24.0
