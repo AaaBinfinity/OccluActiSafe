@@ -208,9 +208,10 @@ def run_episode(client,output,config):
                 identities=raw[:,:,1].astype(np.uint16)+(raw[:,:,0].astype(np.uint16)<<8)
                 pixels[name]=int(np.count_nonzero(identities==target.id))
                 mask_hashes[name]=__import__('hashlib').sha256(image.raw_data).hexdigest()
-            local_visible=camera_visible(carla,cameras['车端'],target,obstacle,config['local_range_m'])
-            road_visible=camera_visible(carla,cameras['路侧'],target,obstacle,config['roadside_range_m'])
-            local_visible=local_visible and pixels['车端']>0;road_visible=road_visible and pixels['路侧']>0
+            # 部分车体在画面边缘出现也算可见，不能用中心点FOV误判为完全遮挡。
+            target_center=target.get_transform().transform(target.bounding_box.location)
+            local_visible=pixels['车端']>0 and cameras['车端'].get_location().distance(target_center)<=config['local_range_m']
+            road_visible=pixels['路侧']>0 and cameras['路侧'].get_location().distance(target_center)<=config['roadside_range_m']
             local=ObservationPacket('map-A','1','map-right-handed',index,'carla-n14',now,now,(restricted_track(target,'vehicle-A',now),)).to_dict() if local_visible else None
             if index%2==0 and road_visible:
                 message=make_prediction((restricted_track(target,'roadside-1',now),),now,sequence,domain='carla-n14')
