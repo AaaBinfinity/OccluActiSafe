@@ -1,0 +1,52 @@
+"""N14因果白名单夹具；真实CARLA配对由场景实测另验。"""
+import unittest
+from occluactisafe.simulation.trajectory_input import TrajectoryAEB
+from occluactisafe.common.schemas import SourceTrack,ObservationPacket,ReceivedMessage
+from occluactisafe.core.roadside_edge import make_prediction
+from occluactisafe.evaluation.episode_metrics import overlap,digest
+
+
+def track(now=3.,source='vehicle-A'):
+    return SourceTrack('target',source,'session-1',source,'vehicle','target','carla-n14','map-right-handed',
+        'geometric_center',now,now,now,now,0.,-8.,0.,8.,1.5708,4.,2.,'annotation',0.,((0.,0.),(0.,0.)),True,True,True,True,True,1.)
+
+
+def obs(now=3.):
+    return {'time_s':now,'ego':dict(x=-8.,y=0.,vx=8.,vy=0.,yaw=0.,length=4.,width=2.),'local':None,'received':[]}
+
+
+class TrajectoryTests(unittest.TestCase):
+    def test_hidden_and_reference_cannot_trigger(self):
+        o=obs();self.assertFalse(TrajectoryAEB('local_aeb').step(o)['brake'])
+        o['local']=ObservationPacket('map-A','1','map-right-handed',60,'carla-n14',3.,3.,(track(),)).to_dict()
+        self.assertFalse(TrajectoryAEB('reference').step(o)['brake'])
+        self.assertTrue(TrajectoryAEB('local_aeb').step(o)['brake'])
+
+    def test_prefix_and_latch(self):
+        p=TrajectoryAEB('local_aeb');o=obs(2.)
+        o['local']=ObservationPacket('map-A','1','map-right-handed',40,'carla-n14',2.,2.,(track(2.),)).to_dict()
+        self.assertFalse(p.step(o)['brake']);o['time_s']=3.
+        o['local']=ObservationPacket('map-A','1','map-right-handed',60,'carla-n14',3.,3.,(track(3.),)).to_dict()
+        self.assertTrue(p.step(o)['brake'])
+        self.assertTrue(p.step(obs(3.1))['brake'])
+
+    def test_usable_time_and_source_strategy(self):
+        o=obs();msg=make_prediction((track(2.8,'roadside-1'),),2.8,0,domain='carla-n14')
+        o['received']=[ReceivedMessage(msg,3.,3.05,'carla-n14').to_dict()]
+        with self.assertRaises(ValueError):TrajectoryAEB('cooperative_aeb').step(o)
+        o['time_s']=3.05
+        self.assertTrue(TrajectoryAEB('cooperative_aeb').step(o)['brake'])
+        self.assertFalse(TrajectoryAEB('local_aeb').step(o)['brake'])
+
+    def test_truth_and_future_fields_rejected(self):
+        for field in ('truth','future','target_hidden'):
+            o=obs();o[field]={'x':0.}
+            with self.assertRaises(ValueError):TrajectoryAEB('cooperative_aeb').step(o)
+
+    def test_geometry_and_prefix_identity(self):
+        a=obs()['ego'];b=dict(a,x=20.)
+        self.assertFalse(overlap(a,b));self.assertTrue(overlap(a,a))
+        self.assertEqual(digest(a),digest(dict(reversed(list(a.items())))))
+
+
+if __name__=='__main__':unittest.main()
