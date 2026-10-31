@@ -25,6 +25,12 @@ def analyze(folder):
     for row in rows:
         if row['phase']=='response': by_case[int(row['case_id'])].append(row)
     results=[]
+    statuses=folder/'工况状态.jsonl'
+    case_names={}
+    if statuses.is_file():
+        for line in statuses.read_text(encoding='utf-8').splitlines():
+            state=json.loads(line)
+            if 'check' in state:case_names[state['case_id']]=state['check']['name']
     for case_id, items in sorted(by_case.items()):
         first=items[0]; initial=float(first['speed_mps'])
         distance=0.
@@ -71,7 +77,8 @@ def analyze(folder):
         fig,axes=plt.subplots(3,1,figsize=(11,10),sharex=True,constrained_layout=True)
         for case_id in selected:
             items=by_case[case_id]; x=[float(r['sim_time_s'])-float(items[0]['sim_time_s']) for r in items]
-            label=f"{items[0]['target_initial_speed_mps']} m/s {items[0]['kind']} {items[0]['value']}"
+            label=(f"{case_id}: {case_names[case_id]}" if case_id in case_names else
+                   f"{items[0]['target_initial_speed_mps']} m/s {items[0]['kind']} {items[0]['value']}")
             for ax,key in zip(axes,('speed_mps','longitudinal_acceleration_mps2','wheel_angle_deg')):
                 ax.plot(x,[float(r[key]) for r in items],label=label,linewidth=.8)
         for ax,label in zip(axes,('速度 (m/s)','纵向加速度 (m/s²)','左前轮角度 (°)')): ax.set_ylabel(label);ax.grid(alpha=.25)
