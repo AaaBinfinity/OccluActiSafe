@@ -102,11 +102,9 @@ def run_episode(client,output,config):
     from occluactisafe.communication.protocol import ChannelConfig
     from occluactisafe.control.actuator import CalibratedActuator
     # 每分支完整重载，世界帧由一个runner推进。无背景交通，无TM。
-    world=client.reload_world(False)
-    if world.get_map().name!=config['map']:raise ValueError('地图不匹配')
-    if __import__('hashlib').sha256(world.get_map().to_opendrive().encode()).hexdigest()!=config['opendrive_sha256']:raise ValueError('地图哈希不匹配')
-    client.set_timeout(20);world.set_pedestrians_seed(config['seed'])
-    run_id=output.parent.name+'-'+output.name;frames={'车端':FrameBuffer(),'路侧':FrameBuffer()};images=[]
+    client.set_timeout(20)
+    run_id=output.parent.name+'-'+output.name;frames={'车端':FrameBuffer(capacity=4),'路侧':FrameBuffer(capacity=4)};images=[]
+    masks={'车端':FrameBuffer(capacity=4),'路侧':FrameBuffer(capacity=4)}
     channel=SimChannel(ChannelConfig('I2V','carla-n14',propagation_delay_s=config['delay_s'],processing_delay_s=config['processing_s'],seed=config['seed']))
     collisions=[];prefix=[];pending=[];sequence=0;observations=[];truth=[]
     def destroy(actor):
@@ -114,9 +112,13 @@ def run_episode(client,output,config):
         if response.error:raise RuntimeError(response.error)
         return True
     def reconnect(timeout):client.set_timeout(timeout);return client
-    with SynchronousRunner(world,run_id=run_id,episode_id=config['scenario_id'],generation=1,clock_domain='carla-n14',
+    with SynchronousRunner.reload_synchronously(client,run_id=run_id,episode_id=config['scenario_id'],generation=1,clock_domain='carla-n14',
             destroy_owned=destroy,cleanup_path=output/'清理报告.json',reconnect=reconnect,
             destroy_command=carla.command.DestroyActor,prepare_cleanup=client.set_timeout) as runner:
+        world=runner._world
+        if world.get_map().name!=config['map']:raise ValueError('地图不匹配')
+        if __import__('hashlib').sha256(world.get_map().to_opendrive().encode()).hexdigest()!=config['opendrive_sha256']:raise ValueError('地图哈希不匹配')
+        world.set_pedestrians_seed(config['seed'])
         def transform(p):return carla.Transform(carla.Location(x=p['x'],y=p['y'],z=p['z']),carla.Rotation(yaw=p['yaw'],pitch=p.get('pitch',0)))
         def spawn(blueprint,pose):
             bp=world.get_blueprint_library().find(blueprint);bp.set_attribute('role_name','oas:'+run_id)
@@ -136,6 +138,10 @@ def run_episode(client,output,config):
             for key,value in {'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():bp.set_attribute(key,value)
             camera=world.spawn_actor(bp,transform(pose),attach_to=ego if name=='车端' else None);runner.register_owned(camera)
             camera.listen(lambda image,n=name:frames[n].put(image.frame,image));cameras[name]=camera
+            label_bp=world.get_blueprint_library().find('sensor.camera.instance_segmentation')
+            for key,value in {'role_name':'oas:'+run_id,'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():label_bp.set_attribute(key,value)
+            labels=world.spawn_actor(label_bp,transform(pose),attach_to=ego if name=='车端' else None);runner.register_owned(labels)
+            labels.listen(lambda image,n=name:masks[n].put(image.frame,image))
         def advance(action,target_action):
             now=runner.sim_time
             control={'request_id':str(runner.frame+1),'plan_id':'n14','solver_status':'success','safety_rechecked':True,
@@ -157,6 +163,9 @@ def run_episode(client,output,config):
                     raise ValueError('遮挡物侵入测试路线')
             route_clear.append(name)
         physics=ego.get_physics_control()
+        actual_context={'map':world.get_map().name,'weather':str(world.get_weather()),'mass_kg':physics.mass,
+            'drag_coefficient':physics.drag_coefficient,'wheels':[{'tire_friction':w.tire_friction,'max_steer_angle_deg':w.max_steer_angle,'radius_cm':w.radius} for w in physics.wheels]}
+        if actual_context!=config['calibration_context']:raise ValueError('地图天气或物理上下文不符合N13标定')
         metadata={'ego':state(ego),'target':state(target),'occluder':state(obstacle),'mass_kg':physics.mass,
                   'tire_friction':[w.tire_friction for w in physics.wheels],'weather':str(world.get_weather()),'route_clear':route_clear}
         (output/'初始状态.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
@@ -178,8 +187,18 @@ def run_episode(client,output,config):
         for index in range(config['ticks']):
             if collisions:break
             now=index*.05;es=state(ego);ts=state(target)
+            import numpy as np
+            pixels={};mask_hashes={}
+            for name,buffer in masks.items():
+                captured=buffer.get(runner.frame,3.)
+                if not captured['valid']:raise RuntimeError('当前帧实例可见性核验缺失')
+                image=captured['value'];raw=np.frombuffer(image.raw_data,dtype=np.uint8).reshape(image.height,image.width,4)
+                identities=raw[:,:,1].astype(np.uint16)+(raw[:,:,0].astype(np.uint16)<<8)
+                pixels[name]=int(np.count_nonzero(identities==target.id))
+                mask_hashes[name]=__import__('hashlib').sha256(image.raw_data).hexdigest()
             local_visible=camera_visible(carla,cameras['车端'],target,obstacle,config['local_range_m'])
             road_visible=camera_visible(carla,cameras['路侧'],target,obstacle,config['roadside_range_m'])
+            local_visible=local_visible and pixels['车端']>0;road_visible=road_visible and pixels['路侧']>0
             local=ObservationPacket('map-A','1','map-right-handed',index,'carla-n14',now,now,(restricted_track(target,'vehicle-A',now),)).to_dict() if local_visible else None
             if index%2==0 and road_visible:
                 message=make_prediction((restricted_track(target,'roadside-1',now),),now,sequence,domain='carla-n14')
@@ -200,7 +219,7 @@ def run_episode(client,output,config):
             target_action={k:ta[k] for k in ('throttle','brake','steer')}
             row={'index':index,'time_s':now,'frame':runner.frame,'ego':es,'target':ts,'local_visible':local_visible,
                  'roadside_visible':road_visible,'geometry_overlap':overlap(es,ts),'control':action,
-                 'pending_count':channel.pending_count+len(pending)}
+                 'pending_count':channel.pending_count+len(pending),'target_pixels':pixels,'visibility_mask_sha256':mask_hashes}
             truth.append(row);observations.append(observation)
             with (output/'评测真值.jsonl').open('a',encoding='utf-8') as evidence:evidence.write(json.dumps(row,ensure_ascii=False)+'\n')
             if now<config['prefix_s']:prefix.append({'observation':observation,'control':action,'target_control':target_action})
@@ -220,6 +239,7 @@ def run_episode(client,output,config):
         (output/'信道事件.json').write_text(json.dumps(channel.events,ensure_ascii=False,indent=2),encoding='utf-8')
         (output/'公共前缀.json').write_text(json.dumps({'sha256':digest(prefix),'frames':len(prefix),'initial_sha256':digest(metadata)},indent=2),encoding='utf-8')
     for buffer in frames.values():buffer.close()
+    for buffer in masks.values():buffer.close()
     print('OAS:'+json.dumps({'kind':'complete'}),flush=True)
 
 

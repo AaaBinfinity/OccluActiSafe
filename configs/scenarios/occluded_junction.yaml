@@ -1063,11 +1063,11 @@ occluder:
   z: 0.3
   yaw: 180.15919494628906
 roadside_camera:
-  x: -71.84415027601432
-  y: -13.515273482628157
+  x: -49.782326635233545
+  y: 8.545765803655234
   z: 7.0
-  yaw: 44.99898147583008
-  pitch: -9.4
+  yaw: 44.99898147583007
+  pitch: -20.0
 speed_mps: 8.0
 prefix_s: 3.0
 horizon_s: 3.0
@@ -1079,3 +1079,9 @@ roadside_range_m: 100.0
 image_interval_ticks: 2
 calibration_path: H:\OccluActiSafeDataset\artifacts\n13_7f739c23ba824498b891dbfc0a8e5897\候选执行器标定.json
 calibration_sha256: 702d0795694a4491beffe6f1da844b2343e73843d0d0cb6a290ecb2b99f93110
+pairing_tolerance:
+  position_m: 0.1
+  velocity_mps: 0.15
+  yaw_rad: 0.001
+  control: 0.01
+pairing_approval: 2026-10-31 用户同意按四项容差复核并重跑，保留原始哈希及全部差异
