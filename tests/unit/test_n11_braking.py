@@ -35,6 +35,8 @@ class BrakingTests(unittest.TestCase):
             self.assertAlmostEqual(e.at(t).a, state.a)
         for i in range(8,30): self.assertFalse(e.request(i*.05,'AEB'))
         self.assertEqual(len(e.requests),2)
+        profile, started = e.preview(1.,4.5,8.)
+        self.assertIs(profile,e.profile);self.assertEqual(started,e.started)
         self.assertEqual(e.at(10).v,0)
         with self.assertRaises(ValueError): e.control(0)
         for i in range(4,201):

@@ -15,6 +15,10 @@ class AnalyticExecutor:
     def preview(self, now, B=None, J=None):
         state = self.at(now)
         if B is None: return self.profile, self.started
+        requested_priority = {(1.5, 4.): 1, (4.5, 8.): 2}.get((B, J))
+        if requested_priority is None: raise ValueError("当前解析执行器仅接受冻结制动档")
+        if requested_priority == self.priority: return self.profile, self.started
+        if requested_priority < self.priority: raise ValueError("不能削弱已锁存制动剖面")
         prefix = self.profile.prefix(now - self.started, self.delay)
         future = self.at(now + self.delay)
         tail = braking_profile(future.v, future.a, B=B, J=J, s0=future.s)
