@@ -70,14 +70,16 @@ def fit(folder):
     # 收窄名义范围，避免把从未达到的最低/最高初速当作实测边界。
     minimum=max(low,low_observed);maximum=min(high,high_observed)
     if minimum>=maximum: raise ValueError('实际初速范围无法构成有效标定区间')
-    calibration={'vehicle_blueprint':physics['vehicle_blueprint'],'surface_id':'Town10HD_Opt_default_dry',
+    context={k:physics[k] for k in ('map','weather','mass_kg','drag_coefficient','wheels')}
+    surface_id=hashlib.sha256(json.dumps(context,sort_keys=True,ensure_ascii=False).encode('utf-8')).hexdigest()
+    calibration={'vehicle_blueprint':physics['vehicle_blueprint'],'surface_id':surface_id,
         'speed_min_mps':minimum,'speed_max_mps':maximum,
         'acceleration_by_speed':acceleration,'steering_by_speed':steering}
     source=folder/'执行器原始采样.csv'
-    result={'calibration':calibration,'uncertainty':uncertainty,'source':str(source),
+    result={'calibration':calibration,'context':context,'uncertainty':uncertainty,'source':str(source),
         'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
         'method':f"每次响应的第5至14帧纵向加速度均值与第2至4帧左前轮角均值；{config['repetitions']}次重复取均值，轮角有相邻帧时序不确定性；零转向锚点来自零转向工况实测。",
-        'limitations':'速度分档按名义初速线性插值，实际初速及其波动见原始记录；尚需闭环复核。场景身份由调用方提供，无法自动验证附着；不外推分档及表范围。'}
+        'limitations':'速度分档按名义初速线性插值，实际初速及其波动见原始记录；尚需闭环复核。桥接复核地图、天气及轮胎物理参数，但不能识别局部摩擦触发器等未知附着变化；不外推分档及表范围。'}
     out=folder/'候选执行器标定.json'
     out.write_text(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False),encoding='utf-8')
     print(f'候选标定已写入 {out}，尚需真实控制复核')

@@ -11,6 +11,7 @@ def prepare(folder):
     source=json.loads((folder/'运行配置.json').read_text(encoding='utf-8'))
     fitted=json.loads((folder/'候选执行器标定.json').read_text(encoding='utf-8'))
     source['calibration']=fitted['calibration']
+    source['calibration_context']=fitted['context']
     source['surface_id']=fitted['calibration']['surface_id']
     # 控制器增益是开发配置，不是实测车辆物理能力。
     source['controller_parameters']={'kp':.5,'ki':.2,'steering_rate_per_s':1.0}

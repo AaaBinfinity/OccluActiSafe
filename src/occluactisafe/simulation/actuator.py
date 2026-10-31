@@ -78,6 +78,11 @@ def run(output):
                         'map':runner._world.get_map().name,'weather':str(runner._world.get_weather()),
                         'spawn':str(initial),'note':'每个工况重置同一生成点和零速度；目标速度通过油门实际加速达到。车轮角RPC与唯一tick并发，采样帧仅能限定在记录的帧区间。'}
                 (output/'车辆与环境.json').write_text(json.dumps(info,ensure_ascii=False,indent=2),encoding='utf-8')
+                if 'controller_checks' in config:
+                    expected_context=config['calibration_context']
+                    actual_context={key:info[key] for key in expected_context}
+                    if actual_context != expected_context:
+                        raise ValueError('实际地图、天气或车辆物理参数与候选标定不一致')
                 def tick(throttle,brake,steer,case,phase,index,case_id,controller=None):
                     now=runner.sim_time
                     control={'request_id':str(runner.frame+1),'plan_id':'n13','solver_status':'success',
