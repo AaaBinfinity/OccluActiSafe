@@ -1,0 +1,13 @@
+# 仅N10构造几何/原始风险机制，不读真实数据、不训练、不执行控制。
+schema_version: n10-mechanism-1
+episode_id: n10-fixture
+clock_domain: sim-n10-fixture
+coordinate_frame_id: map-right-handed
+output_root: H:/OccluActiSafeDataset/artifacts/n10
+interval:
+  min_interval_s: 0.01
+  epsilon_m: 0.000001
+  max_nodes: 65536
+grid:
+  bounds: [-8, -8, 8, 8]
+  resolution_m: 0.5
