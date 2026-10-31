@@ -6,7 +6,22 @@ from .coverage import common_coverage
 from .occupancy import first_conflict_time, IntervalConfig
 
 
-def evaluate_candidates(candidates, targets, *, expected_target_ids, now, plan_start, horizon_s=3., knowledge=None, interval_config=IntervalConfig()):
+def pairwise_mode_risk(candidate, target, start, end, config=IntervalConfig()):
+    """同一模式整窗只计一次命中；不把逐时刻接触相加。"""
+    modes = []; traces = []; hits = []
+    for mode in target.modes:
+        if mode.weight == 0: continue
+        result = first_conflict_time(candidate.path, candidate.geometry, mode.path, target.geometry, start, end, config)
+        modes.append({"target_id": target.target_id, "mode_id": mode.mode_id, "weight": mode.weight,
+                      "heading_assumption": target.heading_assumption, "category": target.geometry.category,
+                      "hit": result.potential_contact, "event": result.event, "interval_algorithm_complete": result.algorithm_complete})
+        hits.append(mode.weight if result.potential_contact else 0.)
+        traces.extend({"candidate_id": candidate.candidate_id, "target_id": target.target_id, "mode_id": mode.mode_id,
+                       "window": "future", **t} for t in result.trace)
+    return {"target_id": target.target_id, "raw_score": min(1., math.fsum(hits)), "modes": modes, "trace": traces}
+
+
+def risk_table_for_candidates(candidates, targets, *, expected_target_ids, now, plan_start, horizon_s=3., knowledge=None, interval_config=IntervalConfig()):
     candidates, targets = tuple(candidates), tuple(targets)
     if not candidates or len({c.candidate_id for c in candidates}) != len(candidates): raise ValueError("候选不能为空或ID重复")
     domains = {(c.path.clock_domain, c.path.coordinate_frame_id) for c in candidates}
@@ -28,7 +43,6 @@ def evaluate_candidates(candidates, targets, *, expected_target_ids, now, plan_s
         else: constraints = {"blocked": True, "reasons": ["candidate_path_incomplete"], "actual_collision": None}
         reasons.extend(constraints["reasons"])
         for target in targets:
-            mode_hits = []
             for mode in target.modes:
                 if mode.weight == 0: continue
                 row = {"target_id": target.target_id, "mode_id": mode.mode_id, "weight": mode.weight,
@@ -39,14 +53,12 @@ def evaluate_candidates(candidates, targets, *, expected_target_ids, now, plan_s
                     prefix_rows.append({**row, "event": prefix.event})
                     traces.extend({"candidate_id": candidate.candidate_id, "target_id": target.target_id, "mode_id": mode.mode_id, "window": "prefix", **t} for t in prefix.trace)
                     if prefix.potential_contact: reasons.append("prefix_potential_contact")
-                if score_available:
-                    result = first_conflict_time(candidate.path, candidate.geometry, mode.path, target.geometry, plan_start, end, interval_config)
-                    row.update({"hit": result.potential_contact, "event": result.event, "interval_algorithm_complete": result.algorithm_complete})
-                    mode_hits.append(mode.weight if result.potential_contact else 0.)
-                    traces.extend({"candidate_id": candidate.candidate_id, "target_id": target.target_id, "mode_id": mode.mode_id, "window": "future", **t} for t in result.trace)
-                else: row.update({"hit": None, "event": None, "interval_algorithm_complete": None})
-                mode_rows.append(row)
-            target_rows.append({"target_id": target.target_id, "raw_score": min(1., math.fsum(mode_hits)) if score_available else None})
+                if not score_available:
+                    mode_rows.append({**row, "hit": None, "event": None, "interval_algorithm_complete": None})
+            if score_available:
+                pair = pairwise_mode_risk(candidate, target, plan_start, end, interval_config)
+                mode_rows.extend(pair["modes"]); traces.extend(pair["trace"])
+            target_rows.append({"target_id": target.target_id, "raw_score": pair["raw_score"] if score_available else None})
         values = [t["raw_score"] for t in target_rows]
         rows.append({"candidate_id": candidate.candidate_id, "reference_policy": candidate.reference_policy,
                      "window_start": plan_start, "window_end": end, "prefix_start": now, "prefix_end": plan_start,
@@ -57,3 +69,6 @@ def evaluate_candidates(candidates, targets, *, expected_target_ids, now, plan_s
                      "actual_collision": None, "near_conflict_proxy_event": None, "simulation_counterfactual_event": None,
                      "action_approval": None})
     return {"coverage": coverage, "candidates": rows, "reference_policy_contract": "declared_input_paths_no_action_selection"}
+
+
+evaluate_candidates = risk_table_for_candidates
