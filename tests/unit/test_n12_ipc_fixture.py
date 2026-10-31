@@ -19,7 +19,7 @@ class Actor:
     next_id = 0
     def __init__(self):
         Actor.next_id += 1; self.id = Actor.next_id; self.destroyed = False; self.callback = None
-    def set_autopilot(self, value): pass
+    def set_autopilot(self, value): raise AssertionError('新生手动车辆不应初始化 Traffic Manager')
     def apply_control(self, value): pass
     def listen(self, callback): self.callback = callback
     def stop(self): pass

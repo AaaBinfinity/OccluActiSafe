@@ -30,7 +30,9 @@ class SynchronousRunner:
             ego=self._world.try_spawn_actor(candidates[0],transform)
             if ego is not None: break
         if ego is None: raise RuntimeError('没有可用的车辆生成点')
-        self.register_owned(ego); ego.set_autopilot(False)
+        # 新生成车辆尚未注册自动驾驶。0.9.16 的 set_autopilot(False) 也会启动 TM；
+        # 其后台线程会在服务端失联时触发原生进程终止，因此此处保持默认手动控制。
+        self.register_owned(ego)
         camera_bp=blueprints.find('sensor.camera.rgb')
         camera_bp.set_attribute('image_size_x','320'); camera_bp.set_attribute('image_size_y','180')
         camera_bp.set_attribute('sensor_tick','0.05')
