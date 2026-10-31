@@ -36,10 +36,11 @@ class SynchronousRunner:
         blueprints=self._world.get_blueprint_library()
         candidates=blueprints.filter('vehicle.*')
         if not candidates: raise RuntimeError('地图没有车辆蓝图')
-        candidates[0].set_attribute('role_name',self._role)
+        ego_bp=candidates[0]
+        ego_bp.set_attribute('role_name',self._role)
         ego=None
         for transform in self._world.get_map().get_spawn_points():
-            ego=self._world.try_spawn_actor(candidates[0],transform)
+            ego=self._world.try_spawn_actor(ego_bp,transform)
             if ego is not None: break
         if ego is None: raise RuntimeError('没有可用的车辆生成点')
         # 新生成车辆尚未注册自动驾驶。0.9.16 的 set_autopilot(False) 也会启动 TM；
@@ -120,6 +121,8 @@ class SynchronousRunner:
                     if owned.id in completed: continue
                     check_time(); actor=world.get_actor(owned.id)
                     if actor is not None and (actor.type_id != owned.type_id or actor.attributes.get('role_name') != self._role):
+                        attempt['conflict']={'actor_id':owned.id,'observed_type':actor.type_id,
+                                             'observed_role':actor.attributes.get('role_name'),'expected_role':self._role}
                         report['reason']='ownership_mismatch'; break
                     pending.append((owned.id,actor))
                 if report.get('reason'): break

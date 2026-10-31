@@ -34,9 +34,14 @@ class World:
     def apply_settings(self, value): self.settings=value
     def get_snapshot(self): return SimpleNamespace(frame=self.frame,timestamp=SimpleNamespace(elapsed_seconds=self.frame*.05))
     def get_blueprint_library(self):
-        bp=SimpleNamespace(attributes={})
-        bp.set_attribute=lambda k,v:bp.attributes.update({k:v})
-        return SimpleNamespace(filter=lambda _: [bp],find=lambda _:bp)
+        def blueprint():
+            bp=SimpleNamespace(attributes={})
+            bp.set_attribute=lambda k,v:bp.attributes.update({k:v})
+            return bp
+        class Copies:
+            def __len__(self):return 1
+            def __getitem__(self,_):return blueprint()
+        return SimpleNamespace(filter=lambda _:Copies(),find=lambda _:blueprint())
     def get_map(self): return SimpleNamespace(get_spawn_points=lambda:[object()])
     def try_spawn_actor(self,bp,*args): self.actors.append(Actor(bp)); return self.actors[-1]
     def spawn_actor(self,bp,*args,**kwargs): self.actors.append(Actor(bp)); return self.actors[-1]
