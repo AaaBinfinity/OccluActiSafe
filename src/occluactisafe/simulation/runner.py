@@ -21,6 +21,7 @@ class SynchronousRunner:
         self._reconnect=reconnect; self._destroy_command=destroy_command; self._prepare_cleanup=prepare_cleanup
         self._recovery_budget_s=recovery_budget_s; self._cleanup_rpc_s=cleanup_rpc_s
         self._world_id=getattr(world,'id',None); self._role='oas:'+run_id
+        self._spectator_original=None
         snapshot=world.get_snapshot(); self.frame=snapshot.frame; self.sim_time=snapshot.timestamp.elapsed_seconds
         settings=world.get_settings(); settings.synchronous_mode=True; settings.fixed_delta_seconds=fixed_delta
         if hasattr(settings,'substepping'):
@@ -58,6 +59,14 @@ class SynchronousRunner:
         if self._closed: raise RuntimeError('runner已关闭')
         self._owned.append(actor)
 
+    def follow_ego(self,carla,ego):
+        """仅供可视诊断；自车位姿不送入核心，旁观者不推进世界。"""
+        spectator=self._world.get_spectator()
+        if self._spectator_original is None:self._spectator_original=spectator.get_transform()
+        transform=ego.get_transform();forward=transform.get_forward_vector();location=transform.location
+        spectator.set_transform(carla.Transform(carla.Location(x=location.x-7*forward.x,y=location.y-7*forward.y,z=location.z+4),
+                                                carla.Rotation(pitch=-18,yaw=transform.rotation.yaw)))
+
     def advance(self, request_json, *, apply_control):
         request=AdvanceRequest.from_json(request_json)
         with self._lock:
@@ -91,6 +100,7 @@ class SynchronousRunner:
         self._closed=True
         report={'status':'in_progress','trigger':self._cleanup_trigger,'world_id':self._world_id,
                 'actors':[],'settings_restored':False,'attempts':[],'budget_s':self._recovery_budget_s}
+        report['spectator_restored']=None if self._spectator_original is None else False
         report['owned']=[{'actor_id':a.id,'type_id':a.type_id,'role_name':self._role} for a in self._owned]
         self._save_cleanup(report)
         if self._prepare_cleanup: self._prepare_cleanup(self._cleanup_rpc_s)
@@ -126,6 +136,9 @@ class SynchronousRunner:
                         report['reason']='ownership_mismatch'; break
                     pending.append((owned.id,actor))
                 if report.get('reason'): break
+                if self._spectator_original is not None:
+                    check_time();world.get_spectator().set_transform(self._spectator_original)
+                    report['spectator_restored']=True
                 # 全部对象归属预检完成后才允许修改服务端。
                 for actor_id,actor in pending:
                     if actor is not None:
@@ -157,6 +170,9 @@ class SynchronousRunner:
             if self._closed: return
             if self._reconnect is not None: return self._close_with_recovery()
             failures=[]
+            if self._spectator_original is not None:
+                try:self._world.get_spectator().set_transform(self._spectator_original)
+                except Exception as exc:failures.append(str(exc))
             report={'status':'in_progress','trigger':self._cleanup_trigger,'actors':[], 'settings_restored':False}
             def save():
                 self._save_cleanup(report)

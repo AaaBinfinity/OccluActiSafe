@@ -48,6 +48,7 @@ def main():
                                    prepare_cleanup=client.set_timeout,
                                    recovery_budget_s=config.get('recovery_budget_s',12.),cleanup_rpc_s=.5) as runner:
                 ego = runner.spawn_ego_and_camera(carla, frames)
+                if config.get('visualize',False):runner.follow_ego(carla,ego)
                 client.set_timeout(config.get('rpc_timeout_s', 5.0))
                 send(conn, {'kind': 'ready', 'client_version': client_version, 'server_version': server_version,
                             'frame': runner.frame, 'sim_time': runner.sim_time})
@@ -69,6 +70,7 @@ def main():
                         send(conn, {'kind': 'rejected', 'frame': runner.frame, 'reason': str(exc)})
                         continue
                     event = json.loads(event_json); sensor = frames.get(event['frame_id'], config['sensor_timeout_s'])
+                    if config.get('visualize',False):runner.follow_ego(carla,ego)
                     if sensor['valid']:
                         image = sensor['value']
                         camera = {'frame': image.frame, 'valid': True, 'width': image.width, 'height': image.height,

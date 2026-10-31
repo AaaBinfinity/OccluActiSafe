@@ -7,6 +7,7 @@ import os
 import platform
 from pathlib import Path
 import secrets
+import socket
 import subprocess
 import sys
 import time
@@ -20,15 +21,50 @@ from occluactisafe.common.run_manifest import _source_identity
 from occluactisafe.simulation.observation_adapter import decode_tick, stationary_control
 
 
-def main():
+def poll_message(conn,timeout,preview):
+    if preview is None:return conn.poll(timeout)
+    deadline=time.monotonic()+timeout
+    while time.monotonic()<deadline:
+        preview.pump()
+        if conn.poll(min(.03,max(0,deadline-time.monotonic()))):return True
+    return False
+
+
+def accept_connection(listener,preview):
+    if preview is None:return listener.accept()
+    listener._listener._socket.settimeout(.1);deadline=time.monotonic()+45
+    while time.monotonic()<deadline:
+        preview.pump()
+        if preview.stop_requested:raise RuntimeError('用户取消连接')
+        try:return listener.accept()
+        except socket.timeout:pass
+    raise TimeoutError('桥接连接超时')
+
+
+def main(argv=None,*,visualize_default=False,default_ticks=200):
     parser = argparse.ArgumentParser()
     parser.add_argument('--bridge-python', type=Path, default=Path('H:/OccluActiSafeDataset/environments/carla_bridge_py311/Scripts/python.exe'))
     parser.add_argument('--output-root', type=Path, default=Path('H:/OccluActiSafeDataset/artifacts/n12'))
     parser.add_argument('--host', default='127.0.0.1'); parser.add_argument('--port', type=int, default=2000)
-    parser.add_argument('--ticks', type=int, default=200); parser.add_argument('--sensor-timeout', type=float, default=0.5)
+    parser.add_argument('--ticks', type=int, default=default_ticks); parser.add_argument('--sensor-timeout', type=float, default=0.5)
+    parser.add_argument('--visualize',action=argparse.BooleanOptionalAction,default=visualize_default)
+    parser.add_argument('--snapshot-every',type=int,default=50)
+    parser.add_argument('--preview-hold-seconds',type=float,default=None,help='默认保留完成画面至手动关闭；测试可指定秒数')
     parser.add_argument('--fault-test', choices=('disconnect', 'timeout', 'exception', 'server_loss'), default=None,
                         help='仅供真实服务的清理验证使用')
-    args = parser.parse_args()
+    args = parser.parse_args(argv);args.preview=None
+    if args.snapshot_every<1 or (args.preview_hold_seconds is not None and not 0<=args.preview_hold_seconds<=3600):raise ValueError('预览参数非法')
+    if args.visualize and args.fault_test:raise ValueError('故障注入请使用无窗口验收入口')
+    try:output=run(args)
+    except BaseException:
+        if args.preview:args.preview.finish('运行失败，请查看本次日志',hold_seconds=args.preview_hold_seconds)
+        raise
+    if args.preview:
+        args.preview.finish('已停止并完成清理' if args.preview.stop_requested else '运行完成',hold_seconds=args.preview_hold_seconds)
+    return output
+
+
+def run(args):
     if not args.bridge_python.is_file(): raise FileNotFoundError(f'桥接 Python 不存在：{args.bridge_python}')
     if args.ticks < 1 or not 0 <= args.sensor_timeout <= 10: raise ValueError('tick 数或传感器等待非法')
     run_id = datetime.now().strftime('n12_%Y%m%d_%H%M%S_%f')
@@ -37,6 +73,7 @@ def main():
               'sensor_timeout_s': args.sensor_timeout, 'ticks': args.ticks, 'fixed_delta_s': .05,
               'rpc_timeout_s': 5.0,
               'recovery_budget_s': 12.0, 'cleanup_rpc_s': .5,
+              'visualize':args.visualize,'snapshot_every':args.snapshot_every,'preview_hz':20 if args.visualize else None,
               'bridge_python': str(args.bridge_python.resolve()), 'core_python': str(Path(sys.executable).resolve()),
               'fault_test': args.fault_test}
     (output / '运行配置.json').write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -44,6 +81,10 @@ def main():
                 'config_sha256': hashlib.sha256((output / '运行配置.json').read_bytes()).hexdigest(),
                 'input': 'real_carla_server', 'dataset': None, 'weights': None}
     (output / '运行清单.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
+    preview=None
+    if args.visualize:
+        from occluactisafe.simulation.preview import LivePreview
+        preview=LivePreview(output,interval=args.snapshot_every);args.preview=preview
     auth = secrets.token_bytes(32)
     listener = Listener(('127.0.0.1', 0), authkey=auth)
     listener._listener._socket.settimeout(45)
@@ -54,8 +95,8 @@ def main():
                                    env=env, stdout=log, stderr=subprocess.STDOUT,
                                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
         try:
-            with listener.accept() as conn, (output / '时序.jsonl').open('x', encoding='utf-8') as records:
-                if not conn.poll(45): raise TimeoutError('CARLA 握手超时')
+            with accept_connection(listener,preview) as conn, (output / '时序.jsonl').open('x', encoding='utf-8') as records:
+                if not poll_message(conn,45,preview): raise TimeoutError('CARLA 握手超时')
                 try: ready = json.loads(conn.recv_bytes())
                 except EOFError as exc:
                     raise RuntimeError(f'桥接在握手前退出；确认服务端可用并检查 {output / "桥接日志.txt"}') from exc
@@ -87,18 +128,23 @@ def main():
                     return
                 frame, sim_time = ready['frame'], ready['sim_time']
                 for index in range(args.ticks):
+                    if preview:
+                        preview.pace()
+                        if preview.stop_requested:break
                     prior = TickEvent('1.0', run_id, 'episode-1', 1, frame, 'carla', sim_time, ())
                     control = stationary_control(prior, index)
                     request = AdvanceRequest('1.0', run_id, 'episode-1', 1, frame + 1, 'carla', sim_time, sim_time + 1.0, control)
                     conn.send_bytes(json.dumps({'kind': 'advance', 'request': request.to_dict()}, allow_nan=False).encode())
-                    if not conn.poll(30): raise TimeoutError('等待 tick 超时')
+                    if not poll_message(conn,30,preview): raise TimeoutError('等待 tick 超时')
                     event, camera = decode_tick(json.loads(conn.recv_bytes(maxlength=2_000_000)))
                     if (event.run_id, event.episode_id, event.generation, event.clock_domain, event.frame_id) != (run_id, 'episode-1', 1, 'carla', frame + 1):
                         raise RuntimeError('tick 身份或帧号错误')
                     if abs((event.sim_time - sim_time) - .05) > 1e-4: raise RuntimeError('仿真步长异常')
                     raw = camera['bgra'].encode() if camera['valid'] else b''
                     records.write(json.dumps({'frame': event.frame_id, 'sim_time': event.sim_time, 'camera_valid': camera['valid'],
-                                              'camera_reason': camera['reason'], 'camera_base64_sha256': hashlib.sha256(raw).hexdigest() if raw else None}) + '\n'); records.flush()
+                                              'camera_reason': camera['reason'], 'camera_base64_sha256': hashlib.sha256(raw).hexdigest() if raw else None,
+                                              'control':{key:getattr(request.control,key) for key in ('throttle','brake','steer')}}) + '\n'); records.flush()
+                    if preview:preview.update(event,camera,request.control,args.ticks)
                     frame, sim_time = event.frame_id, event.sim_time
                     if index == 0:
                         rejected = []
@@ -113,7 +159,7 @@ def main():
                             rejected.append({'case': name, 'frame': frame, 'reason': result['reason']})
                         (output / '异常请求.json').write_text(json.dumps(rejected, ensure_ascii=False, indent=2), encoding='utf-8')
                 conn.send_bytes(b'{"kind":"close"}')
-                if not conn.poll(30) or json.loads(conn.recv_bytes()) != {'kind': 'closed'}: raise RuntimeError('桥接未确认清理完成')
+                if not poll_message(conn,30,preview) or json.loads(conn.recv_bytes()) != {'kind': 'closed'}: raise RuntimeError('桥接未确认清理完成')
         finally:
             listener.close()
             try: process.wait(timeout=40)
@@ -140,6 +186,7 @@ def main():
     (output / '图表来源.json').write_text(json.dumps({'source': timeline.name, 'source_sha256': hashlib.sha256(timeline.read_bytes()).hexdigest(),
                                                    'images': {picture.name: hashlib.sha256(picture.read_bytes()).hexdigest() for picture in pictures}}, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'运行完成：{output}')
+    return output
 
 
 if __name__ == '__main__': main()

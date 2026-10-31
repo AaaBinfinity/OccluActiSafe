@@ -69,5 +69,21 @@ class RecoveryTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError,'evidence_write_failed'):runner.close()
             self.assertEqual(destroyed,[42]); self.assertFalse(world.current.synchronous_mode)
 
+    def test_follow_spectator_is_restored_only_during_same_world_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner,world,actor,client,destroyed=self.setup_case(directory)
+            original=object();spectator=SimpleNamespace(transform=original)
+            spectator.get_transform=lambda:spectator.transform
+            spectator.set_transform=lambda transform:setattr(spectator,'transform',transform)
+            world.get_spectator=lambda:spectator
+            actor.get_transform=lambda:SimpleNamespace(location=SimpleNamespace(x=10,y=20,z=0),
+                rotation=SimpleNamespace(yaw=0),get_forward_vector=lambda:SimpleNamespace(x=1,y=0))
+            carla=SimpleNamespace(Location=lambda **kw:SimpleNamespace(**kw),Rotation=lambda **kw:SimpleNamespace(**kw),
+                                  Transform=lambda location,rotation:SimpleNamespace(location=location,rotation=rotation))
+            runner.follow_ego(carla,actor);self.assertEqual(spectator.transform.location.x,3)
+            runner.close();self.assertIs(spectator.transform,original)
+            report=json.loads((Path(directory)/'清理.json').read_text(encoding='utf-8'))
+            self.assertTrue(report['spectator_restored']);self.assertEqual(world.calls,0)
+
 
 if __name__=='__main__':unittest.main()
