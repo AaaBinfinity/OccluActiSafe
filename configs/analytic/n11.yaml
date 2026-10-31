@@ -1,0 +1,10 @@
+schema_version: n11-analytic-1
+output_root: H:/OccluActiSafeDataset/artifacts/n11
+duration_s: 6.0
+dt_s: 0.05
+propagation_s: 0.2
+scenarios:
+  - scenario_id: sufficient_35m
+    target_x_m: 35.0
+  - scenario_id: unavoidable_8m
+    target_x_m: 8.0
