@@ -11,7 +11,7 @@ import statistics
 ROOT = Path('H:/OccluActiSafeDataset/artifacts')
 
 
-def analyze(folder):
+def analyze(folder, *, steering_only=False):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -73,7 +73,7 @@ def analyze(folder):
                      and v[0]['kind']==kind and float(v[0]['value'])==value]
             if matches: selected.append(min(matches))
     if not selected: selected=sorted(by_case)[:12]
-    if selected:
+    if selected and not steering_only:
         fig,axes=plt.subplots(3,1,figsize=(11,10),sharex=True,constrained_layout=True)
         for case_id in selected:
             items=by_case[case_id]; x=[float(r['sim_time_s'])-float(items[0]['sim_time_s']) for r in items]
@@ -86,7 +86,7 @@ def analyze(folder):
         for ext in ('png','svg'): fig.savefig(folder/f'执行器响应曲线.{ext}',dpi=180)
         plt.close(fig)
     pedal_cases=[items for items in by_case.values() if items[0]['kind'] in ('throttle','brake') and len(items)>=15]
-    if pedal_cases:
+    if pedal_cases and not steering_only:
         fig,ax=plt.subplots(figsize=(9,5),constrained_layout=True)
         speeds=sorted({float(items[0]['target_initial_speed_mps']) for items in pedal_cases})
         for speed in speeds:
@@ -98,9 +98,30 @@ def analyze(folder):
         ax.grid(alpha=.25);ax.legend()
         for ext in ('png','svg'):fig.savefig(folder/f'踏板与加速度重复散点.{ext}',dpi=180)
         plt.close(fig)
+    steering_cases=[]
+    for speed in sorted({float(v[0]['target_initial_speed_mps']) for v in by_case.values()}):
+        for kind,value in (('steer_step',-1.),('steer_step',1.),('steer_ramp',-.3),('steer_ramp',.3)):
+            matches=[(case_id,v) for case_id,v in by_case.items() if float(v[0]['target_initial_speed_mps'])==speed
+                     and v[0]['kind']==kind and float(v[0]['value'])==value]
+            if matches:steering_cases.append(min(matches,key=lambda pair:pair[0])[1])
+    if steering_cases:
+        fig,axes=plt.subplots(1,2,figsize=(13,5),constrained_layout=True)
+        for items in steering_cases:
+            label=f"{items[0]['target_initial_speed_mps']} m/s {items[0]['kind']} {items[0]['value']}"
+            xs=[float(x['x_m'])-float(items[0]['x_m']) for x in items]
+            ys=[float(x['y_m'])-float(items[0]['y_m']) for x in items]
+            times=[float(x['sim_time_s'])-float(items[0]['sim_time_s']) for x in items]
+            axes[0].plot(xs,ys,label=label,linewidth=.9)
+            axes[1].plot(times,[float(x['lateral_acceleration_mps2']) for x in items],linewidth=.9)
+        axes[0].set_xlabel('世界坐标 x 相对位移 (m)');axes[0].set_ylabel('世界坐标 y 相对位移 (m)')
+        axes[0].axis('equal');axes[0].legend(fontsize=6)
+        axes[1].set_xlabel('响应时间 (s)');axes[1].set_ylabel('车体横向加速度 (m/s²)')
+        for ax in axes:ax.grid(alpha=.25)
+        for ext in ('png','svg'):fig.savefig(folder/f'转向轨迹与横向加速度.{ext}',dpi=180)
+        plt.close(fig)
     files=[raw,summary,folder/'重复误差.json']
     for ext in ('png','svg'):
-        for stem in ('执行器响应曲线','踏板与加速度重复散点'):
+        for stem in ('执行器响应曲线','踏板与加速度重复散点','转向轨迹与横向加速度'):
             p=folder/f'{stem}.{ext}'
             if p.exists(): files.append(p)
     hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
@@ -113,10 +134,11 @@ def analyze(folder):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--run-dir',type=Path,default=None)
+    parser.add_argument('--steering-only',action='store_true',help='只新增转向图，保留既有图像原件')
     args=parser.parse_args()
     candidates=[p for p in ROOT.glob('n13_*') if (p/'执行器原始采样.csv').is_file()]
     if args.run_dir is None and not candidates: raise FileNotFoundError('H盘没有 N13 采样目录')
-    analyze(args.run_dir or max(candidates,key=lambda p:p.stat().st_mtime))
+    analyze(args.run_dir or max(candidates,key=lambda p:p.stat().st_mtime),steering_only=args.steering_only)
 
 
 if __name__=='__main__': main()
