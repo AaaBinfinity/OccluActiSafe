@@ -8,6 +8,23 @@ from occluactisafe.common.schemas import AdvanceRequest, TickEvent
 
 
 class SynchronousRunner:
+    @classmethod
+    def reload_synchronously(cls,client,**kwargs):
+        """在重载前固定步长，避免首帧异步物理破坏跨分支重复性。"""
+        previous=client.get_world();original=previous.get_settings()
+        settings=previous.get_settings();settings.synchronous_mode=True;settings.fixed_delta_seconds=.05
+        settings.substepping=True;settings.max_substeps=10;settings.max_substep_delta_time=.01
+        previous.apply_settings(settings)
+        try:
+            world=client.reload_world(False)
+            runner=cls(world,**kwargs)
+            # 回收新世界自建actors后恢复本次调用前的设置。
+            runner._original=original
+            return runner
+        except BaseException:
+            client.get_world().apply_settings(original)
+            raise
+
     def __init__(self, world, *, run_id, episode_id, generation, clock_domain, fixed_delta=.05, destroy_owned=None, cleanup_path=None,
                  reconnect=None, destroy_command=None, prepare_cleanup=None, recovery_budget_s=12., cleanup_rpc_s=.5):
         if not all(isinstance(s,str) and s.strip() for s in (run_id,episode_id,clock_domain)): raise ValueError('身份不能为空')
