@@ -1,0 +1,163 @@
+"""复核N14配对、因果与事件，保存原始差异、图表和双视角视频。"""
+import argparse
+import csv
+import hashlib
+import json
+import math
+from pathlib import Path
+import subprocess
+from occluactisafe.evaluation.episode_metrics import digest
+
+ARTIFACTS=Path('H:/OccluActiSafeDataset/artifacts')
+STRATEGIES=('reference','local_aeb','cooperative_aeb')
+NAMES={'reference':'参考行驶','local_aeb':'仅车端AEB','cooperative_aeb':'车路协同AEB'}
+
+
+def read(path):return json.loads(path.read_text(encoding='utf-8'))
+def rows(path):return [json.loads(s) for s in path.read_text(encoding='utf-8').splitlines()]
+def speed(s):return math.hypot(s['vx'],s['vy'])
+
+
+def video(folder):
+    import imageio_ffmpeg
+    from PIL import Image,ImageDraw,ImageFont
+    index=read(folder/'相机帧索引.json');pairs={}
+    for row in index:pairs.setdefault(row['index'],{})[row['source']]=row
+    filename=folder/'双视角仿真视频.mp4';width,height=2560,720
+    command=[imageio_ffmpeg.get_ffmpeg_exe(),'-y','-loglevel','error','-f','rawvideo','-pix_fmt','rgb24','-s',f'{width}x{height}',
+             '-r','10','-i','pipe:0','-an','-c:v','libx264','-crf','23','-pix_fmt','yuv420p',str(filename)]
+    font=ImageFont.truetype('C:/Windows/Fonts/msyh.ttc',24)
+    with (folder/'视频编码日志.txt').open('w',encoding='utf-8') as log:
+        proc=subprocess.Popen(command,stdin=subprocess.PIPE,stderr=log)
+        try:
+            for _,pair in sorted(pairs.items()):
+                if set(pair)!={'车端','路侧'}:raise ValueError('视频双视角帧缺失')
+                canvas=Image.new('RGB',(width,height))
+                for i,name in enumerate(('车端','路侧')):
+                    with Image.open(folder/pair[name]['image']) as image:canvas.paste(image.convert('RGB'),(1280*i,0))
+                draw=ImageDraw.Draw(canvas);draw.rectangle((0,0,width,45),fill='#101827')
+                draw.text((15,7),f"{NAMES[folder.name]}  |  车端  |  t={pair['车端']['time_s']:.2f}s",font=font,fill='white')
+                draw.text((1295,7),'路侧  |  trajectory_input · 真实CARLA RGB展示',font=font,fill='white')
+                proc.stdin.write(canvas.tobytes())
+        finally:proc.stdin.close();proc.wait(timeout=60)
+        if proc.returncode:raise RuntimeError('视频编码失败')
+    return {'video':filename.name,'frames':len(pairs),'fps':10,'width':width,'height':height,
+            'source_index_sha256':hashlib.sha256((folder/'相机帧索引.json').read_bytes()).hexdigest(),
+            'sha256':hashlib.sha256(filename.read_bytes()).hexdigest()}
+
+
+def analyze(folder,encode=True):
+    folder=Path(folder);config=read(folder/'冻结配置.json');checks=[];data={};metrics=[]
+    def check(name,condition,detail):checks.append({'name':name,'passed':bool(condition),'detail':detail})
+    initial=[];prefix=[]
+    for name in STRATEGIES:
+        d=folder/name;truth=rows(d/'评测真值.jsonl');audit=rows(d/'在线决策.jsonl');observations=rows(d/'合法观测.jsonl')
+        data[name]=(truth,audit,observations);collisions=read(d/'碰撞传感器.json');pref=read(d/'公共前缀.json')
+        initial.append(pref['initial_sha256']);prefix.append(pref['sha256'])
+        check(name+'清理恢复',read(d/'清理报告.json')['status']=='completed',read(d/'清理报告.json'))
+        check(name+'连续合法帧',len(truth)==len(audit)==len(observations) and all(b['frame']==a['frame']+1 for a,b in zip(truth,truth[1:])),{'frames':len(truth)})
+        check(name+'前缀无干预',all(not x['decision']['brake'] for x in audit if x['time_s']<config['prefix_s']),{'prefix_s':config['prefix_s']})
+        legal=True;local_gated=True;first_usable=None
+        for t,o,a in zip(truth,observations,audit):
+            if not t['local_visible'] and o['local'] is not None:local_gated=False
+            if t['local_visible'] and t['target_pixels']['车端']==0:local_gated=False
+            if 'vehicle-A' in a['decision']['used_sources'] and not t['local_visible']:legal=False
+            if name!='cooperative_aeb' and 'roadside-1' in a['decision']['used_sources']:legal=False
+            for received in o['received']:
+                if received['usable_time']>o['time_s'] or received['arrival_time']>o['time_s']:legal=False
+                if first_usable is None:first_usable=received['usable_time']
+            if 'roadside-1' in a['decision']['used_sources'] and not o['received']:legal=False
+        check(name+'不可见目标隔离',local_gated,{'legal_observations':len(observations)})
+        check(name+'消息可用时刻',legal,{'first_usable_time_s':first_usable})
+        first_brake=next((a['time_s'] for a in audit if a['decision']['brake']),None)
+        local_first=next((t['time_s'] for t in truth if t['local_visible']),None)
+        road_first=next((t['time_s'] for t in truth if t['roadside_visible']),None)
+        geo=[t['time_s'] for t in truth if t['geometry_overlap']]
+        yaw=-math.radians(config['ego_spawn']['yaw']);p=config['ego_spawn'];cx,cy=config['conflict_xy']
+        projection=lambda s:(s['x']-cx)*math.cos(yaw)+(s['y']+cy)*math.sin(yaw)
+        cross=lambda s:-math.sin(yaw)*(s['x']-p['x'])+math.cos(yaw)*(s['y']+p['y'])
+        lane_half=min(r['lane_width'] for r in config['ego_route'])/2
+        max_lateral=max(abs(cross(t['ego']))+t['ego']['width']/2 for t in truth)
+        result={'strategy':name,'frames':len(truth),'collision_sensor_events':len(collisions),'geometric_overlap_frames':len(geo),
+            'first_geometric_overlap_s':geo[0] if geo else None,'first_brake_s':first_brake,'first_local_seen_s':local_first,
+            'first_roadside_seen_s':road_first,'first_message_usable_s':first_usable,'end_speed_mps':speed(truth[-1]['ego']),
+            'end_distance_before_conflict_m':-projection(truth[-1]['ego']),'max_lateral_body_edge_m':max_lateral,
+            'lane_half_width_m':lane_half,'raw_prefix_sha256':pref['sha256']}
+        if first_brake is not None:
+            triggered=next(t for t in truth if t['time_s']==first_brake);v=speed(triggered['ego']);B=config['calibration']['capabilities']['effective_deceleration_mps2']
+            budget=v*v/(2*B)+v*config['calibration']['capabilities']['observed_response_delay_s']+5.
+            result.update(brake_start_speed_mps=v,available_distance_m=-projection(triggered['ego']),stopping_budget_with_margin_m=budget)
+        metrics.append(result)
+        if name=='reference':check('参考实际危险事件',bool(collisions) and bool(geo),result)
+        if name=='cooperative_aeb':
+            check('协同停车避撞及道路边界',not collisions and not geo and speed(truth[-1]['ego'])<.1 and max_lateral<=lane_half and -projection(truth[-1]['ego'])>3.,result)
+            check('实测标定停车空间',first_brake is not None and result['available_distance_m']>result['stopping_budget_with_margin_m'],result)
+            check('路侧先见且到达后干预',road_first is not None and first_usable is not None and first_brake>=first_usable and (local_first is None or first_brake<local_first),result)
+    check('初始哈希一致',len(set(initial))==1,initial)
+    differences=[];tolerance=config['pairing_tolerance'];base=data['reference']
+    for name in STRATEGIES[1:]:
+        branch=data[name]
+        for i,(a,b) in enumerate(zip(base[0],branch[0])):
+            if a['time_s']>=config['prefix_s']:break
+            row={'branch':name,'index':i,'time_s':a['time_s']}
+            for actor in ('ego','target'):
+                left,right=a[actor],b[actor]
+                row[actor+'_position_m']=math.hypot(left['x']-right['x'],left['y']-right['y'])
+                row[actor+'_velocity_mps']=math.hypot(left['vx']-right['vx'],left['vy']-right['vy'])
+                row[actor+'_yaw_rad']=abs((left['yaw']-right['yaw']+math.pi)%(2*math.pi)-math.pi)
+            row['control_difference']=max(abs(a['control'][k]-b['control'][k]) for k in ('throttle','brake','steer'))
+            # 观测坐标允许已批准的物理误差；消息身份、可用时刻和队列长度必须相同。
+            identity=lambda o:[(r['payload']['sequence'],r['arrival_time'],r['usable_time']) for r in o['received']]
+            row['message_identity_equal']=identity(base[2][i])==identity(branch[2][i]) and a['pending_count']==b['pending_count']
+            differences.append(row)
+    expected=2*round(config['prefix_s']/.05)
+    check('运动前缀容差配对',len(differences)==expected and all(
+        all(r[a+'_position_m']<=tolerance['position_m'] and r[a+'_velocity_mps']<=tolerance['velocity_mps'] and r[a+'_yaw_rad']<=tolerance['yaw_rad'] for a in ('ego','target'))
+        and r['control_difference']<=tolerance['control'] and r['message_identity_equal'] for r in differences),
+        {'rows':len(differences),'tolerance':tolerance,'raw_hashes':prefix,'maxima':{k:max(r[k] for r in differences) for k in differences[0] if k.endswith(('_m','_mps','_rad','difference'))}})
+    identities=[digest({k:v for k,v in read(folder/n/'运行配置.json').items() if k!='strategy'}) for n in STRATEGIES]
+    check('冻结身份及扰动一致',len(set(identities))==1,identities)
+    with (folder/'公共前缀逐帧差异.csv').open('w',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=list(differences[0]));w.writeheader();w.writerows(differences)
+    report={'passed':sum(c['passed'] for c in checks),'failed':sum(not c['passed'] for c in checks),'checks':checks,'metrics':metrics,
+            'input_mode':'trajectory_input','scope':'一个开发场景，实际碰撞传感器与几何事件分列；非图像检测/完整视频控制闭环'}
+    (folder/'配对验收报告.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+    with (folder/'配对事件指标.csv').open('w',encoding='utf-8-sig',newline='') as f:
+        fields=list(dict.fromkeys(k for m in metrics for k in m));w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(metrics)
+    plot(folder,data,config)
+    if encode:
+        videos={n:video(folder/n) for n in STRATEGIES}
+        (folder/'视频来源与哈希.json').write_text(json.dumps(videos,ensure_ascii=False,indent=2),encoding='utf-8')
+    files={str(p.relative_to(folder)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in folder.rglob('*') if p.is_file() and p.name!='证据索引.json'}
+    (folder/'证据索引.json').write_text(json.dumps({'files':files,'raw_truth_for_evaluation_only':True},ensure_ascii=False,indent=2),encoding='utf-8')
+    print(f"通过{report['passed']}，失败{report['failed']}，证据：{folder}")
+    if report['failed']:raise RuntimeError('N14配对必需检查未通过')
+    return report
+
+
+def plot(folder,data,config):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Polygon
+    from occluactisafe.risk.obb import OBB,obb_corners
+    plt.rcParams['font.sans-serif']=['Microsoft YaHei'];plt.rcParams['axes.unicode_minus']=False
+    fig,axes=plt.subplots(1,2,figsize=(13,6),constrained_layout=True)
+    for name,(truth,audit,_) in data.items():
+        axes[0].plot([r['ego']['x'] for r in truth],[r['ego']['y'] for r in truth],label=NAMES[name])
+        axes[1].plot([r['time_s'] for r in truth],[speed(r['ego']) for r in truth],label=NAMES[name])
+    reference=data['reference'][0];axes[0].plot([r['target']['x'] for r in reference],[r['target']['y'] for r in reference],'--',color='gray',label='参考分支横向车')
+    o=read(folder/'reference'/'初始状态.json')['occluder'];box=OBB((o['x'],o['y']),o['yaw'],o['length'],o['width'])
+    axes[0].add_patch(Polygon(obb_corners(box),color='#e89b39',alpha=.7,label='实体遮挡大车'))
+    axes[0].set_aspect('equal');axes[0].set_xlabel('项目X (m)');axes[0].set_ylabel('项目Y (m)')
+    axes[1].set_xlabel('场景时间 (s)');axes[1].set_ylabel('自车速度 (m/s)')
+    for ax in axes:ax.grid(alpha=.25);ax.legend()
+    for ext in ('png','svg'):fig.savefig(folder/f'三策略轨迹与速度对照.{ext}',dpi=180)
+    plt.close(fig)
+
+
+if __name__=='__main__':
+    parser=argparse.ArgumentParser();parser.add_argument('--run-dir',type=Path);parser.add_argument('--no-video',action='store_true');args=parser.parse_args()
+    candidates=[p for p in ARTIFACTS.glob('n14_*') if (p/'cooperative_aeb'/'公共前缀.json').is_file()]
+    if args.run_dir is None and not candidates:raise FileNotFoundError('没有完整三分支N14运行')
+    analyze(args.run_dir or max(candidates,key=lambda p:p.stat().st_mtime),encode=not args.no_video)
