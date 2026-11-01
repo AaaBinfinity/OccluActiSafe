@@ -51,11 +51,19 @@ def render_overview(observation, decision, config, strategy):
     points=[[ego['x']+ego['vx']*i*.1,ego['y']+ego['vy']*i*.1] for i in range(31)]
     route(points,COLORS['ego'],3,True);vehicle(ego,COLORS['ego'])
     ex,ey=xy(ego['x'],ego['y']);draw.text((ex+14,ey+8),'本车',font=small,fill=COLORS['ego'])
-    for target in decision['known_targets']:
+    # N14固定单一横向目标：双来源估计不叠印标签，显示最紧迫估计；无风险时用最新估计。
+    # 仅选择图形，不改动在线决策或其多来源保守风险计算。
+    groups={}
+    for target in decision['known_targets']:groups.setdefault(target['track_id'],[]).append(target)
+    for i,target in enumerate(decision['known_targets']):
+        source='路侧消息' if target['source_id']=='roadside-1' else '车端观测'
+        draw.text((28,116+25*i),f"{source} · 数据年龄 {target['age_s']:.2f}s",font=small,fill=COLORS['target'])
+    for estimates in groups.values():
+        risk=[t for t in estimates if t['predicted_entry_s'] is not None]
+        target=min(risk,key=lambda t:t['predicted_entry_s']) if risk else min(estimates,key=lambda t:t['age_s'])
         route(target['prediction_xy'],COLORS['target'],4,True);vehicle(target,COLORS['target'])
         x,y=xy(target['x'],target['y'])
-        source='路侧消息' if target['source_id']=='roadside-1' else '车端观测'
-        draw.text((x+14,y-32),f"{source} · 数据年龄{target['age_s']:.2f}s",font=small,fill=COLORS['target'])
+        draw.text((x+14,y+10),'已知横向目标',font=small,fill=COLORS['target'])
         for i in (10,20,30):
             px,py=xy(*target['prediction_xy'][i]);draw.ellipse((px-3,py-3,px+3,py+3),fill=COLORS['target'])
             draw.text((px+5,py+2),f'+{i/10:g}s',font=small,fill=COLORS['target'])
@@ -63,7 +71,7 @@ def render_overview(observation, decision, config, strategy):
     if speed>.1:
         end=[ego['x']+ego['vx']/speed*budget,ego['y']+ego['vy']/speed*budget]
         bx,by=xy(*end);draw.ellipse((bx-7,by-7,bx+7,by+7),outline='#7c3aed',width=3)
-        draw.text((bx+10,by-48),'停车预算边界',font=small,fill='#7c3aed')
+        draw.text((max(30,bx-180),by-48),'停车预算边界',font=small,fill='#7c3aed')
     draw.rectangle((840,0,1280,720), fill='#ffffff')
     branch={'reference':'参考行驶','local_aeb':'仅车端AEB','cooperative_aeb':'车路协同AEB'}[strategy]
     status=decision['mode'];color=COLORS['emergency'] if decision['brake'] else COLORS['warning'] if decision['warning'] else '#166534'
@@ -86,6 +94,7 @@ def render_overview(observation, decision, config, strategy):
     for i,line in enumerate(details):draw.text((862,474+30*i),line,font=small,fill='#475569')
     draw.text((25,646),'预测为当前CV外推，不是车辆真实未来；未发现的目标不绘制',font=regular,fill='#0f172a')
     draw.text((25,681),'真实全场景与遮挡大车请看“俯瞰实景”；示意图不向控制注入信息',font=small,fill='#475569')
+    draw.text((25,619),'多源重合时显示最紧迫估计；无冲突时显示最新估计',font=small,fill='#475569')
     draw.line((40,610,40+10*scale,610),fill='#0f172a',width=3)
     draw.text((40,578),'10 m · 右手系X向右、Y向上',font=small,fill='#334155')
     return image
