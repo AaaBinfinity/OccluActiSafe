@@ -142,7 +142,7 @@ def analyze(folder,encode=True):
         check(name+'清理恢复',read(d/'清理报告.json')['status']=='completed',read(d/'清理报告.json'))
         check(name+'连续合法帧',len(truth)==len(audit)==len(observations) and all(b['frame']==a['frame']+1 for a,b in zip(truth,truth[1:])),{'frames':len(truth)})
         check(name+'前缀无干预',all(not x['decision']['brake'] for x in audit if x['time_s']<config['prefix_s']),{'prefix_s':config['prefix_s']})
-        legal=True;local_gated=True;first_usable=None
+        legal=True;local_gated=True;first_usable=None;usable_history={}
         for t,o,a in zip(truth,observations,audit):
             if not t['local_visible'] and o['local'] is not None:local_gated=False
             if t['local_visible'] and t['target_pixels']['车端']==0:local_gated=False
@@ -151,7 +151,21 @@ def analyze(folder,encode=True):
             for received in o['received']:
                 if received['usable_time']>o['time_s'] or received['arrival_time']>o['time_s']:legal=False
                 if first_usable is None:first_usable=received['usable_time']
-            if 'roadside-1' in a['decision']['used_sources'] and not o['received']:legal=False
+                if received['usable_time']<=o['time_s'] and received['arrival_time']<=o['time_s']:
+                    from occluactisafe.common.schemas import ReceivedMessage
+                    record=ReceivedMessage.from_dict(received)
+                    for target in record.payload.targets:
+                        track=target.track
+                        usable_history[(track.source_id,track.source_track_id,track.state_time)]=record.payload.valid_until
+            if 'roadside-1' in a['decision']['used_sources']:
+                if 'braking' not in config:
+                    if not o['received']:legal=False
+                else:
+                    known=[k for k in a['decision']['known_targets'] if k['source_id']=='roadside-1']
+                    if not known:legal=False
+                    for k in known:
+                        key=(k['source_id'],k['track_id'],k['state_time'])
+                        if usable_history.get(key,-1)<o['time_s'] or not 0<=o['time_s']-k['state_time']<=config['braking']['max_track_age_s']:legal=False
         check(name+'不可见目标隔离',local_gated,{'legal_observations':len(observations)})
         check(name+'消息可用时刻',legal,{'first_usable_time_s':first_usable})
         if config.get('occluder_motion'):
