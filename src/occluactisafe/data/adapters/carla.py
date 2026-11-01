@@ -22,12 +22,13 @@ def decode_instance_id_rgb(rgb_pixel: tuple[int, int, int]) -> tuple[int, int]:
 
 def extract_visible_instances(mask_rgb: Any, actor_catalog: list[dict], *,
                               frame_id: int, episode_id: str, source_time_s: float,
-                              rgb_path: str | Path, instance_path: str | Path) -> dict:
+                              rgb_path: str | Path, instance_path: str | Path,
+                              projected_actor_boxes: dict[int, list[float] | None] | None = None) -> dict:
     """由真实实例像素计算可见框；全遮挡对象仅留hidden清单，不生成检测框。
 
     actor_catalog每项含actor_id、blueprint_id、category、track_id；实例分割传感器
-    原生坐标与RGB尺寸须一致。`occluded_state`对可见实例保守记为unknown，只有
-    完全无像素可严格判定全遮挡；不从3D投影补框。
+    原生坐标与RGB尺寸须一致。投影包围框仅作遮挡比例代理的分母，不作为可见GT框；
+    因CARLA 3D包围盒不等于真实物体轮廓，该比例是近似值并保留代理名称。
     """
     import numpy as np
 
@@ -54,6 +55,7 @@ def extract_visible_instances(mask_rgb: Any, actor_catalog: list[dict], *,
     ids = array[:, :, 1].astype(np.uint32) + (array[:, :, 2].astype(np.uint32) << 8)
     semantic = array[:, :, 0].astype(np.uint16)
     labels, hidden = [], []
+    projected_actor_boxes = projected_actor_boxes or {}
     for actor_id, actor in sorted(actors.items()):
         ys, xs = np.nonzero(ids == actor_id)
         if xs.size == 0:
@@ -64,6 +66,23 @@ def extract_visible_instances(mask_rgb: Any, actor_catalog: list[dict], *,
         x1, y1 = int(xs.min()), int(ys.min())
         x2, y2 = int(xs.max()) + 1, int(ys.max()) + 1
         touches_edge = x1 == 0 or y1 == 0 or x2 == width or y2 == height
+        projected_box = projected_actor_boxes.get(actor_id)
+        estimated_occlusion_fraction = None
+        if projected_box is not None:
+            if (len(projected_box) != 4 or not all(float(v) == v for v in projected_box)
+                    or projected_box[2] <= projected_box[0] or projected_box[3] <= projected_box[1]):
+                raise ValueError("投影包围盒必须是有效的xyxy矩形")
+            projected_area = ((projected_box[2] - projected_box[0])
+                              * (projected_box[3] - projected_box[1]))
+            estimated_occlusion_fraction = max(0.0, min(1.0, 1.0 - float(xs.size) / projected_area))
+        if estimated_occlusion_fraction is None:
+            occlusion_bin = "unknown"
+        elif estimated_occlusion_fraction < 0.10:
+            occlusion_bin = "low_0_10pct"
+        elif estimated_occlusion_fraction < 0.50:
+            occlusion_bin = "medium_10_50pct"
+        else:
+            occlusion_bin = "high_50_100pct"
         labels.append({
             "category": actor["normalized_category"], "track_id": actor["track_id"],
             "actor_id": actor_id, "blueprint_id": actor["blueprint_id"],
@@ -71,7 +90,11 @@ def extract_visible_instances(mask_rgb: Any, actor_catalog: list[dict], *,
             "visible_pixel_count": int(xs.size),
             "semantic_tags": sorted(int(x) for x in np.unique(semantic[ids == actor_id])),
             "truncated_state": "touches_image_edge" if touches_edge else "not_truncated_by_image_edge",
-            "occluded_state": "visible_occlusion_degree_unknown",
+            "occluded_state": "visible_occlusion_proxy_estimated",
+            "occlusion_fraction_proxy": estimated_occlusion_fraction,
+            "occlusion_bin": occlusion_bin,
+            "occlusion_proxy_method": "visible_instance_pixels_vs_projected_3d_bbox_area",
+            "projected_3d_bbox_xyxy_proxy": projected_box,
         })
     return {"schema_version": "1.0", "episode_id": episode_id, "frame_id": frame_id,
             "source_time_s": float(source_time_s), "image_size": [width, height],

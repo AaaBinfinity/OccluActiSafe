@@ -8,7 +8,8 @@ from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
                                              resolve_missing_vehicle_locations)
 from occluactisafe.data.adapters.carla import extract_visible_instances
 from scripts.audit_spd import review_font_identity
-from scripts.capture_n15_carla import (calibrate_fixed_roadside_transform, summarize_scene_labels,
+from scripts.capture_n15_carla import (calibrate_fixed_roadside_transform,
+                                       project_world_points_to_image, summarize_scene_labels,
                                        validate_scene_groups)
 from scripts.verify_n15_carla import synchronized_frame, validate_box
 
@@ -204,23 +205,28 @@ class CarlaVisibleLabelTests(unittest.TestCase):
                                        "路侧": {"negative_frame": True}}}],
                  "labels": [{"labels": [{"category": "vehicle", "camera_distance_m": 5,
                                              "bbox_xyxy_visible_pixels": [0, 0, 20, 30],
-                                             "occluded_state": "visible_occlusion_degree_unknown",
+                                             "occluded_state": "visible_occlusion_proxy_estimated",
+                                             "occlusion_bin": "unknown",
                                              "truncated_state": "not_truncated_by_image_edge"}],
                              "hidden_actor_review": [{"actor_id": 8}]},
                             {"labels": [{"category": "vehicle", "camera_distance_m": 15,
                                           "bbox_xyxy_visible_pixels": [1, 2, 61, 60],
-                                          "occluded_state": "visible_occlusion_degree_unknown",
+                                          "occluded_state": "visible_occlusion_proxy_estimated",
+                                          "occlusion_bin": "unknown",
                                           "truncated_state": "touches_image_edge"},
                                          {"category": "pedestrian", "camera_distance_m": 30,
                                           "bbox_xyxy_visible_pixels": [0, 0, 120, 100],
-                                          "occluded_state": "visible_occlusion_degree_unknown",
+                                          "occluded_state": "visible_occlusion_proxy_estimated",
+                                          "occlusion_bin": "unknown",
                                           "truncated_state": "not_truncated_by_image_edge"}],
                              "hidden_actor_review": []}]}
         self.assertEqual(summarize_scene_labels(scene), {
             "labels_by_category": {"pedestrian": 1, "vehicle": 2},
             "camera_distance_bins_m": {"0_10m": 1, "10_25m": 1, "over_25m": 1},
             "bbox_max_dimension_bins_px": {"small_le_32px": 1, "medium_33_96px": 1, "large_over_96px": 1},
-            "visible_occlusion_degree_unknown": 3,
+            "occlusion_proxy_bins": {"low_0_10pct": 0, "medium_10_50pct": 0,
+                                     "high_50_100pct": 0, "unknown": 3},
+            "occlusion_proxy_unknown": 3,
             "truncated_by_image_edge": 1,
             "negative_view_frames": 1,
             "hidden_actor_review_records": 1})
@@ -236,13 +242,27 @@ class CarlaVisibleLabelTests(unittest.TestCase):
              "blueprint_id": "vehicle.tesla.model3"},
             {"actor_id": 8, "track_id": "episode:a8", "category": "pedestrian",
              "blueprint_id": "walker.pedestrian.0001"}], frame_id=11, episode_id="episode",
-            source_time_s=0.5, rgb_path="rgb.png", instance_path="instance.png")
+            source_time_s=0.5, rgb_path="rgb.png", instance_path="instance.png",
+            projected_actor_boxes={7: [1, 1, 6, 4]})
         self.assertEqual(len(result["labels"]), 1)
         self.assertEqual(result["labels"][0]["bbox_xyxy_visible_pixels"], [2, 1, 5, 4])
         self.assertEqual(result["labels"][0]["visible_pixel_count"], 9)
+        self.assertEqual(result["labels"][0]["occlusion_fraction_proxy"], 0.4)
+        self.assertEqual(result["labels"][0]["occlusion_bin"], "medium_10_50pct")
         self.assertEqual(len(result["hidden_actor_review"]), 1)
         self.assertFalse(result["projected_3d_boxes_used_as_visible_gt"])
         self.assertFalse(result["negative_frame"])
+
+    def test_world_points_project_to_expected_camera_rectangle(self):
+        class Point:
+            def __init__(self, x, y, z):
+                self.x, self.y, self.z = x, y, z
+        points = [Point(10, y, z) for y in (-1, 1) for z in (-1, 1)]
+        matrix = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+        box = project_world_points_to_image(points, matrix, 200, 100, 90)
+        self.assertEqual(box, [90.0, 40.0, 110.0, 60.0])
+        self.assertIsNone(project_world_points_to_image(
+            [Point(-1, 0, 0)] * 4, matrix, 200, 100, 90))
 
     def test_bicycle_blueprint_input_normalizes_to_cyclist(self):
         import numpy as np

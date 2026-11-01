@@ -71,13 +71,45 @@ def summarize_scene_labels(scene: dict) -> dict:
                                for category in sorted({item["category"] for item in labels})},
         "camera_distance_bins_m": distance_bins,
         "bbox_max_dimension_bins_px": size_bins,
-        "visible_occlusion_degree_unknown": sum(
-            item["occluded_state"] == "visible_occlusion_degree_unknown" for item in labels),
+        "occlusion_proxy_bins": {key: sum(item.get("occlusion_bin") == key for item in labels)
+                                 for key in ("low_0_10pct", "medium_10_50pct", "high_50_100pct", "unknown")},
+        "occlusion_proxy_unknown": sum(item.get("occlusion_bin") == "unknown" for item in labels),
         "truncated_by_image_edge": sum(item["truncated_state"] == "touches_image_edge" for item in labels),
         "negative_view_frames": sum(view["negative_frame"] for frame in scene["frames"]
                                      for view in frame["views"].values()),
         "hidden_actor_review_records": sum(len(view["hidden_actor_review"]) for view in scene["labels"]),
     }
+
+
+def project_world_points_to_image(points, world_to_camera_matrix, width: int, height: int,
+                                  horizontal_fov_deg: float) -> list[float] | None:
+    """CARLA相机坐标(x前、y右、z上)投影；返回裁剪图框，只用于离线遮挡代理。"""
+    import math
+    import numpy as np
+
+    matrix = np.asarray(world_to_camera_matrix, dtype=np.float64).reshape(4, 4)
+    xyz = np.asarray([[float(point.x), float(point.y), float(point.z), 1.0] for point in points])
+    camera = (matrix @ xyz.T).T
+    if camera.shape[0] < 4 or np.any(camera[:, 0] <= 1e-3):
+        return None
+    focal = width / (2.0 * math.tan(math.radians(horizontal_fov_deg) / 2.0))
+    u = width / 2.0 + focal * camera[:, 1] / camera[:, 0]
+    v = height / 2.0 - focal * camera[:, 2] / camera[:, 0]
+    box = [max(0.0, float(u.min())), max(0.0, float(v.min())),
+           min(float(width), float(u.max())), min(float(height), float(v.max()))]
+    return box if box[2] > box[0] and box[3] > box[1] else None
+
+
+def actor_projected_boxes(actors, camera_transform, width: int, height: int,
+                          horizontal_fov_deg: float) -> dict[int, list[float] | None]:
+    """由CARLA actor包围盒生成遮挡代理参考框；不得作为检测标签框使用。"""
+    matrix = camera_transform.get_inverse_matrix()
+    output = {}
+    for actor in actors:
+        vertices = actor.bounding_box.get_world_vertices(actor.get_transform())
+        output[int(actor.id)] = project_world_points_to_image(
+            vertices, matrix, width, height, horizontal_fov_deg)
+    return output
 
 
 def calibrate_fixed_roadside_transform(world, ego, carla_module, xyz: list[float],
@@ -310,9 +342,14 @@ def run(config: dict | None = None) -> dict:
                             rgb_proof, mask_proof = save_rgb_frame(rgb_image, rgb_path), save_rgb_frame(mask_image, mask_path)
                             raw = np.frombuffer(mask_image.raw_data, dtype=np.uint8).reshape(height, width, 4)
                             mask_rgb = raw[:, :, :3][:, :, ::-1].copy()
+                            camera_transform = camera_sensors[view_name].get_transform()
+                            projected_boxes = actor_projected_boxes(
+                                actors, camera_transform, width, height,
+                                float(config["horizontal_fov_deg"]))
                             label = extract_visible_instances(mask_rgb, scene["actor_catalog"],
                                 frame_id=frame_id, episode_id=episode_id, source_time_s=timestamp,
-                                rgb_path=rgb_path.name, instance_path=mask_path.name)
+                                rgb_path=rgb_path.name, instance_path=mask_path.name,
+                                projected_actor_boxes=projected_boxes)
                             camera_location = camera_sensors[view_name].get_transform().location
                             actor_by_id = {actor.id: actor for actor in actors}
                             for visible_label in label["labels"]:
