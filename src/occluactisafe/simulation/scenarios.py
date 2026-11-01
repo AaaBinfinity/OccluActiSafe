@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import sys
 import time
+import subprocess
 from dataclasses import replace
 from occluactisafe.simulation.runner import SynchronousRunner
 from occluactisafe.simulation.sensors import FrameBuffer
@@ -57,16 +58,16 @@ def discover(client, output):
     print('candidates',len(found),flush=True)
 
 
-def state(actor):
-    t=actor.get_transform();v=actor.get_velocity();bb=actor.bounding_box
+def state(actor,bounding_box=None):
+    t=actor.get_transform();v=actor.get_velocity();bb=bounding_box if bounding_box is not None else actor.bounding_box
     center=t.transform(bb.location)
     return {'x':center.x,'y':-center.y,'vx':v.x,'vy':-v.y,'yaw':-math.radians(t.rotation.yaw),
             'length':2*bb.extent.x,'width':2*bb.extent.y}
 
 
-def restricted_track(actor,source,now):
+def restricted_track(actor,source,now,bounding_box=None):
     from occluactisafe.common.schemas import SourceTrack
-    s=state(actor)
+    s=state(actor,bounding_box)
     return SourceTrack.from_dict(dict(source_track_id='crossing-1',source_id=source,session_id='session-1',sensor_id=source,
         category='vehicle',role='target',clock_domain='carla-n14',coordinate_frame_id='map-right-handed',reference_point='geometric_center',
         observation_time=now,last_seen_time=now,source_available_time=now,state_time=now,**s,
@@ -91,6 +92,22 @@ def camera_visible(carla,camera,target,obstacle,range_m):
         lo,hi=interval;z0=origin.z+(p.z-origin.z)*lo;z1=origin.z+(p.z-origin.z)*hi
         if min(z0,z1)>oc.z+ob.extent.z or max(z0,z1)<oc.z-ob.extent.z:return True
     return False
+
+
+def measure_geometry(client,output,config):
+    """独立桥接子进程只读查询，绝不tick；由父进程既有runner推进预热帧。"""
+    world=client.get_world();boxes={}
+    for role,identity in config['actor_ids'].items():
+        actor=world.get_actor(identity);box=actor.bounding_box
+        if min(box.extent.x,box.extent.y,box.extent.z)<=0:raise RuntimeError('活体包围盒尺寸无效')
+        boxes[role]={'actor_id':identity,'type_id':actor.type_id,
+            'location':dict(x=box.location.x,y=box.location.y,z=box.location.z),
+            'extent':dict(x=box.extent.x,y=box.extent.y,z=box.extent.z)}
+    physics=world.get_actor(config['actor_ids']['ego']).get_physics_control()
+    context={'map':world.get_map().name,'weather':str(world.get_weather()),'mass_kg':physics.mass,
+        'drag_coefficient':physics.drag_coefficient,'wheels':[{'tire_friction':w.tire_friction,'max_steer_angle_deg':w.max_steer_angle,'radius_cm':w.radius} for w in physics.wheels]}
+    (output/'车辆静态几何.json').write_text(json.dumps({'boxes':boxes,'physics_context':context,
+        'tick_calls':0,'scope':'本轮活体车辆的一次只读几何/物理采样，正式循环缓存静态尺寸'},ensure_ascii=False,indent=2),encoding='utf-8')
 
 
 def run_episode(client,output,config):
@@ -170,7 +187,22 @@ def run_episode(client,output,config):
                 if any(r.error for r in responses):raise RuntimeError('车辆控制批次失败：'+str([r.error for r in responses]))
             runner.advance(json.dumps(request),apply_control=apply)
         held={'throttle':0.,'brake':1.,'steer':0.}
-        for _ in range(30):advance(held,held)
+        # 0.9.16 bounding_box会发同步RPC；独立进程采样避免与父进程tick的GIL/等待互锁。
+        geometry_request=output/'几何采样请求.json'
+        geometry_request.write_text(json.dumps({'actor_ids':{'ego':ego.id,'target':target.id,'occluder':obstacle.id}}),encoding='utf-8')
+        with (output/'几何采样日志.txt').open('w',encoding='utf-8') as log:
+            sampler=subprocess.Popen([sys.executable,'-m','occluactisafe.simulation.scenarios','geometry',str(output),str(geometry_request)],stdout=log,stderr=log)
+            try:
+                for _ in range(100):advance(held,held)
+                sampler.wait(timeout=25)
+                if sampler.returncode:raise RuntimeError('活体几何采样失败，保留日志')
+            finally:
+                if sampler.poll() is None:sampler.kill();sampler.wait()
+        measured=json.loads((output/'车辆静态几何.json').read_text(encoding='utf-8'))
+        boxes={}
+        for box in measured['boxes'].values():
+            boxes[box['actor_id']]=carla.BoundingBox(carla.Location(**box['location']),carla.Vector3D(**box['extent']))
+        current=lambda actor:state(actor,boxes[actor.id])
         if settle_probe:obstacle.set_simulate_physics(False)
         settled={'ego':ego.get_transform(),'target':target.get_transform(),'occluder':obstacle.get_transform()}
         if moving:
@@ -182,19 +214,17 @@ def run_episode(client,output,config):
                 lane_metadata[name]={'road_id':waypoint.road_id,'lane_id':waypoint.lane_id,'yaw_error_deg':delta,'lane_width':waypoint.lane_width}
             (output/'同向车道核验.json').write_text(json.dumps(lane_metadata,ensure_ascii=False,indent=2),encoding='utf-8')
         # 离线核实遮挡物不占用两条测试通道。
-        oc=state(obstacle);route_clear=[]
+        oc=current(obstacle);route_clear=[]
         from occluactisafe.risk.obb import intersects
         for name in ('ego','target'):
             for p in config[name+'_route']:
                 if intersects(OBB((p['x'],-p['y']),-math.radians(p['yaw']),4.,2.),OBB((oc['x'],oc['y']),oc['yaw'],oc['length'],oc['width'])):
                     raise ValueError('遮挡物侵入测试路线')
             route_clear.append(name)
-        physics=ego.get_physics_control()
-        actual_context={'map':world.get_map().name,'weather':str(world.get_weather()),'mass_kg':physics.mass,
-            'drag_coefficient':physics.drag_coefficient,'wheels':[{'tire_friction':w.tire_friction,'max_steer_angle_deg':w.max_steer_angle,'radius_cm':w.radius} for w in physics.wheels]}
+        actual_context=measured['physics_context']
         if actual_context!=config['calibration_context']:raise ValueError('地图天气或物理上下文不符合N13标定')
-        metadata={'ego':state(ego),'target':state(target),'occluder':state(obstacle),'mass_kg':physics.mass,
-                  'tire_friction':[w.tire_friction for w in physics.wheels],'weather':str(world.get_weather()),'route_clear':route_clear}
+        metadata={'ego':current(ego),'target':current(target),'occluder':current(obstacle),'mass_kg':actual_context['mass_kg'],
+                  'tire_friction':[w['tire_friction'] for w in actual_context['wheels']],'weather':str(world.get_weather()),'route_clear':route_clear}
         (output/'初始状态.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
         if moving:
             for _ in range(300):
@@ -205,7 +235,7 @@ def run_episode(client,output,config):
         for warmup in range(200):
             if config.get('probe_static',False):break
             if min(math.hypot(a.get_velocity().x,a.get_velocity().y) for a in (ego,target))>=config['speed_mps']:break
-            full={'throttle':1.,'brake':0.,'steer':0.};advance(full,full,truck_driver.step(state(obstacle),initializing=True) if moving else None)
+            full={'throttle':1.,'brake':0.,'steer':0.};advance(full,full,truck_driver.step(current(obstacle),initializing=True) if moving else None)
         else:raise RuntimeError('动力预热未达到初速')
         initial_commands=[]
         for actor,name in ((ego,'ego'),(target,'target')):
@@ -219,7 +249,7 @@ def run_episode(client,output,config):
             initial_commands.append(carla.command.ApplyTargetAngularVelocity(obstacle.id,carla.Vector3D()))
             truck_driver=OccluderDriver(config['occluder'],config['conflict_xy'],**config['occluder_motion'])
         if any(r.error for r in client.apply_batch_sync(initial_commands,False)):raise RuntimeError('初始化复位批次失败')
-        normal=held if config.get('probe_static',False) else {'throttle':.53,'brake':0.,'steer':0.};advance(normal,normal,truck_driver.step(state(obstacle),initializing=True) if moving else None)
+        normal=held if config.get('probe_static',False) else {'throttle':.53,'brake':0.,'steer':0.};advance(normal,normal,truck_driver.step(current(obstacle),initializing=True) if moving else None)
         if target.id>=65536:raise RuntimeError('实例相机16位ID范围不足，拒绝混淆实例')
         (output/'评测对象身份.json').write_text(json.dumps({'ego_actor_id':ego.id,'target_actor_id':target.id,
             'occluder_actor_id':obstacle.id,'origin_frame':runner.frame,'origin_sim_time_s':runner.sim_time,
@@ -242,7 +272,7 @@ def run_episode(client,output,config):
                     path=output/f'{name}碰撞画面_帧{index:04d}.png';temporary.replace(path)
                     images.append({'image':path.name,'source':name,'frame':runner.frame,'time_s':index*.05,'index':index,'event':'collision_sensor'})
                 break
-            now=index*.05;es=state(ego);ts=state(target)
+            now=index*.05;es=current(ego);ts=current(target)
             import numpy as np
             pixels={};mask_hashes={}
             for name,buffer in masks.items():
@@ -253,12 +283,12 @@ def run_episode(client,output,config):
                 pixels[name]=int(np.count_nonzero(identities==target.id))
                 mask_hashes[name]=__import__('hashlib').sha256(image.raw_data).hexdigest()
             # 部分车体在画面边缘出现也算可见，不能用中心点FOV误判为完全遮挡。
-            target_center=target.get_transform().transform(target.bounding_box.location)
+            target_center=target.get_transform().transform(boxes[target.id].location)
             local_visible=pixels['车端']>0 and cameras['车端'].get_location().distance(target_center)<=config['local_range_m']
             road_visible=pixels['路侧']>0 and cameras['路侧'].get_location().distance(target_center)<=config['roadside_range_m']
-            local=ObservationPacket('map-A','1','map-right-handed',index,'carla-n14',now,now,(restricted_track(target,'vehicle-A',now),)).to_dict() if local_visible else None
+            local=ObservationPacket('map-A','1','map-right-handed',index,'carla-n14',now,now,(restricted_track(target,'vehicle-A',now,boxes[target.id]),)).to_dict() if local_visible else None
             if index%2==0 and road_visible:
-                message=make_prediction((restricted_track(target,'roadside-1',now),),now,sequence,domain='carla-n14')
+                message=make_prediction((restricted_track(target,'roadside-1',now,boxes[target.id]),),now,sequence,domain='carla-n14')
                 message=replace(message,model_hash='n14-cv-current-observation-only');sequence+=1
                 channel.send(message,Timestamp(now,'carla-n14'))
             pending.extend(channel.deliver(Timestamp(now,'carla-n14')))
@@ -274,15 +304,15 @@ def run_episode(client,output,config):
                 acceleration_mps2=0.,angle_rad=-lane_angle(ts,config['target_spawn']),dt_s=.05,
                 vehicle_blueprint='vehicle.audi.a2',surface_id=config['calibration']['surface_id'])
             target_action={k:ta[k] for k in ('throttle','brake','steer')}
-            truck_action=truck_driver.step(state(obstacle)) if moving else None
+            truck_action=truck_driver.step(current(obstacle)) if moving else None
             actual=ego.get_control();acc=ego.get_acceleration();forward=ego.get_transform().get_forward_vector()
             row={'index':index,'time_s':now,'frame':runner.frame,'ego':es,'target':ts,'local_visible':local_visible,
                  'roadside_visible':road_visible,'geometry_overlap':overlap(es,ts),'control':action,
                  'pending_count':channel.pending_count+len(pending),'target_pixels':pixels,'visibility_mask_sha256':mask_hashes,
                  'actual_control':{'throttle':actual.throttle,'brake':actual.brake,'steer':actual.steer},
                  'longitudinal_acceleration_mps2':acc.x*forward.x+acc.y*forward.y+acc.z*forward.z,
-                 'occluder':state(obstacle),'occluder_control':truck_action,
-                 'occluder_target_overlap':overlap(state(obstacle),ts),'occluder_ego_overlap':overlap(state(obstacle),es)}
+                 'occluder':current(obstacle),'occluder_control':truck_action,
+                 'occluder_target_overlap':overlap(current(obstacle),ts),'occluder_ego_overlap':overlap(current(obstacle),es)}
             truth.append(row);observations.append(observation)
             with (output/'评测真值.jsonl').open('a',encoding='utf-8') as evidence:evidence.write(json.dumps(row,ensure_ascii=False)+'\n')
             if now<config['prefix_s']:prefix.append({'observation':observation,'control':action,'target_control':target_action,'occluder_control':truck_action})
@@ -314,6 +344,7 @@ def main():
     if client.get_client_version()!='0.9.16' or client.get_server_version()!='0.9.16':raise RuntimeError('CARLA版本不一致')
     if task=='discover':discover(client,output)
     elif task=='run':run_episode(client,output,json.loads(Path(sys.argv[3]).read_text(encoding='utf-8')))
+    elif task=='geometry':measure_geometry(client,output,json.loads(Path(sys.argv[3]).read_text(encoding='utf-8')))
     else:raise ValueError('未知任务')
 
 
