@@ -137,7 +137,7 @@ def evaluate_one(cfg, model_cfg, weights, stage, seed, root):
         class_map = ({0:'pedestrian', 1:'cyclist', 2:'vehicle', 3:'cyclist', 5:'vehicle', 7:'vehicle'}
                      if stage == 'pretrained' else dict(enumerate(cfg['classes'])))
         detector = UltralyticsDetector(model=model, class_map=class_map, device='0', confidence=e['confidence_keep'],
-                                       imgsz=e['imgsz'], predict_kwargs={'classes': list(class_map), 'half': e['half'],
+                                       imgsz=e['imgsz'], predict_kwargs={'classes': list(class_map), 'quantize': 16 if e['half'] else 32,
                                        'iou': e['iou_nms'], 'max_det': e['max_det'], 'nms': not model_cfg['end2end']})
         result['postprocessing'] = 'end2end_nms_false' if model_cfg['end2end'] else 'standard_nms'
         from PIL import Image

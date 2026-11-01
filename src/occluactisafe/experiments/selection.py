@@ -1,10 +1,18 @@
 """N17只依据验证域指标选择；型号名称不参与排序。"""
 
 
+def _contains_test_field(value):
+    if isinstance(value, dict):
+        return any('test' in str(k).lower() or _contains_test_field(v) for k, v in value.items())
+    if isinstance(value, (list,tuple)):
+        return any(_contains_test_field(v) for v in value)
+    return False
+
+
 def select_detector(candidates, gates):
     decisions = []
     for row in candidates:
-        if row.get('split') != 'model_val' or any('test' in key.lower() for key in row):
+        if row.get('split') != 'model_val' or _contains_test_field(row):
             raise ValueError('选择函数只接受model_val，禁止测试指标')
         reasons = []
         if row.get('status') != 'completed':
