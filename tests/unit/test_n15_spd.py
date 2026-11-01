@@ -3,7 +3,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from occluactisafe.data.adapters.spd import audit_spd_split, build_spd_split, resolve_index_path
+from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
+                                             normalize_visible_box, resolve_index_path)
 
 
 class SpdPathTests(unittest.TestCase):
@@ -67,6 +68,15 @@ class SpdSplitTests(unittest.TestCase):
         rows = [row for row in self.records() if row["intersection_loc"] in ("road-a", "road-b")]
         with self.assertRaisesRegex(ValueError, "至少3个独立地理组"):
             build_spd_split(rows)
+
+    def test_roundoff_clip_is_derived_and_large_outlier_rejected(self):
+        raw = {"2d_box": {"xmin": 0.0, "ymin": 20.0, "xmax": 1920.000061, "ymax": 40.0}}
+        normalized = normalize_visible_box(raw, 1920, 1080)
+        self.assertEqual(normalized["visible_box"]["xmax"], 1920.0)
+        self.assertTrue(normalized["boundary_roundoff_clipped"])
+        self.assertEqual(raw["2d_box"]["xmax"], 1920.000061)
+        with self.assertRaisesRegex(ValueError, "outside_image"):
+            normalize_visible_box({"2d_box": {"xmin": 0, "ymin": 0, "xmax": 1921, "ymax": 10}}, 1920, 1080)
 
 
 if __name__ == "__main__":

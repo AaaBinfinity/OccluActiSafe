@@ -87,9 +87,21 @@ def _bbox_check(label: dict, width: int, height: int) -> str | None:
     if x2 <= x1 or y2 <= y1:
         return "nonpositive_2d_box"
     # Official boxes may meet image edges; outside coordinates remain an audit item.
-    if x1 < 0 or y1 < 0 or x2 > width or y2 > height:
+    if x1 < -1e-3 or y1 < -1e-3 or x2 > width + 1e-3 or y2 > height + 1e-3:
         return "2d_box_outside_image"
     return None
+
+
+def normalize_visible_box(label: dict, width: int, height: int) -> dict:
+    """返回派生裁切框并保留raw_box；只修正≤0.001像素的浮点边界误差。"""
+    error = _bbox_check(label, width, height)
+    if error:
+        raise ValueError(f"不可安全裁切的SPD可见框：{error}")
+    raw = {key: float(label["2d_box"][key]) for key in ("xmin", "ymin", "xmax", "ymax")}
+    clipped = {"xmin": max(0.0, raw["xmin"]), "ymin": max(0.0, raw["ymin"]),
+               "xmax": min(float(width), raw["xmax"]), "ymax": min(float(height), raw["ymax"])}
+    return {"raw_box": raw, "visible_box": clipped,
+            "boundary_roundoff_clipped": clipped != raw}
 
 
 def _group_assignment(group_ids: list[str], seed: int) -> dict[str, str]:
@@ -177,7 +189,11 @@ def audit_spd(dataset_root: Path, *, seed: int = 20261101,
     errors: list[dict] = []
     image_hash_to_paths: dict[str, list[str]] = defaultdict(list)
     label_counts: dict[str, Counter] = {s: Counter() for s in SIDES}
+    label_occlusion_counts: dict[str, Counter] = {s: Counter() for s in SIDES}
+    strata_frames: dict[tuple[str, str, str], set[tuple[str, str, str]]] = defaultdict(set)
     box_errors: Counter = Counter()
+    duplicate_track_frames: list[dict] = []
+    label_frame_empty_count = Counter()
     frame_counts = Counter()
     dimension_counts: Counter = Counter()
     timestamp_deltas: list[int] = []
@@ -274,6 +290,11 @@ def audit_spd(dataset_root: Path, *, seed: int = 20261101,
                                 continue
                             category = str(label.get("type", ""))
                             label_counts[side][category] += 1
+                            occlusion = str(label.get("occluded_state", "missing"))
+                            label_occlusion_counts[side][f"{category}|{occlusion}"] += 1
+                            if image_path is not None:
+                                strata_frames[(side, category, occlusion)].add(
+                                    (sequence, frame, image_path.relative_to(root).as_posix()))
                             if category not in EXPECTED_LABEL_TYPES:
                                 box_errors["unknown_category"] += 1
                             box_error = _bbox_check(label, width or 1920, height or 1080)
@@ -285,7 +306,18 @@ def audit_spd(dataset_root: Path, *, seed: int = 20261101,
                             if track_id is not None:
                                 if str(track_id) in ids:
                                     box_errors["duplicate_track_id_in_frame"] += 1
+                                    if len(duplicate_track_frames) < 500:
+                                        duplicate_track_frames.append({"side": side, "sequence_id": sequence,
+                                            "frame_id": frame, "track_id": str(track_id),
+                                            "category": category, "token": label.get("token"),
+                                            "box": label.get("2d_box")})
                                 ids.add(str(track_id))
+                            if _bbox_check(label, width or 1920, height or 1080) is None:
+                                normalized = normalize_visible_box(label, width or 1920, height or 1080)
+                                if normalized["boundary_roundoff_clipped"]:
+                                    box_errors["boundary_roundoff_clipped"] += 1
+                        if not payload:
+                            label_frame_empty_count[side] += 1
                 except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
                     errors.append({"side": side, "sequence_id": sequence, "frame_id": frame,
                                    "kind": field, "path": str(path.relative_to(root)),
@@ -347,6 +379,28 @@ def audit_spd(dataset_root: Path, *, seed: int = 20261101,
                 pair_time_delta_us.append(int(infra["image_timestamp"]) - int(vehicle["image_timestamp"]))
             except (KeyError, TypeError, ValueError):
                 pair_missing["timestamp_unavailable"] += 1
+    # 部分vehicle data_info的intersection_loc为空；仅按官方cooperative序列链接，
+    # 且目标序列唯一映射到一个有名路口时填派生分组，原始字段仍保留。
+    vehicle_sequence_locations: dict[str, set[str]] = defaultdict(set)
+    vehicle_sequence_infrastructure: dict[str, set[str]] = defaultdict(set)
+    for pair in cooperative:
+        vseq, iseq = str(pair.get("vehicle_sequence", "")), str(pair.get("infrastructure_sequence", ""))
+        vehicle_sequence_infrastructure[vseq].add(iseq)
+        vehicle_sequence_locations[vseq].update(sequence_locations.get(f"infrastructure-side:{iseq}", set()))
+    raw_blank_vehicle_records = 0
+    resolved_blank_vehicle_records = 0
+    for row in records:
+        if row["side"] != "vehicle-side" or row["intersection_loc"]:
+            continue
+        raw_blank_vehicle_records += 1
+        locations = vehicle_sequence_locations.get(row["sequence_id"], set())
+        if len(locations) == 1 and len(vehicle_sequence_infrastructure.get(row["sequence_id"], set())) == 1:
+            row["intersection_loc_raw"] = ""
+            row["intersection_loc"] = next(iter(locations))
+            row["location_resolution_method"] = "official_cooperative_sequence_link"
+            resolved_blank_vehicle_records += 1
+        else:
+            row["location_resolution_method"] = "unresolved_quarantined"
     split = build_spd_split(records, seed=seed)
 
     # Hash exact duplicate RGB content across all registered assets; package-only assets are indexed below.
@@ -395,20 +449,37 @@ def audit_spd(dataset_root: Path, *, seed: int = 20261101,
                                              isinstance(k, tuple) and str(k[1]).startswith("flat")),
            "decoded_image_dimensions": dict(dimension_counts),
            "label_object_counts": {side: dict(sorted(counts.items())) for side, counts in label_counts.items()},
+           "label_category_occlusion_counts": {side: dict(sorted(counts.items()))
+                                               for side, counts in label_occlusion_counts.items()},
+           "stratified_review_samples": [
+               {"side": side, "category": category, "occluded_state": occlusion,
+                "population_frames": len(rows),
+                "sample_frames": [{"sequence_id": seq, "frame_id": frame, "source_file": source}
+                                  for seq, frame, source in sorted(rows,
+                                      key=lambda x: hashlib.sha256(
+                                          f"{seed}:{side}:{category}:{occlusion}:{x[0]}:{x[1]}".encode()).hexdigest())[:30]],
+                "sample_count": min(30, len(rows)), "sample_rule": "按冻结seed和身份SHA排序，类别×遮挡层内固定样本；不足30则全查"}
+               for (side, category, occlusion), rows in sorted(strata_frames.items())],
            "label_quality_findings": dict(box_errors),
+           "duplicate_track_id_frames": duplicate_track_frames,
+           "tracking_identity_note": "same-frame raw track_id duplicates are preserved and flagged; detector boxes remain scoreable, affected identity rows must be excluded from ID metrics unless independently disambiguated",
+           "empty_camera_label_frames": dict(label_frame_empty_count),
            "optional_missing_pointcloud_files": {side: sum(v for (s, k), v in frame_counts.items()
                if s == side and str(k).startswith("optional_missing:pointcloud_path")) for side in SIDES},
            "optional_missing_lidar_labels": {side: sum(v for (s, k), v in frame_counts.items()
                if s == side and str(k).startswith("optional_missing:label_lidar_std_path")) for side in SIDES},
            "pair_reference_findings": dict(pair_missing),
-           "pair_image_timestamp_delta_us": {
+           "pair_image_timestamp_delta_raw_integer": {
                "count": len(pair_time_delta_us), "min": min(pair_time_delta_us) if pair_time_delta_us else None,
                "median": sorted(pair_time_delta_us)[len(pair_time_delta_us)//2] if pair_time_delta_us else None,
                "max": max(pair_time_delta_us) if pair_time_delta_us else None,
-               "unit_source": "integer field magnitude suggests microseconds; retain raw value; not converted for online use"},
+               "unit_source": "integer field magnitudes and sequence cadence suggest microseconds, but local official schema does not declare units; values remain raw and are not converted for online use"},
            "sequences_by_location": {k: sorted(v) for k, v in sorted(sequence_locations.items())},
            "group_assignment": split["group_assignment"], "role_counts": dict(role_counts),
            "unknown_location_quarantined": split["quarantined_unknown_location_records"],
+           "raw_blank_vehicle_location_records": raw_blank_vehicle_records,
+           "blank_vehicle_location_resolved_by_official_pairs": resolved_blank_vehicle_records,
+           "unresolved_blank_vehicle_location_records": raw_blank_vehicle_records-resolved_blank_vehicle_records,
            "map_references": maps, "additional_package": {
                "path": extra_root.relative_to(root).as_posix(), "file_count": len(extra_files),
                "bytes": sum(p.stat().st_size for p in extra_files),
