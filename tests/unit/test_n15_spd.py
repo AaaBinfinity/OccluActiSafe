@@ -8,7 +8,8 @@ from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
                                              resolve_missing_vehicle_locations)
 from occluactisafe.data.adapters.carla import extract_visible_instances
 from scripts.audit_spd import review_font_identity
-from scripts.capture_n15_carla import summarize_scene_labels, validate_scene_groups
+from scripts.capture_n15_carla import (local_camera_location_to_world, summarize_scene_labels,
+                                       validate_scene_groups)
 
 
 class SpdPathTests(unittest.TestCase):
@@ -107,6 +108,24 @@ class SpdSplitTests(unittest.TestCase):
 
 
 class CarlaVisibleLabelTests(unittest.TestCase):
+    def test_local_camera_transform_uses_in_place_location_result(self):
+        class Location:
+            def __init__(self, x=0, y=0, z=0):
+                self.x, self.y, self.z = x, y, z
+
+        class Carla:
+            pass
+        Carla.Location = Location
+
+        class Transform:
+            def transform(self, location):
+                location.x += 10
+                location.y += 20
+                location.z += 30
+
+        world = local_camera_location_to_world(Transform(), Carla, [1, 2, 3])
+        self.assertEqual((world.x, world.y, world.z), (11, 22, 33))
+
     def test_carla_layout_groups_are_split_before_frames(self):
         config = {"maps": [{"map": "Town03_Opt", "project_role": "train"},
                            {"map": "Town05_Opt", "project_role": "model_val"},

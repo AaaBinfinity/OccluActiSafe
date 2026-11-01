@@ -76,6 +76,13 @@ def summarize_scene_labels(scene: dict) -> dict:
     }
 
 
+def local_camera_location_to_world(transform, carla_module, xyz: list[float]):
+    """CARLA Transform.transform 原位修改 Location 并返回 None，不能接收其返回值。"""
+    location = carla_module.Location(x=float(xyz[0]), y=float(xyz[1]), z=float(xyz[2]))
+    transform.transform(location)
+    return location
+
+
 def run(config: dict | None = None) -> dict:
     import carla
     import numpy as np
@@ -203,8 +210,7 @@ def run(config: dict | None = None) -> dict:
 
                     ego_transform = ego.get_transform()
                     roadside_xyz = config["roadside_camera_local_xyz"]
-                    roadside_location = ego_transform.transform(carla.Location(
-                        x=float(roadside_xyz[0]), y=float(roadside_xyz[1]), z=float(roadside_xyz[2])))
+                    roadside_location = local_camera_location_to_world(ego_transform, carla, roadside_xyz)
                     roadside_transform = carla.Transform(roadside_location,
                         carla.Rotation(yaw=ego_transform.rotation.yaw,
                                        pitch=float(config["roadside_camera_pitch_deg"])))
