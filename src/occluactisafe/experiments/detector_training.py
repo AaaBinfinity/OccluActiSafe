@@ -32,11 +32,39 @@ def training_plots(directory):
         fig.tight_layout()
         for ext in ('png', 'svg'):
             path = directory/(filename+'.'+ext)
-            fig.savefig(path, dpi=160)
+            if not path.exists():
+                fig.savefig(path, dpi=160)
             figs.append({'file': path.name, 'sha256': sha256(path)})
         plt.close(fig)
-    write_json(directory/'训练图表来源.json', {'step_csv_sha256': sha256(step_path),
-               'points': len(rows), 'smoothing': False, 'figures': figs})
+    components=[json.loads(row['loss_components']) for row in rows]
+    keys=sorted({k for row in components for k in row})
+    fig,axes=plt.subplots(len(keys),1,figsize=(10,3*len(keys)),squeeze=False)
+    for ax,key in zip(axes[:,0],keys):
+        ax.plot([int(r['step']) for r in rows],[r.get(key,float('nan')) for r in components],linewidth=.7)
+        ax.set(xlabel='优化更新步',ylabel=key,title='实际损失分项（原始值）');ax.grid(alpha=.2)
+    fig.tight_layout()
+    for ext in ('png','svg'):
+        path=directory/('逐步全部损失分项.'+ext)
+        if not path.exists():fig.savefig(path,dpi=160)
+        figs.append({'file':path.name,'sha256':sha256(path)})
+    plt.close(fig)
+    epoch_path=directory/'逐轮验证指标.jsonl'
+    epochs=[json.loads(line) for line in epoch_path.read_text(encoding='utf-8').splitlines()] if epoch_path.exists() else []
+    if epochs:
+        names=[k for k in epochs[0]['metrics'] if 'mAP' in k]
+        fig,ax=plt.subplots(figsize=(10,4))
+        for key in names:
+            ax.plot([r['epoch'] for r in epochs],[r['metrics'].get(key,float('nan')) for r in epochs],marker='o',label=key)
+        ax.set(xlabel='epoch',ylabel='原生验证指标',title='逐轮真实验证（非逐步验证）');ax.legend();ax.grid(alpha=.2);fig.tight_layout()
+        for ext in ('png','svg'):
+            path=directory/('逐轮验证变化.'+ext)
+            if not path.exists():fig.savefig(path,dpi=160)
+            figs.append({'file':path.name,'sha256':sha256(path)})
+        plt.close(fig)
+    source={'step_csv_sha256':sha256(step_path),'points':len(rows),'smoothing':False,'figures':figs,
+            'epoch_jsonl_sha256':sha256(epoch_path) if epochs else None,'validation_epochs':len(epochs)}
+    if not (directory/'训练图表来源.json').exists():write_json(directory/'训练图表来源.json',source)
+    write_json(directory/'训练图表来源_完整分项.json',source)
 
 
 def trainer_class(expected_batch):
