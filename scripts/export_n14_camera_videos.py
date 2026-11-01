@@ -31,19 +31,19 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def decode_check(path, expected_frames, fps):
+def decode_check(path, expected_frames, fps, size=SIZE):
     """实际逐帧解码，只保留当前帧，不把视频整体载入内存。"""
     stream = imageio_ffmpeg.read_frames(str(path), pix_fmt='rgb24')
     try:
         metadata = next(stream)
         count = 0
         for frame in stream:
-            if len(frame) != SIZE[0] * SIZE[1] * 3:
+            if len(frame) != size[0] * size[1] * 3:
                 raise ValueError(f'解码帧字节数不符：{path}')
             count += 1
     finally:
         stream.close()
-    passed = (count == expected_frames and tuple(metadata['size']) == SIZE
+    passed = (count == expected_frames and tuple(metadata['size']) == tuple(size)
               and math.isclose(metadata['fps'], fps, abs_tol=1e-6))
     return {'passed': passed, 'decoded_frames': count, 'expected_frames': expected_frames,
             'size': metadata['size'], 'fps': metadata['fps'],
@@ -119,13 +119,14 @@ def export(run_dir=None, output_dir=None):
                             or not math.isclose(right['time_s'] - left['time_s'], period, abs_tol=1e-6)):
                         raise ValueError(f'{branch}/{camera}存在重复、缺失或不等间隔帧')
                 video = output / f'{branch_name}_{view_name}.mp4'
+                with Image.open(folder/records[0]['image']) as first_image:size=first_image.size
                 result = {'branch': branch, 'camera': camera, 'video': video.name,
-                          'source_index_sha256': sha(index_path), 'fps': fps, 'size': list(SIZE),
+                          'source_index_sha256': sha(index_path), 'fps': fps, 'size': list(size),
                           'frames': len(records), 'first_source_time_s': records[0]['time_s'],
                           'last_source_time_s': records[-1]['time_s'], 'source_frames': []}
                 report['videos'].append(result)
                 command = [imageio_ffmpeg.get_ffmpeg_exe(), '-n', '-v', 'error', '-f', 'rawvideo',
-                           '-pix_fmt', 'rgb24', '-s', '1280x720', '-r', str(fps), '-i', 'pipe:0',
+                           '-pix_fmt', 'rgb24', '-s', f'{size[0]}x{size[1]}', '-r', str(fps), '-i', 'pipe:0',
                            '-an', '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p',
                            '-movflags', '+faststart', str(video)]
                 result['encoder_command'] = command
@@ -141,7 +142,7 @@ def export(run_dir=None, output_dir=None):
                             if digest != frozen[source.relative_to(run_dir).as_posix()]:
                                 raise ValueError(f'原始图片哈希不符：{source}')
                             with Image.open(BytesIO(raw)) as image:
-                                if image.size != SIZE:
+                                if image.size != size:
                                     raise ValueError('相机原始尺寸不符，拒绝缩放')
                                 process.stdin.write(image.convert('RGB').tobytes())
                             result['source_frames'].append(dict(record, sha256=digest))
@@ -151,7 +152,7 @@ def export(run_dir=None, output_dir=None):
                     if process.returncode:
                         raise RuntimeError(f'独立相机视频编码失败：{video}')
                 result['sha256'] = sha(video)
-                result['decode_check'] = decode_check(video, len(records), fps)
+                result['decode_check'] = decode_check(video, len(records), fps,size)
                 persist()
                 if not result['decode_check']['passed']:
                     raise RuntimeError(f'独立相机视频逐帧解码复核失败：{video}')

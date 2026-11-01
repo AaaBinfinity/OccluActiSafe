@@ -13,13 +13,28 @@ SIZE = (1280, 720)
 COLORS = {'ego': '#2563eb', 'target': '#c2410c', 'warning': '#9a6700', 'emergency': '#b91c1c'}
 
 
+class ScaledDraw:
+    """在目标像素画布原生绘制坐标、字体和线宽；不放大已生成的位图。"""
+    def __init__(self,image,scale):self.draw=ImageDraw.Draw(image);self.scale=scale
+    def __getattr__(self,name):
+        def invoke(coordinates,*args,**kwargs):
+            def scaled(value):
+                if isinstance(value,(tuple,list)):return tuple(scaled(v) for v in value)
+                return round(value*self.scale)
+            for key in ('width','radius'):
+                if key in kwargs:kwargs[key]=max(1,round(kwargs[key]*self.scale))
+            return getattr(self.draw,name)(scaled(coordinates),*args,**kwargs)
+        return invoke
+
+
 def render_overview(observation, decision, config, strategy):
     """一帧在线状态→PNG画布。道路为公开冻结地图，实车位置仅来自合法输入。"""
-    image = Image.new('RGB', SIZE, '#f1f5f9')
-    draw = ImageDraw.Draw(image)
-    regular = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', 20)
-    small = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', 16)
-    title = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', 26)
+    output_scale=config.get('overview',{}).get('output_scale',1.)
+    image = Image.new('RGB', tuple(round(v*output_scale) for v in SIZE), '#f1f5f9')
+    draw = ScaledDraw(image,output_scale)
+    regular = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', round(20*output_scale))
+    small = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', round(16*output_scale))
+    title = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', round(26*output_scale))
     cx, cy = config['conflict_xy'][0], -config['conflict_xy'][1]
     scale = 4.7
 
@@ -51,19 +66,21 @@ def render_overview(observation, decision, config, strategy):
     points=[[ego['x']+ego['vx']*i*.1,ego['y']+ego['vy']*i*.1] for i in range(31)]
     route(points,COLORS['ego'],3,True);vehicle(ego,COLORS['ego'])
     ex,ey=xy(ego['x'],ego['y']);draw.text((ex+14,ey+8),'本车',font=small,fill=COLORS['ego'])
-    # N14固定单一横向目标：双来源估计不叠印标签，显示最紧迫估计；无风险时用最新估计。
+    # 每个语义目标的多来源估计不叠印标签；多个真实目标分别显示。
     # 仅选择图形，不改动在线决策或其多来源保守风险计算。
     groups={}
     for target in decision['known_targets']:groups.setdefault(target['track_id'],[]).append(target)
     for i,target in enumerate(decision['known_targets']):
         source='路侧消息' if target['source_id']=='roadside-1' else '车端观测'
-        draw.text((28,116+25*i),f"{source} · 数据年龄 {target['age_s']:.2f}s",font=small,fill=COLORS['target'])
+        draw.text((28,116+25*i),f"{source} · {target['track_id']} · 年龄 {target['age_s']:.2f}s",font=small,fill=COLORS['target'])
     for estimates in groups.values():
         risk=[t for t in estimates if t['predicted_entry_s'] is not None]
         target=min(risk,key=lambda t:t['predicted_entry_s']) if risk else min(estimates,key=lambda t:t['age_s'])
-        route(target['prediction_xy'],COLORS['target'],4,True);vehicle(target,COLORS['target'])
+        pedestrian=target.get('category')=='pedestrian';color='#047857' if pedestrian else COLORS['target']
+        route(target['prediction_xy'],color,4,True);vehicle(target,color)
         x,y=xy(target['x'],target['y'])
-        draw.text((x+14,y+10),'已知横向目标',font=small,fill=COLORS['target'])
+        if pedestrian:draw.ellipse((x-3,y-3,x+3,y+3),fill=color)
+        draw.text((x+14,y+10),('行人 ' if pedestrian else '车辆 ')+target['track_id'],font=small,fill=color)
         for i in (10,20,30):
             px,py=xy(*target['prediction_xy'][i]);draw.ellipse((px-3,py-3,px+3,py+3),fill=COLORS['target'])
             draw.text((px+5,py+2),f'+{i/10:g}s',font=small,fill=COLORS['target'])
@@ -131,7 +148,8 @@ class OverviewRecorder:
              'legal_observation_sha256':hashlib.sha256(json.dumps(observation,sort_keys=True).encode()).hexdigest()}
         self.stream.write(json.dumps(row,ensure_ascii=False,allow_nan=False)+'\n');self.stream.flush()
         if self.root is not None:
-            self.photo=self.ImageTk.PhotoImage(picture);self.label.configure(image=self.photo)
+            preview=picture if picture.size==SIZE else picture.resize(SIZE,Image.Resampling.LANCZOS)
+            self.photo=self.ImageTk.PhotoImage(preview);self.label.configure(image=self.photo)
             self.root.update_idletasks();self.root.update();self.displayed+=1
             if self.root is None:return
             event=('首次紧急制动' if decision['brake'] else '首次风险预警' if decision['warning']
