@@ -118,6 +118,38 @@ def _group_assignment(group_ids: list[str], seed: int) -> dict[str, str]:
     return assignment
 
 
+def resolve_missing_vehicle_locations(records: list[dict], cooperative: list[dict],
+                                      sequence_locations: dict[str, set[str]]) -> dict:
+    """仅用官方 cooperative 序列关系补齐唯一映射；保留原始空值与歧义隔离。"""
+    vehicle_sequence_locations: dict[str, set[str]] = defaultdict(set)
+    vehicle_sequence_infrastructure: dict[str, set[str]] = defaultdict(set)
+    for pair in cooperative:
+        vehicle_sequence = str(pair.get("vehicle_sequence", ""))
+        infrastructure_sequence = str(pair.get("infrastructure_sequence", ""))
+        vehicle_sequence_infrastructure[vehicle_sequence].add(infrastructure_sequence)
+        vehicle_sequence_locations[vehicle_sequence].update(
+            sequence_locations.get(f"infrastructure-side:{infrastructure_sequence}", set()))
+
+    raw_blank = resolved = 0
+    for row in records:
+        if row.get("side") != "vehicle-side" or str(row.get("intersection_loc", "")).strip():
+            continue
+        raw_blank += 1
+        original = row.get("intersection_loc", "")
+        locations = vehicle_sequence_locations.get(str(row.get("sequence_id", "")), set())
+        sequences = vehicle_sequence_infrastructure.get(str(row.get("sequence_id", "")), set())
+        row["intersection_loc_raw"] = original
+        if len(locations) == 1 and len(sequences) == 1:
+            row["intersection_loc"] = next(iter(locations))
+            row["location_resolution_method"] = "official_cooperative_sequence_link"
+            resolved += 1
+        else:
+            row["location_resolution_method"] = "unresolved_quarantined"
+    return {"raw_blank_vehicle_records": raw_blank,
+            "resolved_blank_vehicle_records": resolved,
+            "unresolved_blank_vehicle_records": raw_blank - resolved}
+
+
 def build_spd_split(records: list[dict], *, seed: int = 20261101) -> dict:
     """按实际路口隔离双视角、配对帧及所有派生窗口。未知路口隔离不入集合。"""
     if not records:
@@ -381,26 +413,9 @@ def audit_spd(dataset_root: Path, *, seed: int = 20261101,
                 pair_missing["timestamp_unavailable"] += 1
     # 部分vehicle data_info的intersection_loc为空；仅按官方cooperative序列链接，
     # 且目标序列唯一映射到一个有名路口时填派生分组，原始字段仍保留。
-    vehicle_sequence_locations: dict[str, set[str]] = defaultdict(set)
-    vehicle_sequence_infrastructure: dict[str, set[str]] = defaultdict(set)
-    for pair in cooperative:
-        vseq, iseq = str(pair.get("vehicle_sequence", "")), str(pair.get("infrastructure_sequence", ""))
-        vehicle_sequence_infrastructure[vseq].add(iseq)
-        vehicle_sequence_locations[vseq].update(sequence_locations.get(f"infrastructure-side:{iseq}", set()))
-    raw_blank_vehicle_records = 0
-    resolved_blank_vehicle_records = 0
-    for row in records:
-        if row["side"] != "vehicle-side" or row["intersection_loc"]:
-            continue
-        raw_blank_vehicle_records += 1
-        locations = vehicle_sequence_locations.get(row["sequence_id"], set())
-        if len(locations) == 1 and len(vehicle_sequence_infrastructure.get(row["sequence_id"], set())) == 1:
-            row["intersection_loc_raw"] = ""
-            row["intersection_loc"] = next(iter(locations))
-            row["location_resolution_method"] = "official_cooperative_sequence_link"
-            resolved_blank_vehicle_records += 1
-        else:
-            row["location_resolution_method"] = "unresolved_quarantined"
+    location_resolution = resolve_missing_vehicle_locations(records, cooperative, sequence_locations)
+    raw_blank_vehicle_records = location_resolution["raw_blank_vehicle_records"]
+    resolved_blank_vehicle_records = location_resolution["resolved_blank_vehicle_records"]
     split = build_spd_split(records, seed=seed)
 
     # Hash exact duplicate RGB content across all registered assets; package-only assets are indexed below.

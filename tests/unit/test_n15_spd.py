@@ -4,8 +4,10 @@ import tempfile
 import unittest
 
 from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
-                                             normalize_visible_box, resolve_index_path)
+                                             normalize_visible_box, resolve_index_path,
+                                             resolve_missing_vehicle_locations)
 from occluactisafe.data.adapters.carla import extract_visible_instances
+from scripts.audit_spd import review_font_identity
 
 
 class SpdPathTests(unittest.TestCase):
@@ -70,6 +72,29 @@ class SpdSplitTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "至少3个独立地理组"):
             build_spd_split(rows)
 
+    def test_missing_location_resolves_only_unique_official_mapping(self):
+        rows = [
+            {"side": "vehicle-side", "sequence_id": "v1", "intersection_loc": ""},
+            {"side": "vehicle-side", "sequence_id": "v2", "intersection_loc": ""},
+            {"side": "vehicle-side", "sequence_id": "v3", "intersection_loc": ""},
+        ]
+        pairs = [
+            {"vehicle_sequence": "v1", "infrastructure_sequence": "i1"},
+            {"vehicle_sequence": "v2", "infrastructure_sequence": "i2"},
+            {"vehicle_sequence": "v2", "infrastructure_sequence": "i3"},
+        ]
+        locations = {"infrastructure-side:i1": {"road-a"},
+                     "infrastructure-side:i2": {"road-b"},
+                     "infrastructure-side:i3": {"road-c"}}
+        counts = resolve_missing_vehicle_locations(rows, pairs, locations)
+        self.assertEqual(counts, {"raw_blank_vehicle_records": 3,
+                                  "resolved_blank_vehicle_records": 1,
+                                  "unresolved_blank_vehicle_records": 2})
+        self.assertEqual(rows[0]["intersection_loc"], "road-a")
+        self.assertEqual(rows[0]["intersection_loc_raw"], "")
+        self.assertEqual(rows[1]["location_resolution_method"], "unresolved_quarantined")
+        self.assertEqual(rows[2]["location_resolution_method"], "unresolved_quarantined")
+
     def test_roundoff_clip_is_derived_and_large_outlier_rejected(self):
         raw = {"2d_box": {"xmin": 0.0, "ymin": 20.0, "xmax": 1920.000061, "ymax": 40.0}}
         normalized = normalize_visible_box(raw, 1920, 1080)
@@ -111,6 +136,14 @@ class CarlaVisibleLabelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "actor_id"):
             extract_visible_instances(image, actors, frame_id=1, episode_id="e", source_time_s=0,
                                       rgb_path="rgb.png", instance_path="instance.png")
+
+    def test_review_font_contains_chinese_and_is_hash_pinned(self):
+        from PIL import ImageFont
+        identity = review_font_identity()
+        font = ImageFont.truetype(identity["path"], identity["size_px"])
+        self.assertTrue(Path(identity["path"]).is_file())
+        self.assertEqual(len(identity["sha256"]), 64)
+        self.assertGreater(font.getlength("车端分层抽查"), 0)
 
 
 if __name__ == "__main__":

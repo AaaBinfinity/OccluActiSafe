@@ -48,6 +48,7 @@ def run(config: dict | None = None, *, dataset_root: str | Path | None = None,
         report["usage_conditions"] = config.get("usage_conditions", "unverified")
         report["license_evidence"] = config.get("license_evidence", "unverified")
         report["archive_sha256"] = "unavailable: original downloaded archives are not present"
+        report["review_font"] = review_font_identity()
         report["visual_review_sheets"] = render_review_sheets(report, root, run_dir / "分层抽查图")
         from occluactisafe.data.adapters.spd import canonical_sha256
         report["report_sha256"] = canonical_sha256({k: v for k, v in report.items()
@@ -91,7 +92,8 @@ def render_review_sheets(report: dict, dataset_root: Path, output_dir: Path) -> 
     sheets = []
     source_hashes = {entry["path"]: entry["sha256"] for entry in report["files"]}
     cell_w, cell_h, columns, rows = 400, 240, 4, 8
-    font = ImageFont.load_default()
+    font_path = Path(report["review_font"]["path"])
+    font = ImageFont.truetype(str(font_path), 18)
     for stratum in report["stratified_review_samples"]:
         samples = stratum["sample_frames"]
         if not samples:
@@ -145,6 +147,18 @@ def render_review_sheets(report: dict, dataset_root: Path, output_dir: Path) -> 
                            f"V2X-Seq-SPD/{stratum['side']}/label/camera/{x['frame_id']}.json"]
                                              for x in samples]})
     return sheets
+
+
+def review_font_identity() -> dict:
+    """选择真实包含中文的系统字体，避免默认位图字体把图中文字渲染成方框。"""
+    from occluactisafe.data.adapters.spd import sha256_file
+
+    candidates = (Path("C:/Windows/Fonts/msyh.ttc"), Path("C:/Windows/Fonts/simhei.ttf"),
+                  Path("C:/Windows/Fonts/msyhbd.ttc"))
+    font_path = next((path for path in candidates if path.is_file()), None)
+    if font_path is None:
+        raise FileNotFoundError("缺少可用的Windows中文字体（msyh.ttc/simhei.ttf），拒绝输出不可读抽查图")
+    return {"path": str(font_path.resolve()), "sha256": sha256_file(font_path), "size_px": 18}
 
 
 def main(argv=None) -> int:
