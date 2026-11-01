@@ -101,8 +101,17 @@ def score_detections(frames: list[MetricFrame], *, iou_threshold: float = 0.5) -
         for _, is_tp in sorted(entries, key=lambda item: -item[0]):
             tp_cum += int(is_tp); fp_cum += int(not is_tp)
             points.append((tp_cum/positives, tp_cum/(tp_cum+fp_cum)))
-        aps[class_id] = sum((recall-prev_recall)*max((p for r, p in points if r >= recall), default=0.0)
-                            for prev_recall, recall in zip([0.0]+[r for r, _ in points], [r for r, _ in points]))
+        # 反向累计最大值构成相同精度包络，避免全量预测下O(N²)重复扫描。
+        envelope = [0.0] * len(points)
+        best = 0.0
+        for index in range(len(points)-1, -1, -1):
+            best = max(best, points[index][1])
+            envelope[index] = best
+        previous_recall, area = 0.0, 0.0
+        for (recall, _), precision in zip(points, envelope):
+            area += (recall-previous_recall)*precision
+            previous_recall = recall
+        aps[class_id] = area
     eligible = [v for v in aps.values() if v is not None]
     return {"frames": len(frames), "tp": tp, "fp": fp, "fn": fn,
             "ground_truth_count": tp+fn, "prediction_count": tp+fp,
