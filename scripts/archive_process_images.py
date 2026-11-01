@@ -21,6 +21,7 @@ NAMES = {
     "duplex_timing": "双向通信时序", "association_gates": "跨源关联与门控",
     "source_filter_history": "来源滤波与历史状态", "geometry_intervals": "车体几何与区间细分",
     "raw_scores_coverage": "原始风险评分与时域覆盖", "visibility_constraints": "可见性与未知区域约束",
+    "frame_4_1": "中断时未归类传感器帧_4_1",
 }
 EXTENSIONS = {".png", ".svg", ".jpg", ".jpeg", ".webp", ".gif"}
 
