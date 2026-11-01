@@ -3,12 +3,14 @@ from pathlib import Path
 import tempfile
 import unittest
 import os
+from unittest.mock import patch
 
 from occluactisafe.experiments.detector_data import class_box_line, load_config, materialize
 from occluactisafe.experiments.detector_matrix import validate_matrix
 from occluactisafe.experiments.run_store import write_json, read_json, sha256
 from occluactisafe.experiments.selection import select_detector, family_candidates
 from occluactisafe.experiments.detector_evaluation import metric_summary
+from occluactisafe.experiments.detector_audit import audit_training_matrix
 from occluactisafe.evaluation.detection_metrics import GroundTruthObject, MetricFrame, score_detections
 from occluactisafe.perception.types import Detection
 
@@ -118,6 +120,18 @@ class N17Tests(unittest.TestCase):
         groups=family_candidates(rows,[17,29,43])
         self.assertEqual(groups[0]['seed_count'],3)
         self.assertEqual(select_detector(groups,self.cfg['gates'])['status'],'no_qualified_candidate')
+
+    def test_budget_audit_rejects_a_false_completed_short_run(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp); (root/'训练').mkdir()
+            weight=root/'last.pt';weight.write_bytes(b'mechanism-fixture-not-model')
+            (root/'训练/逐步优化指标.csv').write_text('step,image_count\n1,8\n',encoding='utf-8')
+            run=dict(family='YOLO26',seed=17,status='completed',config_sha256=self.cfg['_config_sha256'],
+                     data_index_sha256='fixture-index',initial_weight_sha256='fixture-initial',
+                     checkpoint=str(weight),checkpoint_sha256=sha256(weight),directory=str(root))
+            matrix=root/'matrix.json';write_json(matrix,{'runs':[run]})
+            with patch('occluactisafe.experiments.detector_audit.load_index',return_value=([{'role':'train'}]*16,{'index_sha256':'fixture-index'})):
+                with self.assertRaises(ValueError):audit_training_matrix(self.cfg,matrix)
 
 
 if __name__ == '__main__':

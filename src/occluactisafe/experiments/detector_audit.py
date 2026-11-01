@@ -17,6 +17,7 @@ def audit_training_matrix(cfg, matrix_path):
     expected_images = train_frames*cfg['training']['epochs']
     expected = set(validate_matrix(cfg))
     seen = set()
+    initial_weights = {}
     checks = []
     for run in matrix['runs']:
         identity = run['family'], run['seed']
@@ -28,6 +29,9 @@ def audit_training_matrix(cfg, matrix_path):
             continue
         if run['config_sha256'] != cfg['_config_sha256'] or run['data_index_sha256'] != data['index_sha256']:
             raise ValueError('训练候选数据/配置哈希不公平')
+        previous=initial_weights.setdefault(run['family'],run['initial_weight_sha256'])
+        if previous!=run['initial_weight_sha256']:
+            raise ValueError('同一模型族的训练种子使用不同初始权重')
         if sha256(run['checkpoint']) != run['checkpoint_sha256']:
             raise ValueError('完成权重哈希改变')
         path=Path(run['directory'])/'训练'/'逐步优化指标.csv'
@@ -44,6 +48,7 @@ def audit_training_matrix(cfg, matrix_path):
                     raise ValueError('训练日志含非有限原值')
         checks.append({'family':run['family'],'seed':run['seed'],'status':'passed',
                        'optimizer_steps':len(steps),'image_exposures':exposures,
+                       'initial_weight_sha256':run['initial_weight_sha256'],
                        'step_csv_sha256':sha256(path),'checkpoint_sha256':run['checkpoint_sha256']})
     return {'status':'passed' if seen==expected and all(r['status']=='passed' for r in checks) else 'failed',
             'expected_runs':len(expected),'actual_runs':len(matrix['runs']), 'train_frames':train_frames,
