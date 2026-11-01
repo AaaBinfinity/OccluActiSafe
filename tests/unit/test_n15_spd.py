@@ -165,10 +165,15 @@ class CarlaVisibleLabelTests(unittest.TestCase):
         config = {"maps": [{"map": "Town03_Opt", "project_role": "train"},
                            {"map": "Town05_Opt", "project_role": "model_val"},
                            {"map": "Town10HD_Opt", "project_role": "test"}],
-                  "scenes": ["vehicle", "cyclist", "pedestrian", "negative"],
+                  "scenes": ["vehicle", "vehicle_occlusion", "cyclist", "pedestrian", "negative"],
                   "frames_per_scene": 30, "moving_target_speed_mps": 3.0,
-                  "pedestrian_speed_mps": 1.2, "roadside_camera_local_xyz": [-3, 3.5, 6]}
+                  "pedestrian_speed_mps": 1.2, "vehicle_occlusion_distance_m": [12, 24],
+                  "roadside_camera_local_xyz": [-3, 3.5, 6]}
         validate_scene_groups(config)
+        config["vehicle_occlusion_distance_m"] = [24, 12]
+        with self.assertRaisesRegex(ValueError, "严格递增"):
+            validate_scene_groups(config)
+        config["vehicle_occlusion_distance_m"] = [12, 24]
         config["pedestrian_speed_mps"] = 0
         with self.assertRaisesRegex(ValueError, "必须为正数"):
             validate_scene_groups(config)

@@ -44,6 +44,10 @@ def validate_scene_groups(config: dict) -> None:
             raise ValueError(f"{key}必须为正数")
     if len(config["roadside_camera_local_xyz"]) != 3:
         raise ValueError("路侧相机相对位姿须为xyz三项")
+    occlusion_distances = config["vehicle_occlusion_distance_m"]
+    if (len(occlusion_distances) != 2 or float(occlusion_distances[0]) <= 0
+            or float(occlusion_distances[1]) <= float(occlusion_distances[0])):
+        raise ValueError("车辆前后遮挡距离须为严格递增的两个正数")
 
 
 def _write_json(path: Path, value) -> None:
@@ -173,7 +177,7 @@ def run(config: dict | None = None) -> dict:
                     ahead = waypoint.next(18.0)
                     moving_targets = []
                     moving_walker = None
-                    if scene_kind in {"vehicle", "vehicle_occlusion"}:
+                    if scene_kind == "vehicle":
                         if not ahead:
                             raise RuntimeError("ego路线前方无可用CARLA waypoint")
                         target_bp = world.get_blueprint_library().find("vehicle.audi.a2")
@@ -185,6 +189,24 @@ def run(config: dict | None = None) -> dict:
                         moving_targets.append(target)
                         scene["actor_catalog"] = [{"actor_id": target.id, "track_id": f"{episode_id}:vehicle",
                                                    "category": "vehicle", "blueprint_id": target.type_id}]
+                    elif scene_kind == "vehicle_occlusion":
+                        scene["actor_catalog"] = []
+                        distances = config["vehicle_occlusion_distance_m"]
+                        for actor_role, distance_m in zip(("near", "far"), distances):
+                            route = waypoint.next(distance_m)
+                            if not route:
+                                raise RuntimeError(f"遮挡场景缺少{distance_m:g}m waypoint")
+                            target_bp = world.get_blueprint_library().find("vehicle.audi.a2")
+                            target_bp.set_attribute("role_name", f"oas:n15:target:vehicle:{actor_role}")
+                            target = world.try_spawn_actor(target_bp, route[0].transform)
+                            if target is None:
+                                raise RuntimeError(f"遮挡场景{actor_role}车辆spawn失败")
+                            actors.append(target)
+                            moving_targets.append(target)
+                            scene["actor_catalog"].append({
+                                "actor_id": target.id, "track_id": f"{episode_id}:{actor_role}",
+                                "category": "vehicle", "blueprint_id": target.type_id,
+                                "scene_role": "near_occluder" if actor_role == "near" else "far_candidate"})
                     elif scene_kind == "cyclist":
                         if not ahead:
                             raise RuntimeError("ego路线前方无可用CARLA waypoint")
