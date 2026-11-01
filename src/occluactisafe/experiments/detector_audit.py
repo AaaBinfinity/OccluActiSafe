@@ -30,8 +30,9 @@ def audit_training_matrix(cfg, matrix_path):
         if identity in seen or identity not in expected:
             raise ValueError('训练矩阵重复/未知候选身份')
         seen.add(identity)
-        if run['status'] != 'completed':
-            checks.append({'family':run['family'],'seed':run['seed'],'status':run['status']})
+        if run['status'] != 'completed' or run.get('returncode',0) != 0:
+            checks.append({'family':run['family'],'seed':run['seed'],'status':'failed',
+                           'worker_status':run['status'],'returncode':run.get('returncode')})
             continue
         if run['config_sha256'] != cfg['_config_sha256'] or run['data_index_sha256'] != data['index_sha256']:
             raise ValueError('训练候选数据/配置哈希不公平')
@@ -48,6 +49,13 @@ def audit_training_matrix(cfg, matrix_path):
         exposures=sum(int(r['image_count']) for r in steps)
         if exposures != expected_images:
             raise ValueError('实际样本曝光不等于完整训练预算')
+        graph_path=path.parent/'训练图表来源_完整分项.json'
+        graph=read_json(graph_path)
+        if graph['points']!=expected_steps or graph['validation_epochs']!=cfg['training']['epochs'] or graph['step_csv_sha256']!=sha256(path):
+            raise ValueError('训练图表与原始逐步/逐轮记录不一致')
+        for item in graph['figures']:
+            if sha256(path.parent/item['file'])!=item['sha256']:
+                raise ValueError('已保存训练图表的SHA不符')
         for row in steps:
             for field in ('loss','gradient_norm','learning_rate','step_seconds','gpu_allocated_mib','host_rss_mib'):
                 if not math.isfinite(float(row[field])):
@@ -67,6 +75,7 @@ def audit_training_matrix(cfg, matrix_path):
                        'optimizer_steps':len(steps),'image_exposures':exposures,
                        'initial_weight_sha256':run['initial_weight_sha256'],
                        'source_commit':commit,'training_function_ast_sha256':algorithm_hashes[commit],
+                       'figure_count':len(graph['figures']),'figure_source_sha256':sha256(graph_path),
                        'step_csv_sha256':sha256(path),'checkpoint_sha256':run['checkpoint_sha256']})
     return {'status':'passed' if seen==expected and all(r['status']=='passed' for r in checks) else 'failed',
             'expected_runs':len(expected),'actual_runs':len(matrix['runs']), 'train_frames':train_frames,
