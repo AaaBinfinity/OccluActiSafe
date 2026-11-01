@@ -157,7 +157,7 @@ def run(config: dict | None = None) -> dict:
                         bike.set_simulate_physics(False)
                         actors.append(bike)
                         scene["actor_catalog"] = [{"actor_id": bike.id, "track_id": f"{episode_id}:cyclist",
-                                                   "category": "cyclist", "blueprint_id": bike.type_id}]
+                                                   "category": "bicycle", "blueprint_id": bike.type_id}]
                     elif scene_kind == "pedestrian":
                         if not ahead:
                             raise RuntimeError("ego路线前方无可用CARLA waypoint")

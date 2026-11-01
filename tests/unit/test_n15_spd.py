@@ -148,6 +148,16 @@ class CarlaVisibleLabelTests(unittest.TestCase):
         self.assertFalse(result["projected_3d_boxes_used_as_visible_gt"])
         self.assertFalse(result["negative_frame"])
 
+    def test_bicycle_blueprint_input_normalizes_to_cyclist(self):
+        import numpy as np
+        image = np.zeros((4, 5, 3), dtype=np.uint8)
+        image[1:3, 1:4, 1] = 9
+        result = extract_visible_instances(image, [
+            {"actor_id": 9, "track_id": "e:bicycle", "category": "bicycle",
+             "blueprint_id": "vehicle.bh.crossbike"}], frame_id=4, episode_id="e", source_time_s=.2,
+            rgb_path="bike.png", instance_path="mask.png")
+        self.assertEqual(result["labels"][0]["category"], "cyclist")
+
     def test_empty_mask_is_a_negative_frame_and_duplicate_actor_ids_rejected(self):
         import numpy as np
         image = np.zeros((3, 4, 3), dtype=np.uint8)
