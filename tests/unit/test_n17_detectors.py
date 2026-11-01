@@ -7,6 +7,7 @@ from occluactisafe.experiments.detector_data import class_box_line, load_config,
 from occluactisafe.experiments.detector_matrix import validate_matrix
 from occluactisafe.experiments.run_store import write_json, read_json, sha256
 from occluactisafe.experiments.selection import select_detector
+from occluactisafe.experiments.detector_evaluation import metric_summary
 from occluactisafe.evaluation.detection_metrics import GroundTruthObject, MetricFrame, score_detections
 from occluactisafe.perception.types import Detection
 
@@ -80,6 +81,17 @@ class N17Tests(unittest.TestCase):
             before = sha256(path)
             self.assertEqual(read_json(path)['status'], 'failed')
             self.assertEqual(before, sha256(path))
+
+    def test_full_metrics_keep_missing_gt_and_negative_denominators(self):
+        gt = GroundTruthObject((0,0,10,10), 'vehicle', 'one', pixel_scale='small', official_occlusion_state='0')
+        meta = (('namespace','a'), ('camera_side','vehicle'))
+        frames = [MetricFrame('a', (gt,), (Detection((0,0,10,10),.9,'vehicle'),), metadata=meta),
+                  MetricFrame('b', (gt,), metadata=meta), MetricFrame('negative', (), metadata=meta)]
+        result = metric_summary(frames, .25)
+        self.assertEqual((result['tp'], result['fn'], result['negative_frames']), (1,1,1))
+        self.assertAlmostEqual(result['map50_95'], .5)
+        self.assertEqual(result['conditional_strata']['pixel_scale']['small']['gt'], 2)
+        self.assertEqual(result['false_positives_per_empty_frame'], 0)
 
 
 if __name__ == '__main__':

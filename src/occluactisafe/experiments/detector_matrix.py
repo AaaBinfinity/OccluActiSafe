@@ -48,8 +48,8 @@ def train_one(cfg, family, seed, directory):
     write_json(directory/'训练状态.json', state)
     try:
         model = YOLO(str(weight))
-        state['parameter_count'] = sum(p.numel() for p in model.model.parameters())
-        state['gflops_960'] = float(get_flops(model.model, imgsz=cfg['training']['imgsz']))
+        state['pretrained_parameter_count'] = sum(p.numel() for p in model.model.parameters())
+        state['pretrained_gflops_960'] = float(get_flops(model.model, imgsz=cfg['training']['imgsz']))
         write_json(directory/'训练状态.json', state)
         model.train(trainer=trainer_class(cfg['training']['batch']), data=str(Path(data['root'])/'dataset.yaml'),
                     device=0, seed=seed, project=str(directory), name='训练', exist_ok=False,
@@ -58,6 +58,8 @@ def train_one(cfg, family, seed, directory):
         checkpoint = directory/'训练'/'weights'/'last.pt'
         if not checkpoint.is_file():
             raise FileNotFoundError('训练未产生last.pt')
+        state['parameter_count'] = sum(p.numel() for p in model.trainer.model.parameters())
+        state['gflops_960'] = float(get_flops(model.trainer.model, imgsz=cfg['training']['imgsz']))
         state.update(status='completed', finished_at=now(), checkpoint=str(checkpoint),
                      checkpoint_sha256=sha256(checkpoint),
                      peak_gpu_allocated_mib=torch.cuda.max_memory_allocated()/2**20)
