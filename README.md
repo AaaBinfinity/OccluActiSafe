@@ -18,6 +18,8 @@ N04本机已生成65,575个窗口；N07三seed各完整训练3epoch，留存共3
 
 ## 阅读入口
 
+N17首次环境使用`uv sync --locked --group training --group perception --group simulation-video`，选择仓库`.venv`解释器。首次数据/官方权重准备运行`scripts/prepare_detector.py`，CUDA视觉后处理检查运行`scripts/check_detector_environment.py`；日常IDE直接运行`scripts/train_detector.py`，默认三族×三个seed×三轮完整GPU微调，之后`scripts/evaluate_detectors.py`运行冻结模型验证。当前预算、隔离、逐步图表和实际限制见[N17协议](docs/N17检测器统一比较协议.md)。运行产物、权重和图片保存在H盘节点目录。
+
 1. [项目节点实施与验收计划](docs/项目节点实施与验收计划.md)：33个核心节点、2个条件扩展；逐项范围、测试、标准、证据和结果回填。
 2. [工程架构与文件结构设计](docs/工程架构与文件结构设计.md)：代码框架、技术栈与接口。
 3. [文档导航](docs/README.md)：阅读顺序与各资料用途。
