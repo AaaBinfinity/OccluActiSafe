@@ -14,7 +14,7 @@ module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 class ArchiveTests(unittest.TestCase):
     def test_inplace_registration_is_atomic_and_retry_keeps_all_images(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp);workspace=root/'repo';metadata=workspace/'docs/过程图';artifacts=root/'external/artifacts';images=artifacts/'n14_fixture';images.mkdir(parents=True)
+            root=Path(tmp).resolve();workspace=(root/'repo').resolve();metadata=workspace/'docs/过程图';artifacts=root/'external/artifacts';images=artifacts/'n14_fixture';images.mkdir(parents=True)
             for name in ('中文图一.svg','中文图二.svg'):(images/name).write_text('<svg/>',encoding='utf-8')
             with patch.object(module,'PROJECT_ROOT',workspace),patch.object(module,'write',side_effect=PermissionError('fixture')):
                 with self.assertRaises(PermissionError):module.archive(artifacts,metadata)
@@ -27,7 +27,7 @@ class ArchiveTests(unittest.TestCase):
 
     def test_real_rename_does_not_delete_source_before_catalog_is_saved(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp);workspace=root/'repo';metadata=workspace/'docs/过程图';artifacts=root/'external/artifacts';images=artifacts/'n11_fixture';images.mkdir(parents=True)
+            root=Path(tmp).resolve();workspace=(root/'repo').resolve();metadata=workspace/'docs/过程图';artifacts=root/'external/artifacts';images=artifacts/'n11_fixture';images.mkdir(parents=True)
             source=images/'trajectory_preview.svg';source.write_text('<svg/>',encoding='utf-8')
             with patch.object(module,'PROJECT_ROOT',workspace),patch.object(module,'write',side_effect=PermissionError('fixture')):
                 with self.assertRaises(PermissionError):module.archive(artifacts,metadata)
