@@ -13,6 +13,16 @@ class Vehicle:
 
 
 class GeometryTests(unittest.TestCase):
+    def test_native_style_inplace_transform_cannot_mutate_cached_offset(self):
+        class InplaceVehicle(Vehicle):
+            def get_transform(self):
+                def transform(point):point.x+=2.;point.y+=3.;return point
+                return SimpleNamespace(rotation=SimpleNamespace(yaw=0.),transform=transform)
+        box=SimpleNamespace(location=SimpleNamespace(x=0.,y=0.,z=1.),extent=SimpleNamespace(x=2.,y=1.))
+        a=state(InplaceVehicle(),box);b=state(InplaceVehicle(),box)
+        self.assertEqual((a['x'],a['y']),(2.,-3.));self.assertEqual(a,b)
+        self.assertEqual((box.location.x,box.location.y),(0.,0.))
+
     def test_live_measured_box_is_reused_for_state_and_legal_track(self):
         box=SimpleNamespace(location=SimpleNamespace(x=0.,y=0.,z=1.),extent=SimpleNamespace(x=2.,y=1.))
         result=state(Vehicle(),box);self.assertEqual((result['length'],result['width']),(4.,2.))

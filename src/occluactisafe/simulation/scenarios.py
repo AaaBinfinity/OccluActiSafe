@@ -60,7 +60,8 @@ def discover(client, output):
 
 def state(actor,bounding_box=None):
     t=actor.get_transform();v=actor.get_velocity();bb=bounding_box if bounding_box is not None else actor.bounding_box
-    center=t.transform(bb.location)
+    # CARLA Transform.transform原位修改Location，必须复制，不能污染缓存的局部偏移。
+    offset=bb.location;center=t.transform(type(offset)(x=offset.x,y=offset.y,z=offset.z))
     return {'x':center.x,'y':-center.y,'vx':v.x,'vy':-v.y,'yaw':-math.radians(t.rotation.yaw),
             'length':2*bb.extent.x,'width':2*bb.extent.y}
 
@@ -283,7 +284,8 @@ def run_episode(client,output,config):
                 pixels[name]=int(np.count_nonzero(identities==target.id))
                 mask_hashes[name]=__import__('hashlib').sha256(image.raw_data).hexdigest()
             # 部分车体在画面边缘出现也算可见，不能用中心点FOV误判为完全遮挡。
-            target_center=target.get_transform().transform(boxes[target.id].location)
+            offset=boxes[target.id].location
+            target_center=target.get_transform().transform(carla.Location(x=offset.x,y=offset.y,z=offset.z))
             local_visible=pixels['车端']>0 and cameras['车端'].get_location().distance(target_center)<=config['local_range_m']
             road_visible=pixels['路侧']>0 and cameras['路侧'].get_location().distance(target_center)<=config['roadside_range_m']
             local=ObservationPacket('map-A','1','map-right-handed',index,'carla-n14',now,now,(restricted_track(target,'vehicle-A',now,boxes[target.id]),)).to_dict() if local_visible else None
