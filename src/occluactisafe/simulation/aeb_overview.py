@@ -61,7 +61,7 @@ def render_overview(observation, decision, config, strategy):
         route(points,'#cbd5e1',round(7*scale));route(points,'#ffffff',2)
     draw.rectangle((15,15,825,100), fill='#f8fafc')
     draw.text((28,24), '在线俯瞰示意 · 决策当时可知的信息',font=title,fill='#0f172a')
-    draw.text((28,65),'蓝色：自车   橙色：已知目标   虚线：当前常速预测   灰色：地图',font=small,fill='#334155')
+    draw.text((28,65),'蓝：自车   橙：车辆   绿：行人   虚线：当前CV预测   灰：地图',font=small,fill='#334155')
     ego=observation['ego'];now=observation['time_s']
     points=[[ego['x']+ego['vx']*i*.1,ego['y']+ego['vy']*i*.1] for i in range(31)]
     route(points,COLORS['ego'],3,True);vehicle(ego,COLORS['ego'])
@@ -109,7 +109,7 @@ def render_overview(observation, decision, config, strategy):
              f"执行延迟  {b['response_delay_s']:.2f}s + 周期{b['control_period_s']:.2f}s",
              f"安全余量  {b['margin_m']:.1f}m",'D > B：预警，保持参考行驶','D ≤ B：锁存紧急制动（前缀后）']
     for i,line in enumerate(details):draw.text((862,474+30*i),line,font=small,fill='#475569')
-    draw.text((25,646),'预测为当前CV外推，不是车辆真实未来；未发现的目标不绘制',font=regular,fill='#0f172a')
+    draw.text((25,646),'预测为当前CV外推，不是目标真实未来；未发现的目标不绘制',font=regular,fill='#0f172a')
     draw.text((25,681),'真实全场景与遮挡大车请看“俯瞰实景”；示意图不向控制注入信息',font=small,fill='#475569')
     draw.text((25,619),'多源重合时显示最紧迫估计；无冲突时显示最新估计',font=small,fill='#475569')
     draw.line((40,610,40+10*scale,610),fill='#0f172a',width=3)
