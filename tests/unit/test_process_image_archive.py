@@ -12,6 +12,17 @@ module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 
 class ArchiveTests(unittest.TestCase):
+    def test_frozen_rgb_cache_is_excluded_but_generated_graph_is_kept(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);node=root/'节点资料/N17_检测器比较/02_运行产物';raw=node/'冻结数据';raw.mkdir(parents=True)
+            index=raw/'逐帧数据索引.jsonl';index.write_text('{}\n',encoding='utf-8')
+            (raw/'source.jpg').write_bytes(b'original-rgb')
+            module.write(raw/'数据清单.json',dict(status='completed',index_sha256=module.sha(index)))
+            generated=node/'实际训练曲线.svg';generated.write_bytes(b'<svg/>')
+            self.assertEqual(list(module.artifact_images(root)),[generated])
+            index.write_text('changed',encoding='utf-8')
+            with self.assertRaises(ValueError):list(module.artifact_images(root))
+
     def test_legacy_catalog_moves_to_disk_with_identical_original_bytes(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp).resolve();workspace=root/'repo';metadata=workspace/'docs/过程图';metadata.mkdir(parents=True)

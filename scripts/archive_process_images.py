@@ -115,6 +115,13 @@ def artifact_images(root):
     for start in sorted(starts):
         for current, directories, files in os.walk(start, followlinks=False):
             parent = Path(current)
+            raw = parent/'冻结数据'
+            if raw.relative_to(root).as_posix() == '节点资料/N17_检测器比较/02_运行产物/冻结数据' and raw.is_dir():
+                proof = read(raw/'数据清单.json')
+                index = raw/'逐帧数据索引.jsonl'
+                if proof.get('status') != 'completed' or not index.is_file() or sha(index) != proof.get('index_sha256'):
+                    raise ValueError('冻结RGB数据缓存缺少有效清单，拒绝猜测归档范围')
+                directories.remove('冻结数据')  # 原始RGB的硬链接，不属于生成的过程图。
             directories[:] = sorted(name for name in directories
                                     if not getattr((parent/name).lstat(), 'st_reparse_tag', 0)
                                     and not (parent/name).is_symlink())

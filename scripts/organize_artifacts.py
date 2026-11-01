@@ -17,7 +17,8 @@ ARTIFACTS = Path('H:/OccluActiSafeDataset/artifacts')
 CATALOG = ROOT/'docs/最终结果目录.json'
 NODES = dict(enumerate(('工程安装', '数据契约', '轨迹审计', '窗口预处理', 'CV基线', 'GPU环境',
                         'GRU训练', '通信机制', '状态融合', '几何风险', '解析闭环', '仿真桥接',
-                        '执行器标定', '盲区路口', 'CARLA双视角标注与SPD审计'), 1))
+                        '执行器标定', '盲区路口', 'CARLA双视角标注与SPD审计',
+                        '检测器与ByteTrack统一适配', '检测器比较'), 1))
 
 
 def read(path):
@@ -52,6 +53,8 @@ def bounded(root, relative):
 def node_folder(node):
     number = int(node[1:])
     if number not in NODES: raise ValueError(f'尚未登记的节点：{node}')
+    if node == 'N16':
+        return Path('节点资料')/'N16检测器与ByteTrack统一适配'  # 保持既有真实地址。
     return Path('节点资料')/f'{node}_{NODES[number]}'
 
 

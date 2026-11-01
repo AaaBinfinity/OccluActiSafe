@@ -31,6 +31,10 @@ def fixture(root):
 
 
 class LayoutTests(unittest.TestCase):
+    def test_n16_path_is_preserved_and_n17_is_registered(self):
+        self.assertEqual(layout.node_folder('N16').as_posix(),'节点资料/N16检测器与ByteTrack统一适配')
+        self.assertEqual(layout.node_folder('N17').as_posix(),'节点资料/N17_检测器比较')
+
     def test_n15_has_a_named_node_archive_directory(self):
         self.assertEqual(layout.node_folder('N15').as_posix(), '节点资料/N15_CARLA双视角标注与SPD审计')
 
