@@ -223,6 +223,11 @@ def run_evaluation_matrix(cfg, training_matrix=None):
         weights = Path(cfg['output_root'])/'02_运行产物'/'官方预训练权重'/m['weights']
         candidates.append((m, weights, 'pretrained', None))
     if training_matrix is not None:
+        from .detector_audit import audit_training_matrix
+        budget_audit=audit_training_matrix(cfg,training_matrix)
+        write_json(root/'训练预算复核.json',budget_audit)
+        if budget_audit['status']!='passed':
+            raise ValueError('训练矩阵未完成冻结预算，保留训练预算复核，不冒充完整评测')
         trained = read_json(training_matrix)
         for run in trained['runs']:
             m = next(m for m in cfg['models'] if m['family'] == run['family'])
@@ -240,6 +245,8 @@ def run_evaluation_matrix(cfg, training_matrix=None):
     selection = select_detector(families, cfg['gates'])
     selection['family_metrics'] = families
     write_json(root/'离线预选.json', selection)
+    from .detector_audit import audit_evaluation_matrix
+    write_json(root/'矩阵公平性复核.json',audit_evaluation_matrix(cfg,outputs,root,len(candidates)))
     comparison_plots(root, outputs)
     return root
 
