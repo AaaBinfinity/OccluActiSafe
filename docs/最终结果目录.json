@@ -2,7 +2,7 @@
   "schema_version": "final-output-directory-1",
   "path_base": "本机实际移动硬盘项目artifacts根目录",
   "prefix": "last_",
-  "selection_basis": "项目节点实施与验收计划中当前最终交付结果；不按文件修改时间选择，不代表用户验收通过",
+  "selection_basis": "按节点计划显式选择当前最终交付；status=current或省略为当前，historical_reference为保留旧入口；last不表示用户验收",
   "storage": "按节点和用途归类的真实目录；last联接集中在各节点01_最终结果，根目录旧路径为隐藏兼容链接",
   "entries": [
     {
@@ -287,43 +287,73 @@
     },
     {
       "node": "N14",
-      "purpose": "三分支及12份独立视频",
+      "purpose": "旧版720p：三分支及12份独立视频",
       "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_711b3da7319d4725a564403bc1cf5ff3",
       "original_artifact_path": "n14_711b3da7319d4725a564403bc1cf5ff3",
       "evidence_file": "证据索引.json",
       "evidence_sha256": "2f55e3fb5e1782d64db4abd8610158ef4f19c8e6ca63b34ff427098c448cb175",
       "legacy_directory": "last_n14_711b3da7319d4725a564403bc1cf5ff3",
-      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_711b3da7319d4725a564403bc1cf5ff3"
+      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_711b3da7319d4725a564403bc1cf5ff3",
+      "status": "historical_reference",
+      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531"
     },
     {
       "node": "N14",
-      "purpose": "分级制动交付证据",
+      "purpose": "旧版720p：分级制动交付证据",
       "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_budget_20261101",
       "original_artifact_path": "n14_budget_20261101",
       "evidence_file": "交付证据索引.json",
       "evidence_sha256": "8c7497b919d1259efcbe4a2e67310f68eca8299424c91bd9b24b5d4717f58e34",
       "legacy_directory": "last_n14_budget_20261101",
-      "physical_artifact_path": "节点资料/N14_盲区路口/03_验收证据/n14_budget_20261101"
+      "physical_artifact_path": "节点资料/N14_盲区路口/03_验收证据/n14_budget_20261101",
+      "status": "historical_reference",
+      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531"
     },
     {
       "node": "N14",
-      "purpose": "静态遮挡保留对照",
+      "purpose": "旧版720p：静态遮挡保留对照",
       "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_e2d0d4f09e3f48cdb277872f45ed22c0",
       "original_artifact_path": "n14_e2d0d4f09e3f48cdb277872f45ed22c0",
       "evidence_file": "源码版本.json",
       "evidence_sha256": "d2e2a2797ede617c308d62f51adb664104a7a38158b5ac962395f0c13335379b",
       "legacy_directory": "last_n14_e2d0d4f09e3f48cdb277872f45ed22c0",
-      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_e2d0d4f09e3f48cdb277872f45ed22c0"
+      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_e2d0d4f09e3f48cdb277872f45ed22c0",
+      "status": "historical_reference",
+      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531"
     },
     {
       "node": "N14",
-      "purpose": "静态遮挡移开对照",
+      "purpose": "旧版720p：静态遮挡移开对照",
       "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
       "original_artifact_path": "n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
       "evidence_file": "源码版本.json",
       "evidence_sha256": "d2e2a2797ede617c308d62f51adb664104a7a38158b5ac962395f0c13335379b",
       "legacy_directory": "last_n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
-      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_a7c943f6a08047c3b8e7f9dcfd5c14f1"
+      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
+      "status": "historical_reference",
+      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531"
+    },
+    {
+      "node": "N14",
+      "purpose": "四场景1080p/Epic及48份独立视频",
+      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
+      "original_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
+      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
+      "legacy_directory": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
+      "evidence_file": "高画质多场景证据索引.json",
+      "evidence_sha256": "b79f61cd607132e8dac0f962f319d69ca0090fd6cc91fc7221984a1cd7c3f869",
+      "status": "current"
+    },
+    {
+      "node": "N14",
+      "purpose": "高清复核/失败/环境/归档及观看导航",
+      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_hd_20261101",
+      "original_artifact_path": "节点资料/N14_盲区路口/03_验收证据/n14_hd_20261101",
+      "physical_artifact_path": "节点资料/N14_盲区路口/03_验收证据/n14_hd_20261101",
+      "legacy_directory": "last_n14_hd_20261101",
+      "evidence_file": "交付数据证据索引.json",
+      "evidence_sha256": "ae5a78721ad6bd0d9effe55fc5bc57378b72a26d3fd00b071464a1c881e491d5",
+      "status": "current"
     }
   ]
 }
