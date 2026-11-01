@@ -126,11 +126,26 @@ class CarlaVisibleLabelTests(unittest.TestCase):
     def test_carla_scene_summary_counts_nested_view_labels(self):
         scene = {"frames": [{"views": {"车端": {"negative_frame": False},
                                        "路侧": {"negative_frame": True}}}],
-                 "labels": [{"labels": [{"category": "vehicle"}], "hidden_actor_review": [{"actor_id": 8}]},
-                            {"labels": [{"category": "vehicle"}, {"category": "pedestrian"}],
+                 "labels": [{"labels": [{"category": "vehicle", "camera_distance_m": 5,
+                                             "bbox_xyxy_visible_pixels": [0, 0, 20, 30],
+                                             "occluded_state": "visible_occlusion_degree_unknown",
+                                             "truncated_state": "not_truncated_by_image_edge"}],
+                             "hidden_actor_review": [{"actor_id": 8}]},
+                            {"labels": [{"category": "vehicle", "camera_distance_m": 15,
+                                          "bbox_xyxy_visible_pixels": [1, 2, 61, 60],
+                                          "occluded_state": "visible_occlusion_degree_unknown",
+                                          "truncated_state": "touches_image_edge"},
+                                         {"category": "pedestrian", "camera_distance_m": 30,
+                                          "bbox_xyxy_visible_pixels": [0, 0, 120, 100],
+                                          "occluded_state": "visible_occlusion_degree_unknown",
+                                          "truncated_state": "not_truncated_by_image_edge"}],
                              "hidden_actor_review": []}]}
         self.assertEqual(summarize_scene_labels(scene), {
             "labels_by_category": {"pedestrian": 1, "vehicle": 2},
+            "camera_distance_bins_m": {"0_10m": 1, "10_25m": 1, "over_25m": 1},
+            "bbox_max_dimension_bins_px": {"small_le_32px": 1, "medium_33_96px": 1, "large_over_96px": 1},
+            "visible_occlusion_degree_unknown": 3,
+            "truncated_by_image_edge": 1,
             "negative_view_frames": 1,
             "hidden_actor_review_records": 1})
 

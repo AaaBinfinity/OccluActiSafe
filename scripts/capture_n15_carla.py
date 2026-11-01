@@ -53,9 +53,23 @@ def _write_json(path: Path, value) -> None:
 
 def summarize_scene_labels(scene: dict) -> dict:
     labels = [item for view in scene["labels"] for item in view["labels"]]
+    distance_bins = {"0_10m": 0, "10_25m": 0, "over_25m": 0}
+    size_bins = {"small_le_32px": 0, "medium_33_96px": 0, "large_over_96px": 0}
+    for item in labels:
+        distance = item.get("camera_distance_m")
+        if distance is not None:
+            distance_bins["0_10m" if distance <= 10 else "10_25m" if distance <= 25 else "over_25m"] += 1
+        box = item["bbox_xyxy_visible_pixels"]
+        extent = max(box[2] - box[0], box[3] - box[1])
+        size_bins["small_le_32px" if extent <= 32 else "medium_33_96px" if extent <= 96 else "large_over_96px"] += 1
     return {
         "labels_by_category": {category: sum(item["category"] == category for item in labels)
                                for category in sorted({item["category"] for item in labels})},
+        "camera_distance_bins_m": distance_bins,
+        "bbox_max_dimension_bins_px": size_bins,
+        "visible_occlusion_degree_unknown": sum(
+            item["occluded_state"] == "visible_occlusion_degree_unknown" for item in labels),
+        "truncated_by_image_edge": sum(item["truncated_state"] == "touches_image_edge" for item in labels),
         "negative_view_frames": sum(view["negative_frame"] for frame in scene["frames"]
                                      for view in frame["views"].values()),
         "hidden_actor_review_records": sum(len(view["hidden_actor_review"]) for view in scene["labels"]),
@@ -196,6 +210,7 @@ def run(config: dict | None = None) -> dict:
                                        pitch=float(config["roadside_camera_pitch_deg"])))
                     views = (("车端", carla.Transform(carla.Location(x=1.5, z=1.6), carla.Rotation()), ego),
                              ("路侧", roadside_transform, None))
+                    camera_sensors = {}
                     for view_name, transform, parent in views:
                         buffers[view_name + "_rgb"] = FrameBuffer(capacity=8)
                         buffers[view_name + "_mask"] = FrameBuffer(capacity=8)
@@ -208,6 +223,8 @@ def run(config: dict | None = None) -> dict:
                             bp.set_attribute("sensor_tick", str(config["fixed_delta_s"]))
                             sensor = world.spawn_actor(bp, transform, attach_to=parent)
                             sensors.append(sensor)
+                            if kind == "rgb":
+                                camera_sensors[view_name] = sensor
                             sensor.listen(lambda image, key=view_name + "_" + suffix:
                                           buffers[key].put(image.frame, image))
                     for _ in range(5):
@@ -258,6 +275,12 @@ def run(config: dict | None = None) -> dict:
                             label = extract_visible_instances(mask_rgb, scene["actor_catalog"],
                                 frame_id=frame_id, episode_id=episode_id, source_time_s=timestamp,
                                 rgb_path=rgb_path.name, instance_path=mask_path.name)
+                            camera_location = camera_sensors[view_name].get_transform().location
+                            actor_by_id = {actor.id: actor for actor in actors}
+                            for visible_label in label["labels"]:
+                                target_actor = actor_by_id[visible_label["actor_id"]]
+                                target_location = target_actor.get_transform().location
+                                visible_label["camera_distance_m"] = float(camera_location.distance(target_location))
                             label["view"] = view_name
                             label["rgb_sha256"] = rgb_proof["sha256"]
                             label["instance_sha256"] = mask_proof["sha256"]

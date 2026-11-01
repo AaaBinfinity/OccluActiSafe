@@ -8,7 +8,7 @@ fixed_delta_s: 0.05
 frames_per_scene: 30
 moving_target_speed_mps: 3.0
 pedestrian_speed_mps: 1.2
-roadside_camera_local_xyz: [-3.0, 3.5, 6.0]
+roadside_camera_local_xyz: [-2.0, -2.5, 6.0]
 roadside_camera_pitch_deg: -25.0
 seed: 20261101
 output_root: H:/OccluActiSafeDataset/artifacts/节点资料/N15_CARLA双视角标注与SPD审计
