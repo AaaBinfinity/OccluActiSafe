@@ -38,6 +38,9 @@ def expand_cases(base, suite):
                           target_start_s=case['pedestrian_start_s'],settle_static_occluder=True)
             config['target_spawn']=dict(x=cx+.14,y=cy+case['pedestrian_distance_m'],z=.5,yaw=-90.)
             dx,dy=case['occluder_offset_xy'];config['occluder']=dict(x=cx+dx,y=cy+dy,z=.5,yaw=-90.)
+            config['occluder_blueprint']='vehicle.mercedes.sprinter'
+            config['static_occluders']=[dict(role=f'static_{i}',blueprint='static.prop.clothcontainer',
+                spawn=dict(x=cx+1.4,y=cy+offset,z=0.,yaw=0.)) for i,offset in enumerate((2.35,4.2,6.05))]
         elif case['kind']!='original':raise ValueError('未授权的场景类别')
         if not 4.5<=config['speed_mps']<=11.5:raise ValueError('开发初速须保留N13标定速度范围余量')
         result.append((case,config))

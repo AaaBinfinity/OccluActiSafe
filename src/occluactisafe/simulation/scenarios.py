@@ -156,6 +156,8 @@ def run_episode(client,output,config):
         participants={s['role']:spawn(s['blueprint'],s['spawn']) for s in specs};target=participants['target']
         settle_probe=bool(config.get('probe_static') and config.get('probe_settle_occluder')) or config.get('settle_static_occluder',False)
         obstacle=spawn(config['occluder_blueprint'],config['occluder']);obstacle.set_simulate_physics(moving or settle_probe)
+        static_occluders={s['role']:spawn(s['blueprint'],s['spawn']) for s in config.get('static_occluders',[])}
+        for actor in static_occluders.values():actor.set_simulate_physics(False)
         truck_driver=OccluderDriver(config['occluder'],config['conflict_xy'],**config['occluder_motion']) if moving else None
         sensor_bp=world.get_blueprint_library().find('sensor.other.collision')
         sensor_bp.set_attribute('role_name','oas:'+run_id)
@@ -207,7 +209,7 @@ def run_episode(client,output,config):
         held={'throttle':0.,'brake':1.,'steer':0.}
         # 0.9.16 bounding_box会发同步RPC；独立进程采样避免与父进程tick的GIL/等待互锁。
         geometry_request=output/'几何采样请求.json'
-        geometry_request.write_text(json.dumps({'world_id':world.id,'actor_ids':{'ego':ego.id,'occluder':obstacle.id,**{r:a.id for r,a in participants.items()}}}),encoding='utf-8')
+        geometry_request.write_text(json.dumps({'world_id':world.id,'actor_ids':{'ego':ego.id,'occluder':obstacle.id,**{r:a.id for r,a in participants.items()},**{r:a.id for r,a in static_occluders.items()}}}),encoding='utf-8')
         from occluactisafe.simulation.scenario_rpc import ScenarioRPC
         rpc=ScenarioRPC(output,geometry_request);resources.callback(rpc.close)
         for _ in range(100):advance(held,held)
@@ -237,12 +239,18 @@ def run_episode(client,output,config):
             for p in config[name+'_route']:
                 if intersects(OBB((p['x'],-p['y']),-math.radians(p['yaw']),*dimensions),OBB((oc['x'],oc['y']),oc['yaw'],oc['length'],oc['width'])):
                     raise ValueError('遮挡物侵入测试路线')
+                for prop in static_occluders.values():
+                    state_=current(prop)
+                    if intersects(OBB((p['x'],-p['y']),-math.radians(p['yaw']),*dimensions),OBB((state_['x'],state_['y']),state_['yaw'],state_['length'],state_['width'])):
+                        raise ValueError('附加实体遮挡物侵入测试路线')
             route_clear.append(name)
         actual_context=measured['physics_context']
         if actual_context!=config['calibration_context']:raise ValueError('地图天气或物理上下文不符合N13标定')
         metadata={'ego':current(ego),'target':current(target),'occluder':current(obstacle),'mass_kg':actual_context['mass_kg'],
                   'tire_friction':[w['tire_friction'] for w in actual_context['wheels']],'weather':actual_context['weather'],'route_clear':route_clear}
-        if config.get('suite_case'):metadata['participants']={s['track_id']:{'category':s['category'],'state':current(participants[s['role']])} for s in specs}
+        if config.get('suite_case'):
+            metadata['participants']={s['track_id']:{'category':s['category'],'state':current(participants[s['role']])} for s in specs}
+            metadata['static_occluders']={r:current(a) for r,a in static_occluders.items()}
         (output/'初始状态.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
         if moving:
             for _ in range(300):
@@ -311,6 +319,8 @@ def run_episode(client,output,config):
                 all_pixels[name]={s['track_id']:int(np.count_nonzero(identities==participants[s['role']].id)) for s in specs}
                 pixels[name]=all_pixels[name][specs[0]['track_id']]
                 mask_hashes[name]=__import__('hashlib').sha256(image.raw_data).hexdigest()
+                if config.get('probe_static'):
+                    label_path=output/f'{name}实例标签_帧{index:04d}.png';save_rgb_frame(image,label_path)
             # 部分车体在画面边缘出现也算可见，不能用中心点FOV误判为完全遮挡。
             visible={};local_tracks=[];road_tracks=[]
             for spec in specs:
@@ -361,6 +371,8 @@ def run_episode(client,output,config):
             if config.get('suite_case'):
                 row.update(participants=participant_states,participant_visibility=visible,participant_pixels=all_pixels,
                     participant_controls=participant_actions,
+                    static_occluders={r:current(a) for r,a in static_occluders.items()},
+                    static_occluder_overlaps={r:any(overlap(current(a),s) for s in (es,*participant_states.values())) for r,a in static_occluders.items()},
                     participant_overlaps={identity:overlap(es,s) for identity,s in participant_states.items()},
                     participant_occluder_overlaps={identity:overlap(current(obstacle),s) for identity,s in participant_states.items()})
             truth.append(row);observations.append(observation)
