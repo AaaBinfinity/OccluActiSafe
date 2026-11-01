@@ -2,6 +2,7 @@ import copy
 from pathlib import Path
 import tempfile
 import unittest
+import os
 
 from occluactisafe.experiments.detector_data import class_box_line, load_config, materialize
 from occluactisafe.experiments.detector_matrix import validate_matrix
@@ -29,6 +30,17 @@ class N17Tests(unittest.TestCase):
         invalid['models'].pop()
         with self.assertRaises(ValueError):
             validate_matrix(invalid)
+
+    def test_default_and_relative_config_do_not_depend_on_cwd(self):
+        original=Path.cwd()
+        with tempfile.TemporaryDirectory() as temp:
+            try:
+                os.chdir(temp)
+                relative=load_config('configs/experiments/detector_train.yaml')
+                self.assertEqual(relative['_config_sha256'],self.cfg['_config_sha256'])
+                self.assertEqual(load_config()['_config_path'],self.cfg['_config_path'])
+            finally:
+                os.chdir(original)
 
     def test_performance_winner_can_be_any_family(self):
         for family in ('YOLOv8', 'YOLO11', 'YOLO26'):

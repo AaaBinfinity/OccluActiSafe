@@ -17,7 +17,8 @@ DEFAULT_CONFIG = PROJECT_ROOT / 'configs/experiments/detector_train.yaml'
 
 
 def load_config(path=DEFAULT_CONFIG):
-    path = Path(path).resolve()
+    path = Path(path)
+    path = (path if path.is_absolute() else PROJECT_ROOT/path).resolve()
     cfg = yaml.safe_load(path.read_text(encoding='utf-8-sig'))
     cfg['_config_path'] = str(path)
     cfg['_config_sha256'] = sha256(path)
