@@ -13,15 +13,17 @@ cases:
     kind: multiple_vehicles
     second_vehicle_headway_m: 18.0
   - id: S03
-    name: 大型厢式货车后行人鬼探头
+    name: 厢式车与广告亭后行人鬼探头
     kind: pedestrian
     pedestrian_speed_mps: 1.5
     pedestrian_start_s: 0.0
     ego_speed_mps: 10.5
     pedestrian_distance_m: 6.9
-    occluder_offset_xy: [3.7, 5.0]
-    occluder_blueprint: vehicle.carlamotors.european_hgv
-    occluder_yaw_deg: 90.0
+    occluder_offset_xy: [3.7, 4.2]
+    occluder_blueprint: vehicle.mercedes.sprinter
+    occluder_yaw_deg: -90.0
+    static_occluder_blueprint: static.prop.kiosk_01
+    static_occluder_offsets_y: [2.35, 3.90, 5.45, 7.0]
   - id: S04
     name: 行人停留后突然横穿
     kind: pedestrian
@@ -29,6 +31,8 @@ cases:
     pedestrian_start_s: 1.15
     ego_speed_mps: 10.5
     pedestrian_distance_m: 6.9
-    occluder_offset_xy: [3.7, 5.0]
-    occluder_blueprint: vehicle.carlamotors.european_hgv
-    occluder_yaw_deg: 90.0
+    occluder_offset_xy: [3.7, 4.2]
+    occluder_blueprint: vehicle.mercedes.sprinter
+    occluder_yaw_deg: -90.0
+    static_occluder_blueprint: static.prop.kiosk_01
+    static_occluder_offsets_y: [2.35, 3.90, 5.45, 7.0]
