@@ -1,0 +1,61 @@
+schema_version: 1
+node: N17
+output_root: H:/OccluActiSafeDataset/artifacts/节点资料/N17_检测器比较
+spd_config: configs/perception/n16.yaml
+carla_manifest: H:/OccluActiSafeDataset/artifacts/节点资料/N15_CARLA双视角标注与SPD审计/02_运行产物/n15_carla_b27b994ed8a74239ae3d4ac7ff484af6/CARLA双视角数据清单.json
+seeds: [17, 29, 43]
+models:
+  - {family: YOLO26, weights: yolo26n.pt, end2end: true}
+  - {family: YOLOv8, weights: yolov8n.pt, end2end: false}
+  - {family: YOLO11, weights: yolo11n.pt, end2end: false}
+classes: [vehicle, pedestrian, cyclist, barrowlist, traffic_cone]
+training:
+  epochs: 3
+  batch: 8
+  nbs: 8
+  imgsz: 960
+  optimizer: SGD
+  lr0: 0.001
+  lrf: 0.1
+  momentum: 0.937
+  weight_decay: 0.0005
+  warmup_epochs: 0.0
+  patience: 0
+  amp: false
+  workers: 0
+  cache: false
+  deterministic: true
+  mosaic: 0.0
+  close_mosaic: 0
+  mixup: 0.0
+  copy_paste: 0.0
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  degrees: 0.0
+  translate: 0.1
+  scale: 0.1
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+evaluation:
+  imgsz: 960
+  batch: 1
+  confidence_keep: 0.01
+  confidence_operating: 0.25
+  iou_nms: 0.7
+  max_det: 300
+  half: false
+  warmup_frames: 20
+  tune_search_trials_per_family: 0
+gates:
+  status: frozen_by_user_acceptance_2026_11_01
+  minimum_recall_iou50: {vehicle: 0.95, pedestrian: 0.90, cyclist: 0.90}
+  maximum_false_positives_per_empty_frame: 0.10
+  detector_end_to_end_p95_ms: 100
+  false_positive_domain: CARLA_model_val_negative_frames
+  recall_domain: SPD_model_val
+  selection_split: model_val
+  projection_scope: N18_only
+  ranking: [macro_recall_desc, false_positive_rate_asc, p95_latency_asc, parameter_count_asc]
