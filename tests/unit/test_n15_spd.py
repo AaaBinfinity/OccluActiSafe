@@ -8,8 +8,8 @@ from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
                                              resolve_missing_vehicle_locations)
 from occluactisafe.data.adapters.carla import extract_visible_instances
 from scripts.audit_spd import review_font_identity
-from scripts.capture_n15_carla import (local_camera_location_to_world, summarize_scene_labels,
-                                       roadside_camera_yaw, validate_scene_groups)
+from scripts.capture_n15_carla import (calibrate_fixed_roadside_transform, summarize_scene_labels,
+                                       validate_scene_groups)
 
 
 class SpdPathTests(unittest.TestCase):
@@ -108,27 +108,54 @@ class SpdSplitTests(unittest.TestCase):
 
 
 class CarlaVisibleLabelTests(unittest.TestCase):
-    def test_local_camera_transform_uses_in_place_location_result(self):
+    def test_fixed_roadside_pose_uses_carla_resolved_world_transform(self):
         class Location:
             def __init__(self, x=0, y=0, z=0):
                 self.x, self.y, self.z = x, y, z
 
-        class Carla:
-            pass
-        Carla.Location = Location
+        class Rotation:
+            def __init__(self, yaw=0, pitch=0):
+                self.yaw, self.pitch, self.roll = yaw, pitch, 0
 
         class Transform:
-            def transform(self, location):
-                location.x += 10
-                location.y += 20
-                location.z += 30
+            def __init__(self, location, rotation):
+                self.location, self.rotation = location, rotation
 
-        world = local_camera_location_to_world(Transform(), Carla, [1, 2, 3])
-        self.assertEqual((world.x, world.y, world.z), (11, 22, 33))
+        class Carla:
+            pass
+        Carla.Location, Carla.Rotation, Carla.Transform = Location, Rotation, Transform
 
-    def test_roadside_camera_yaw_offset_is_normalized(self):
-        self.assertEqual(roadside_camera_yaw(5.0, 180.0), 185.0)
-        self.assertEqual(roadside_camera_yaw(270.0, 180.0), 90.0)
+        class BlueprintLibrary:
+            def find(self, name):
+                return name
+
+        class Probe:
+            def __init__(self):
+                self.destroyed = False
+                self.transform = Transform(Location(101, 202, 303), Rotation(44, -10))
+
+            def get_transform(self):
+                return self.transform
+
+            def destroy(self):
+                self.destroyed = True
+
+        class World:
+            def get_blueprint_library(self):
+                return BlueprintLibrary()
+
+            def spawn_actor(self, blueprint, transform, attach_to):
+                self.probe = Probe()
+                self.attach_to = attach_to
+                return self.probe
+
+        world, ego = World(), object()
+        fixed = calibrate_fixed_roadside_transform(world, ego, Carla, [0, 1.5, 3],
+                                                    yaw_deg=0, pitch_deg=-10)
+        self.assertEqual((fixed.location.x, fixed.location.y, fixed.location.z), (101, 202, 303))
+        self.assertEqual((fixed.rotation.yaw, fixed.rotation.pitch), (44, -10))
+        self.assertIs(world.attach_to, ego)
+        self.assertTrue(world.probe.destroyed)
 
     def test_carla_layout_groups_are_split_before_frames(self):
         config = {"maps": [{"map": "Town03_Opt", "project_role": "train"},

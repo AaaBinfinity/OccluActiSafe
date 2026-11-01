@@ -76,15 +76,19 @@ def summarize_scene_labels(scene: dict) -> dict:
     }
 
 
-def local_camera_location_to_world(transform, carla_module, xyz: list[float]):
-    """CARLA Transform.transform 原位修改 Location 并返回 None，不能接收其返回值。"""
-    location = carla_module.Location(x=float(xyz[0]), y=float(xyz[1]), z=float(xyz[2]))
-    transform.transform(location)
-    return location
-
-
-def roadside_camera_yaw(ego_yaw_deg: float, offset_deg: float) -> float:
-    return (float(ego_yaw_deg) + float(offset_deg)) % 360.0
+def calibrate_fixed_roadside_transform(world, ego, carla_module, xyz: list[float],
+                                       *, yaw_deg: float, pitch_deg: float):
+    """借临时附着传感器读取CARLA解析后的真实世界位姿，再以独立世界传感器固定采集。"""
+    blueprint = world.get_blueprint_library().find("sensor.camera.rgb")
+    relative = carla_module.Transform(
+        carla_module.Location(x=float(xyz[0]), y=float(xyz[1]), z=float(xyz[2])),
+        carla_module.Rotation(yaw=float(yaw_deg), pitch=float(pitch_deg)))
+    probe = world.spawn_actor(blueprint, relative, attach_to=ego)
+    try:
+        transform = probe.get_transform()
+        return carla_module.Transform(transform.location, transform.rotation)
+    finally:
+        probe.destroy()
 
 
 def run(config: dict | None = None) -> dict:
@@ -214,11 +218,10 @@ def run(config: dict | None = None) -> dict:
 
                     ego_transform = ego.get_transform()
                     roadside_xyz = config["roadside_camera_local_xyz"]
-                    roadside_location = local_camera_location_to_world(ego_transform, carla, roadside_xyz)
-                    roadside_transform = carla.Transform(roadside_location,
-                        carla.Rotation(yaw=roadside_camera_yaw(ego_transform.rotation.yaw,
-                                                               config["roadside_camera_yaw_offset_deg"]),
-                                       pitch=float(config["roadside_camera_pitch_deg"])))
+                    roadside_transform = calibrate_fixed_roadside_transform(
+                        world, ego, carla, roadside_xyz,
+                        yaw_deg=float(config["roadside_camera_local_yaw_deg"]),
+                        pitch_deg=float(config["roadside_camera_pitch_deg"]))
                     views = (("车端", carla.Transform(carla.Location(x=1.5, z=1.6), carla.Rotation()), ego),
                              ("路侧", roadside_transform, None))
                     camera_sensors = {}
@@ -305,6 +308,15 @@ def run(config: dict | None = None) -> dict:
                             scene["labels"].append(label)
                         scene["frames"].append(frame_record)
                     scene["camera_calibration"] = calibration
+                    roadside_world = roadside_transform
+                    scene["roadside_camera_fixed_world_pose"] = {
+                        "location_m": {"x": roadside_world.location.x, "y": roadside_world.location.y,
+                                       "z": roadside_world.location.z},
+                        "rotation_deg": {"yaw": roadside_world.rotation.yaw,
+                                         "pitch": roadside_world.rotation.pitch,
+                                         "roll": roadside_world.rotation.roll},
+                        "attached_to_vehicle": False,
+                    }
                     scene["status"] = "completed"
                 except Exception as error:
                     scene.update(status="failed", error=f"{type(error).__name__}: {error}")
