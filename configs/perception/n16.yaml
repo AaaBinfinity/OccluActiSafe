@@ -55,5 +55,14 @@ proposed_validation_gates:
   maximum_false_positives_per_empty_frame: 0.10
   detector_end_to_end_p95_ms: 100
   projection_error_p95_m_by_distance: {0_20m: 0.5, 20_40m: 1.0}
+  report_strata: [canonical_class, camera_side, pixel_scale, official_occlusion]
+  selection_rule:
+    status: proposed_pending_user_confirmation
+    feasibility: all_class_recall_floors_and_empty_frame_fp_and_end_to_end_latency_must_pass
+    empty_frame_fp_unavailable: mark_not_estimable_and_do_not_treat_as_zero_or_pass
+    projection_gate_scope: N18_projection_validation_only_not_an_N17_detector_ranking_metric
+    ranking: highest_macro_recall_over_vehicle_pedestrian_cyclist_then_lower_false_positive_rate_then_lower_p95_latency_then_lower_parameter_count
+    strata: report_each_stratum_with_ground_truth_denominator_and_do_not_drop_failed_or_unsupported_strata
+    test_split: prohibited_for_feasibility_ranking_or_tie_breaking
   gpu: RTX 5060 Ti 16GB
   input: 960px_batch1
