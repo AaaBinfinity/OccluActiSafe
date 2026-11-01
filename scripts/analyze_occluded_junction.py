@@ -306,6 +306,9 @@ def analyze(folder,encode=True):
         w=csv.DictWriter(f,fieldnames=list(differences[0]));w.writeheader();w.writerows(differences)
     report={'passed':sum(c['passed'] for c in checks),'failed':sum(not c['passed'] for c in checks),'checks':checks,'metrics':metrics,
             'validation_contract':'原C07/F01要求参考分支真实发生声明冲突；原生碰撞事件与截至末次决策帧的OBB代理分列。车辆演示保留两者同时出现及仅车端碰撞附加检查；该演示筛选不扩展到新增行人，不预设车端必然失败。协同仍须传感器/几何均零、停车及边界安全，因果与配对要求不变。',
+            'requirement_scope':{'category':config.get('target_category','vehicle'),
+                'original_local_collision_demo_flag':bool(config.get('require_local_collision')),
+                'local_collision_assertion_applicable':bool(config.get('require_local_collision')) and config.get('target_category')!='pedestrian'},
             'input_mode':'trajectory_input','scope':'一个开发场景，实际碰撞传感器与几何事件分列；非图像检测/完整视频控制闭环'}
     (folder/'配对验收报告.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     with (folder/'配对事件指标.csv').open('w',encoding='utf-8-sig',newline='') as f:
