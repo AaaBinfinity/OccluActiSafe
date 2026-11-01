@@ -82,6 +82,14 @@ class LayoutTests(unittest.TestCase):
             self.assertTrue(old_file.lstat().st_file_attributes & 2)
             self.assertFalse(old_file.resolve().lstat().st_file_attributes & 2)
             self.assertEqual(old_file.read_text('utf-8'), '{"值":1}')
+            settings = json.loads((root/'.vscode/settings.json').read_text('utf-8'))
+            self.assertTrue(settings['files.exclude']['n14_fixture'])
+            self.assertTrue(settings['files.exclude']['last_n14_fixture'])
+            self.assertNotIn('节点资料', settings['files.exclude'])
+            settings['editor.fontSize'] = 17
+            (root/'.vscode/settings.json').write_text(json.dumps(settings), encoding='utf-8')
+            layout.configure_explorer(root)
+            self.assertEqual(json.loads((root/'.vscode/settings.json').read_text('utf-8'))['editor.fontSize'], 17)
             self.assertEqual(layout.build_plan(root, updated)['moves'], [])
             with self.assertRaises(FileExistsError): layout.make_link(root/'n14_fixture', root/'公共管理')
             # 联接只移除入口本身，TemporaryDirectory不沿它递归。

@@ -79,8 +79,9 @@ def make_link(path, target, directory=True):
     if not os.path.samefile(path, target): raise RuntimeError('目录联接目标不符')
 
 
-def hide_link(path):
-    if not is_link(path): raise ValueError('仅允许隐藏兼容链接，不能隐藏实际结果')
+def hide_link(path, *, workspace_config=False):
+    if not is_link(path) and not (workspace_config and path.name == '.vscode'):
+        raise ValueError('仅允许隐藏兼容链接或本工具的工作区设置，不能隐藏实际结果')
     library = ctypes.WinDLL('kernel32', use_last_error=True)
     library.SetFileAttributesW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32]
     library.SetFileAttributesW.restype = ctypes.c_int
@@ -89,13 +90,26 @@ def hide_link(path):
     if not path.lstat().st_file_attributes & 2: raise RuntimeError('兼容入口未设为隐藏')
 
 
+def configure_explorer(root):
+    """只排除根目录兼容入口，保留现有用户设置；不隐藏节点内真实产物。"""
+    directory = root/'.vscode'; path = directory/'settings.json'
+    settings = read(path) if path.is_file() else {}
+    excludes = settings.setdefault('files.exclude', {})
+    for source in root.iterdir():
+        if is_link(source): excludes.setdefault(source.name, True)
+    excludes.setdefault('.vscode', True)
+    write(path, settings)
+    hide_link(directory, workspace_config=True)
+    return len(excludes)
+
+
 def build_plan(root, catalog):
     root = Path(root).resolve()
     if root.is_relative_to(ROOT) or not root.is_dir(): raise ValueError('必须使用已接入的仓库外产物根')
     final_sources = {x['original_artifact_path'].split('/')[0] for x in catalog['entries']}
     moves = []
     for source in sorted(root.iterdir()):
-        if is_link(source) or source.name in ('节点资料', '公共管理', '产物导航.md'): continue
+        if is_link(source) or source.name in ('节点资料', '公共管理', '产物导航.md', '.vscode'): continue
         match = re.match(r'n(\d{2})(?:_|$)', source.name)
         if source.is_dir() and match:
             node = 'N'+match[1]; folder = node_folder(node)
@@ -158,6 +172,7 @@ def apply_plan(plan, catalog, report_path):
                                    'physical_artifact_path': source.relative_to(root).as_posix()})
         report['final_directories'].append(alias.as_posix())
     updated['storage'] = '按节点和用途归类的真实目录；last联接集中在各节点01_最终结果，根目录旧路径为隐藏兼容链接'
+    report['workspace_exclude_entries'] = configure_explorer(root)
     report['status'] = 'passed'; report['moves_completed'] = len(report['completed'])
     report['last_verified'] = len(report['final_directories']); write(report_path, report)
     return updated
