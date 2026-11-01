@@ -15,8 +15,11 @@ from occluactisafe.control.actuator import CalibratedActuator
 DEFAULT_CONFIG=ROOT/'configs/scenarios/occluded_junction.yaml'
 
 
-def run(config_path=DEFAULT_CONFIG):
+def run(config_path=DEFAULT_CONFIG,*,output_root=None):
     config=yaml.safe_load(Path(config_path).read_text(encoding='utf-8'))
+    if config.get('render_quality')=='Epic':
+        from occluactisafe.simulation.n14_suite import epic_server
+        config['render_server']=epic_server()
     calibration_path=Path(config.pop('calibration_path'))
     if hashlib.sha256(calibration_path.read_bytes()).hexdigest()!=config['calibration_sha256']:raise ValueError('N13标定哈希不匹配')
     fitted=json.loads(calibration_path.read_text(encoding='utf-8'));config['calibration']=fitted['calibration'];config['calibration_context']=fitted['context']
@@ -24,12 +27,17 @@ def run(config_path=DEFAULT_CONFIG):
     config['braking']={'deceleration_mps2':capabilities['effective_deceleration_mps2'],
         'response_delay_s':capabilities['observed_response_delay_s'],'control_period_s':.05,
         'margin_m':config.get('aeb_margin_m',5.),'max_track_age_s':.5}
-    output=ARTIFACTS/('n14_'+uuid.uuid4().hex);output.mkdir();print(output,flush=True)
+    parent=Path(output_root).resolve() if output_root is not None else ARTIFACTS
+    if not parent.is_dir() or not parent.resolve().is_relative_to(ARTIFACTS.resolve()):raise ValueError('场景输出必须位于已接入的硬盘artifacts目录')
+    output=parent/('n14_'+uuid.uuid4().hex);output.mkdir();print(output,flush=True)
     (output/'冻结配置.json').write_text(json.dumps(config,ensure_ascii=False,indent=2),encoding='utf-8')
     tracked=[ROOT/'src/occluactisafe/simulation'/n for n in ('scenarios.py','trajectory_input.py','runner.py')]
     tracked.extend([Path(__file__),ROOT/'src/occluactisafe/control/actuator.py'])
     if config.get('occluder_motion'):tracked.append(ROOT/'src/occluactisafe/simulation/occluder_driver.py')
     tracked.append(ROOT/'src/occluactisafe/simulation/scenario_rpc.py')
+    tracked.append(ROOT/'src/occluactisafe/simulation/n14_participants.py')
+    if config.get('render_quality')=='Epic':tracked.append(ROOT/'src/occluactisafe/simulation/n14_suite.py')
+    if config.get('suite_case'):tracked.append(ROOT/'scripts/run_n14_scenarios.py')
     if config.get('overview',{}).get('enabled'):tracked.append(ROOT/'src/occluactisafe/simulation/aeb_overview.py')
     (output/'源码版本.json').write_text(json.dumps({'commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),
         'source_sha256':{str(p.relative_to(ROOT)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in tracked}},ensure_ascii=False,indent=2),encoding='utf-8')

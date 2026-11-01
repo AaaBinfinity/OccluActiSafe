@@ -1089,6 +1089,10 @@ aeb_margin_m: 5.0
 overview:
   enabled: true
   live_window: true
+  output_scale: 1.5
+rgb_size: [1920, 1080]
+visibility_size: [1280, 720]
+render_quality: Epic
 extra_cameras:
   俯瞰:
     attach_to_ego: false

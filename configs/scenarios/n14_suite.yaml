@@ -1,0 +1,30 @@
+# N14获授权的4个开发案例；不代表N27专项或正式研究矩阵
+base_config: occluded_junction.yaml
+rgb_size: [1920, 1080]
+visibility_size: [1280, 720]
+render_quality: Epic
+fps: 20
+cases:
+  - id: S01
+    name: 同向大车遮挡来车
+    kind: original
+  - id: S02
+    name: 多车交叉来车
+    kind: multiple_vehicles
+    second_vehicle_headway_m: 18.0
+  - id: S03
+    name: 停放大车后行人鬼探头
+    kind: pedestrian
+    pedestrian_speed_mps: 1.5
+    pedestrian_start_s: 0.0
+    ego_speed_mps: 11.0
+    pedestrian_distance_m: 6.9
+    occluder_offset_xy: [2.3, 5.5]
+  - id: S04
+    name: 行人停留后突然横穿
+    kind: pedestrian
+    pedestrian_speed_mps: 2.0
+    pedestrian_start_s: 1.15
+    ego_speed_mps: 11.0
+    pedestrian_distance_m: 6.9
+    occluder_offset_xy: [2.3, 5.5]
