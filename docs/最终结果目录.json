@@ -410,6 +410,39 @@
       "legacy_directory": "last_n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481",
       "physical_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481",
       "status": "current"
+    },
+    {
+      "node": "N17",
+      "purpose": "九次完整GPU微调、逐步/逐轮指标、中文图表及权重",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_train_5d1e9498125c40f89db618b8a7c45586",
+      "original_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_train_5d1e9498125c40f89db618b8a7c45586",
+      "evidence_file": "训练矩阵.json",
+      "evidence_sha256": "9f67b3bf6acc8aedd94e2fd59b851d210be392efcfcdc5620b57f3bf3fa327c3",
+      "legacy_directory": "last_n17_train_5d1e9498125c40f89db618b8a7c45586",
+      "physical_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_train_5d1e9498125c40f89db618b8a7c45586",
+      "status": "current"
+    },
+    {
+      "node": "N17",
+      "purpose": "三族预训练/微调双域检测、跟踪、资源及无合格配置预选",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_eval_7a23368416ae41c184480f23caa85b1a",
+      "original_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_eval_7a23368416ae41c184480f23caa85b1a",
+      "evidence_file": "比较矩阵.json",
+      "evidence_sha256": "8528a2c97f4d770a69d9c965d357b25c75924b6377fb3d6e62248e69625ec19f",
+      "legacy_directory": "last_n17_eval_7a23368416ae41c184480f23caa85b1a",
+      "physical_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_eval_7a23368416ae41c184480f23caa85b1a",
+      "status": "current"
+    },
+    {
+      "node": "N17",
+      "purpose": "N17源码、环境、必需检查、失败、图片与输入完整性证据",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_evidence_20261102",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_20261102",
+      "evidence_file": "N17证据索引.json",
+      "evidence_sha256": "c2ed3e629f45a0ca27273e5296587979801dc03c828940c0ac581c32d26e413e",
+      "legacy_directory": "last_n17_evidence_20261102",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_20261102",
+      "status": "current"
     }
   ]
 }
