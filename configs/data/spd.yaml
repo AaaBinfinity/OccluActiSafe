@@ -1,0 +1,10 @@
+# 本机 N15 真实数据审计入口；覆盖路径可用 OAS_DATASET_ROOT 或 --dataset-root。
+dataset_root: H:/OccluActiSafeDataset/V2X-Seq-SPD
+output_root: H:/OccluActiSafeDataset/artifacts/节点资料/N15_CARLA双视角标注与SPD审计
+dataset_version: extracted_local_unknown_release
+acquired_date: unknown
+source_url: https://github.com/AIR-THU/DAIR-V2X-Seq/tree/main/dataset/v2x-seq-spd
+usage_conditions: user_reported_open_commercial_and_secondary_publication
+license_evidence: user_email_confirmation_reported_2026-10-29_not_independently_read
+seed: 20261101
+verify_image_decode: true
