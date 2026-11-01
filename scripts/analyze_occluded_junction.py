@@ -75,6 +75,18 @@ def verify_budget_overview(folder,name,config,truth,audit,observations,check):
                 and abs(truth[0][a]['width']-2*geometry['boxes'][a]['extent']['y'])<1e-7 for a in ('ego','target','occluder'))
             and max(pose_errors.values())<=.1)
         check(name+'活体几何缓存与初态位置',valid_geometry,{'first_step_position_errors_m':pose_errors,'sampler_tick_calls':geometry['tick_calls']})
+    source_files=read(folder/'源码版本.json')['source_sha256']
+    if 'src/occluactisafe/simulation/scenario_rpc.py' in source_files:
+        proof=read(folder/name/'批量RPC复核.json');batches=rows(folder/name/'批量RPC请求.jsonl')
+        acknowledged=(proof['worker_exit_code']==0 and proof['worker_tick_calls']==0
+            and proof['acknowledged_batches']==len(batches) and len(batches)>=len(truth)
+            and [b['sequence'] for b in batches]==list(range(len(batches)))
+            and all(b['response_count']==len(b['commands']) for b in batches))
+        formal=batches[-len(truth):]
+        for batch,record in zip(formal,truth):
+            controls={c['actor_id']:c['value'] for c in batch['commands'] if c['kind']=='control'}
+            acknowledged=acknowledged and controls.get(objects['ego_actor_id'])==record['control']
+        check(name+'控制回执与唯一父时钟',acknowledged,proof)
     if name=='cooperative_aeb':
         first=next((x for x in audit if x['decision']['brake']),None)
         warnings=[x for x in audit if x['decision']['warning'] and not x['decision']['brake']]

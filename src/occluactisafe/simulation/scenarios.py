@@ -7,6 +7,7 @@ import sys
 import time
 import subprocess
 from dataclasses import replace
+from contextlib import ExitStack
 from occluactisafe.simulation.runner import SynchronousRunner
 from occluactisafe.simulation.sensors import FrameBuffer
 from occluactisafe.risk.obb import OBB,segment_obb_interval
@@ -133,7 +134,7 @@ def run_episode(client,output,config):
         if response.error:raise RuntimeError(response.error)
         return True
     def reconnect(timeout):client.set_timeout(timeout);return client
-    with SynchronousRunner.reload_synchronously(client,run_id=run_id,episode_id=config['scenario_id'],generation=1,clock_domain='carla-n14',
+    with ExitStack() as resources, SynchronousRunner.reload_synchronously(client,run_id=run_id,episode_id=config['scenario_id'],generation=1,clock_domain='carla-n14',
             destroy_owned=destroy,cleanup_path=output/'清理报告.json',reconnect=reconnect,
             destroy_command=carla.command.DestroyActor,prepare_cleanup=client.set_timeout) as runner:
         world=runner._world
@@ -160,20 +161,22 @@ def run_episode(client,output,config):
                 extra=world.spawn_actor(bp,carla.Transform(),attach_to=actor);runner.register_owned(extra)
                 extra.listen(lambda event,r=role:environment_collisions.append({'role':r,'frame':event.frame,'other_id':event.other_actor.id,'other_type':event.other_actor.type_id}))
         cameras={}
-        camera_specs=[('车端',{'x':1.5,'y':0.,'z':1.6,'yaw':config.get('ego_camera_yaw_deg',0.)},True),
-                      ('路侧',config['roadside_camera'],False),('跟车',{'x':-7.,'y':0.,'z':3.5,'yaw':0.,'pitch':-14.},True)]
-        camera_specs.extend((name,spec['pose'],spec['attach_to_ego']) for name,spec in extra_cameras.items())
-        for name,pose,attached in camera_specs:
-            bp=world.get_blueprint_library().find('sensor.camera.rgb')
-            bp.set_attribute('role_name','oas:'+run_id)
-            for key,value in {'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():bp.set_attribute(key,value)
-            camera=world.spawn_actor(bp,transform(pose),attach_to=ego if attached else None);runner.register_owned(camera)
-            camera.listen(lambda image,n=name:frames[n].put(image.frame,image));cameras[name]=camera
-            if name not in masks:continue
-            label_bp=world.get_blueprint_library().find('sensor.camera.instance_segmentation')
-            for key,value in {'role_name':'oas:'+run_id,'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():label_bp.set_attribute(key,value)
-            labels=world.spawn_actor(label_bp,transform(pose),attach_to=ego if name=='车端' else None);runner.register_owned(labels)
-            labels.listen(lambda image,n=name:masks[n].put(image.frame,image))
+        def spawn_cameras():
+            camera_specs=[('车端',{'x':1.5,'y':0.,'z':1.6,'yaw':config.get('ego_camera_yaw_deg',0.)},True),
+                          ('路侧',config['roadside_camera'],False),('跟车',{'x':-7.,'y':0.,'z':3.5,'yaw':0.,'pitch':-14.},True)]
+            camera_specs.extend((name,spec['pose'],spec['attach_to_ego']) for name,spec in extra_cameras.items())
+            for name,pose,attached in camera_specs:
+                bp=world.get_blueprint_library().find('sensor.camera.rgb')
+                bp.set_attribute('role_name','oas:'+run_id)
+                for key,value in {'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():bp.set_attribute(key,value)
+                camera=world.spawn_actor(bp,transform(pose),attach_to=ego if attached else None);runner.register_owned(camera)
+                camera.listen(lambda image,n=name:frames[n].put(image.frame,image));cameras[name]=camera
+                if name not in masks:continue
+                label_bp=world.get_blueprint_library().find('sensor.camera.instance_segmentation')
+                for key,value in {'role_name':'oas:'+run_id,'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():label_bp.set_attribute(key,value)
+                labels=world.spawn_actor(label_bp,transform(pose),attach_to=ego if name=='车端' else None);runner.register_owned(labels)
+                labels.listen(lambda image,n=name:masks[n].put(image.frame,image))
+        rpc=None;rpc_ready=False
         def advance(action,target_action,occluder_action=None):
             now=runner.sim_time
             control={'request_id':str(runner.frame+1),'plan_id':'n14','solver_status':'success','safety_rechecked':True,
@@ -184,26 +187,31 @@ def run_episode(client,output,config):
                 commands=[carla.command.ApplyVehicleControl(ego.id,carla.VehicleControl(throttle=c.throttle,brake=c.brake,steer=c.steer)),
                           carla.command.ApplyVehicleControl(target.id,carla.VehicleControl(**target_action))]
                 if moving or settle_probe:commands.append(carla.command.ApplyVehicleControl(obstacle.id,carla.VehicleControl(**(occluder_action or {'throttle':0.,'brake':1.,'steer':0.}))))
-                responses=client.apply_batch_sync(commands,False)
-                if any(r.error for r in responses):raise RuntimeError('车辆控制批次失败：'+str([r.error for r in responses]))
+                if not rpc_ready:
+                    # 此时尚未注册图像回调；固定100帧确认保持控制并预热RPC子进程。
+                    responses=client.apply_batch_sync(commands,False)
+                    if any(r.error for r in responses):raise RuntimeError('无相机预热批次失败')
+                else:
+                    payload=[{'kind':'control','actor_id':ego.id,'value':{'throttle':c.throttle,'brake':c.brake,'steer':c.steer}},
+                             {'kind':'control','actor_id':target.id,'value':target_action}]
+                    if moving or settle_probe:payload.append({'kind':'control','actor_id':obstacle.id,'value':occluder_action or {'throttle':0.,'brake':1.,'steer':0.}})
+                    rpc.apply(payload)
             runner.advance(json.dumps(request),apply_control=apply)
         held={'throttle':0.,'brake':1.,'steer':0.}
         # 0.9.16 bounding_box会发同步RPC；独立进程采样避免与父进程tick的GIL/等待互锁。
         geometry_request=output/'几何采样请求.json'
-        geometry_request.write_text(json.dumps({'actor_ids':{'ego':ego.id,'target':target.id,'occluder':obstacle.id}}),encoding='utf-8')
-        with (output/'几何采样日志.txt').open('w',encoding='utf-8') as log:
-            sampler=subprocess.Popen([sys.executable,'-m','occluactisafe.simulation.scenarios','geometry',str(output),str(geometry_request)],stdout=log,stderr=log)
-            try:
-                for _ in range(100):advance(held,held)
-                sampler.wait(timeout=25)
-                if sampler.returncode:raise RuntimeError('活体几何采样失败，保留日志')
-            finally:
-                if sampler.poll() is None:sampler.kill();sampler.wait()
+        geometry_request.write_text(json.dumps({'world_id':world.id,'actor_ids':{'ego':ego.id,'target':target.id,'occluder':obstacle.id}}),encoding='utf-8')
+        from occluactisafe.simulation.scenario_rpc import ScenarioRPC
+        rpc=ScenarioRPC(output,geometry_request);resources.callback(rpc.close)
+        for _ in range(100):advance(held,held)
+        rpc.ready(world.id);rpc_ready=True
         measured=json.loads((output/'车辆静态几何.json').read_text(encoding='utf-8'))
         boxes={}
         for box in measured['boxes'].values():
             boxes[box['actor_id']]=carla.BoundingBox(carla.Location(**box['location']),carla.Vector3D(**box['extent']))
         current=lambda actor:state(actor,boxes[actor.id])
+        spawn_cameras()
+        for _ in range(30):advance(held,held)
         if settle_probe:obstacle.set_simulate_physics(False)
         settled={'ego':ego.get_transform(),'target':target.get_transform(),'occluder':obstacle.get_transform()}
         if moving:
@@ -225,7 +233,7 @@ def run_episode(client,output,config):
         actual_context=measured['physics_context']
         if actual_context!=config['calibration_context']:raise ValueError('地图天气或物理上下文不符合N13标定')
         metadata={'ego':current(ego),'target':current(target),'occluder':current(obstacle),'mass_kg':actual_context['mass_kg'],
-                  'tire_friction':[w['tire_friction'] for w in actual_context['wheels']],'weather':str(world.get_weather()),'route_clear':route_clear}
+                  'tire_friction':[w['tire_friction'] for w in actual_context['wheels']],'weather':actual_context['weather'],'route_clear':route_clear}
         (output/'初始状态.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
         if moving:
             for _ in range(300):
@@ -240,16 +248,17 @@ def run_episode(client,output,config):
         else:raise RuntimeError('动力预热未达到初速')
         initial_commands=[]
         for actor,name in ((ego,'ego'),(target,'target')):
-            if not config.get('probe_static',False):initial_commands.append(carla.command.ApplyTransform(actor.id,settled[name]))
+            if not config.get('probe_static',False):
+                pose=settled[name];initial_commands.append({'kind':'transform','actor_id':actor.id,'value':{'location':dict(x=pose.location.x,y=pose.location.y,z=pose.location.z),'rotation':dict(pitch=pose.rotation.pitch,yaw=pose.rotation.yaw,roll=pose.rotation.roll)}})
             yaw=math.radians(config[name+'_spawn']['yaw']);initial_speed=0. if config.get('probe_static',False) else config['speed_mps']
-            initial_commands.append(carla.command.ApplyTargetVelocity(actor.id,carla.Vector3D(x=initial_speed*math.cos(yaw),y=initial_speed*math.sin(yaw))))
-            initial_commands.append(carla.command.ApplyTargetAngularVelocity(actor.id,carla.Vector3D()))
+            initial_commands.append({'kind':'velocity','actor_id':actor.id,'value':dict(x=initial_speed*math.cos(yaw),y=initial_speed*math.sin(yaw),z=0.)})
+            initial_commands.append({'kind':'angular_velocity','actor_id':actor.id,'value':dict(x=0.,y=0.,z=0.)})
         if moving:
-            initial_commands.append(carla.command.ApplyTransform(obstacle.id,settled['occluder']));yaw=math.radians(config['occluder']['yaw'])
-            initial_commands.append(carla.command.ApplyTargetVelocity(obstacle.id,carla.Vector3D(x=config['speed_mps']*math.cos(yaw),y=config['speed_mps']*math.sin(yaw))))
-            initial_commands.append(carla.command.ApplyTargetAngularVelocity(obstacle.id,carla.Vector3D()))
+            pose=settled['occluder'];initial_commands.append({'kind':'transform','actor_id':obstacle.id,'value':{'location':dict(x=pose.location.x,y=pose.location.y,z=pose.location.z),'rotation':dict(pitch=pose.rotation.pitch,yaw=pose.rotation.yaw,roll=pose.rotation.roll)}});yaw=math.radians(config['occluder']['yaw'])
+            initial_commands.append({'kind':'velocity','actor_id':obstacle.id,'value':dict(x=config['speed_mps']*math.cos(yaw),y=config['speed_mps']*math.sin(yaw),z=0.)})
+            initial_commands.append({'kind':'angular_velocity','actor_id':obstacle.id,'value':dict(x=0.,y=0.,z=0.)})
             truck_driver=OccluderDriver(config['occluder'],config['conflict_xy'],**config['occluder_motion'])
-        if any(r.error for r in client.apply_batch_sync(initial_commands,False)):raise RuntimeError('初始化复位批次失败')
+        rpc.apply(initial_commands)
         normal=held if config.get('probe_static',False) else {'throttle':.53,'brake':0.,'steer':0.};advance(normal,normal,truck_driver.step(current(obstacle),initializing=True) if moving else None)
         if target.id>=65536:raise RuntimeError('实例相机16位ID范围不足，拒绝混淆实例')
         (output/'评测对象身份.json').write_text(json.dumps({'ego_actor_id':ego.id,'target_actor_id':target.id,

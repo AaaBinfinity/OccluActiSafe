@@ -29,6 +29,7 @@ def run(config_path=DEFAULT_CONFIG):
     tracked=[ROOT/'src/occluactisafe/simulation'/n for n in ('scenarios.py','trajectory_input.py','runner.py')]
     tracked.extend([Path(__file__),ROOT/'src/occluactisafe/control/actuator.py'])
     if config.get('occluder_motion'):tracked.append(ROOT/'src/occluactisafe/simulation/occluder_driver.py')
+    tracked.append(ROOT/'src/occluactisafe/simulation/scenario_rpc.py')
     if config.get('overview',{}).get('enabled'):tracked.append(ROOT/'src/occluactisafe/simulation/aeb_overview.py')
     (output/'源码版本.json').write_text(json.dumps({'commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),
         'source_sha256':{str(p.relative_to(ROOT)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in tracked}},ensure_ascii=False,indent=2),encoding='utf-8')
