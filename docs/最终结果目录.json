@@ -1,0 +1,265 @@
+{
+  "schema_version": "final-output-directory-1",
+  "path_base": "本机实际移动硬盘项目artifacts根目录",
+  "prefix": "last_",
+  "selection_basis": "项目节点实施与验收计划中当前最终交付结果；不按文件修改时间选择，不代表用户验收通过",
+  "storage": "Windows目录联接，原run目录/内部文件/run_id/不可变清单保持原样，无重复数据副本",
+  "entries": [
+    {
+      "node": "N01",
+      "purpose": "验收证据",
+      "directory": "last_n01_20261029",
+      "original_artifact_path": "n01_20261029",
+      "evidence_file": "manifest.json",
+      "evidence_sha256": "227c938b08770382aca6e259700ae0bb6bb2464055d99a66e6c792b27cea3d29"
+    },
+    {
+      "node": "N02",
+      "purpose": "验收证据",
+      "directory": "last_n02_20261029",
+      "original_artifact_path": "n02_20261029",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "6f91c071adad7e5de3475e3c1442b2c723e08fc0000d4706f00ae52c9cbac0cb"
+    },
+    {
+      "node": "N03",
+      "purpose": "审计产物",
+      "directory": "last_n03_80e4390cb71442498769c622eebf06e9",
+      "original_artifact_path": "n03_20261029/full_audit/80e4390cb71442498769c622eebf06e9",
+      "evidence_file": "manifest.json",
+      "evidence_sha256": "328f541a8c6a12e82d367cc7ad193b28c18b1d6dad6dd902abf64c7b2074e99b"
+    },
+    {
+      "node": "N03",
+      "purpose": "验收证据",
+      "directory": "last_n03_20261029",
+      "original_artifact_path": "n03_20261029",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "9b2ccb98ec42e80211ec33e7c54baaf09a9faaa554e30d8e57e7c1cf470e9212"
+    },
+    {
+      "node": "N04",
+      "purpose": "窗口产物",
+      "directory": "last_n04_fd47055e0f80407a87a0e05199e53a8a",
+      "original_artifact_path": "n04/fd47055e0f80407a87a0e05199e53a8a",
+      "evidence_file": "manifest.json",
+      "evidence_sha256": "e14fc9dc038bfb6543cea2b308254a72063a23a892292bf9f1a42105d08e4d41"
+    },
+    {
+      "node": "N04",
+      "purpose": "验收证据",
+      "directory": "last_n04_20261030",
+      "original_artifact_path": "n04_20261030",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "fc60c6747c61915b0271fe158df1a1d51d4270f5908ba1568a7ce872fcc39e33"
+    },
+    {
+      "node": "N05",
+      "purpose": "CV预测与指标",
+      "directory": "last_n05_800b5fd8e4f843a8b6e58eba39701a1b",
+      "original_artifact_path": "n05/800b5fd8e4f843a8b6e58eba39701a1b",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "79ce58752afa9eec777638e7436f9652310867cb71d54d1f673ab64eb6c668c6"
+    },
+    {
+      "node": "N05",
+      "purpose": "验收证据",
+      "directory": "last_n05_20261030",
+      "original_artifact_path": "n05_20261030",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "91e45221bde2cc0e78aa07fd10dc9385aa96e77bf32f3218bd28952bb7f412d0"
+    },
+    {
+      "node": "N06",
+      "purpose": "设备检查结果",
+      "directory": "last_n06_072ba69cd981400bab3c929c9f9d3660",
+      "original_artifact_path": "n06/072ba69cd981400bab3c929c9f9d3660",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "0a226c6d698880e69d044590c304899c3fa7dbb8d3bdc97bb3f73ece1b3f6b1d"
+    },
+    {
+      "node": "N06",
+      "purpose": "验收证据",
+      "directory": "last_n06_20261030",
+      "original_artifact_path": "n06_20261030",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "33bf176c4a86ad0b71fbeccb2ee5440af0c32308a3438300c31f23df2b868652"
+    },
+    {
+      "node": "N07",
+      "purpose": "逐步训练最终产物",
+      "directory": "last_n07_fcb1259dedf24738a9265586e9f4df38",
+      "original_artifact_path": "n07/fcb1259dedf24738a9265586e9f4df38",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "4d676f69a3b3ac3004b653c8a03658f5092629ca1c593815fb77c0bfb9fc084b"
+    },
+    {
+      "node": "N07",
+      "purpose": "逐步训练验收证据",
+      "directory": "last_n07_step_20261030",
+      "original_artifact_path": "n07_step_20261030",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "546a1d4e981082cbae29d6a651f5a7f39e63242697360df168da9b41620c15a1"
+    },
+    {
+      "node": "N08",
+      "purpose": "通信结果",
+      "directory": "last_n08_dcd44df987de47b4bbbd28d370ff51ea",
+      "original_artifact_path": "n08/dcd44df987de47b4bbbd28d370ff51ea",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "cbc9ae26a1b3eb668bd226867efbd9009dd82adaac00a167fa4aa6d97c4cbc30"
+    },
+    {
+      "node": "N08",
+      "purpose": "验收证据",
+      "directory": "last_n08_20261030",
+      "original_artifact_path": "n08_20261030",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "3b4a38a464e3e6e1e4f8073d74a3f6ceca4c15451249580dd685d99caa8a0632"
+    },
+    {
+      "node": "N09",
+      "purpose": "状态融合结果",
+      "directory": "last_n09_a23b334aa9fd4cb38de5a24daec8826e",
+      "original_artifact_path": "n09/a23b334aa9fd4cb38de5a24daec8826e",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "0f3376e8883e65f575073d2f8a9678d509f38027b23fec1cf855eb4f832cba67"
+    },
+    {
+      "node": "N09",
+      "purpose": "验收证据",
+      "directory": "last_n09_20261031",
+      "original_artifact_path": "n09_20261031",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "a4a0807ab0de2cc3bae4e2d153af350da51b4885f86037f2d9f659297ecf589f"
+    },
+    {
+      "node": "N10",
+      "purpose": "几何风险结果",
+      "directory": "last_n10_241fa9bc4f1b4981af9dae8547b00c8e",
+      "original_artifact_path": "n10/241fa9bc4f1b4981af9dae8547b00c8e",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "8604e9102f89dbdca1e40cb560fe05c410df060ca91ebaca8402691a4e0c6d67"
+    },
+    {
+      "node": "N10",
+      "purpose": "验收证据",
+      "directory": "last_n10_20261031",
+      "original_artifact_path": "n10_20261031",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "8472ec1c93ab1230cec172c1381ceb6a96c5b7f888e0851e055d26cae49aa555"
+    },
+    {
+      "node": "N11",
+      "purpose": "解析闭环结果",
+      "directory": "last_n11_bc03ed4f74484ac1ba857b863194e84b",
+      "original_artifact_path": "n11/bc03ed4f74484ac1ba857b863194e84b",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "3667fc4be5d375888c7e928f01bcd66c9532bb716642feb5e9e6a95cbe562772"
+    },
+    {
+      "node": "N11",
+      "purpose": "验收证据",
+      "directory": "last_n11_20261031",
+      "original_artifact_path": "n11_20261031",
+      "evidence_file": "evidence_index.json",
+      "evidence_sha256": "a6bd74c5ab8a669316150e766419ba44bf696aabe8d84ec73403fda6a060a4f3"
+    },
+    {
+      "node": "N12",
+      "purpose": "恢复安全收尾",
+      "directory": "last_n12_recovery_20261031_145240_448303",
+      "original_artifact_path": "n12_recovery/n12_recovery_20261031_145240_448303",
+      "evidence_file": "恢复验收.json",
+      "evidence_sha256": "0e7a1ec159e6a51b708024440d322b026dfd55b69bbaf93e72d29daeb1271125"
+    },
+    {
+      "node": "N12",
+      "purpose": "高清实时可视",
+      "directory": "last_n12_preview_20261031_155432_916473",
+      "original_artifact_path": "n12_preview/n12_preview_20261031_155432_916473",
+      "evidence_file": "可视验收.json",
+      "evidence_sha256": "695b6b56831bd25203c8b6598aeb4639a11c230578d7fbce1ffaeb705a90b83d"
+    },
+    {
+      "node": "N12",
+      "purpose": "高清后恢复回归",
+      "directory": "last_n12_recovery_20261031_155731_643065",
+      "original_artifact_path": "n12_preview/高清后恢复回归/n12_recovery_20261031_155731_643065",
+      "evidence_file": "恢复验收.json",
+      "evidence_sha256": "4a7db2a0c12aeb162a8a81e9240df9b291399b8b077f05281730ef3183b1d921"
+    },
+    {
+      "node": "N13",
+      "purpose": "正式执行器扫值",
+      "directory": "last_n13_7f739c23ba824498b891dbfc0a8e5897",
+      "original_artifact_path": "n13_7f739c23ba824498b891dbfc0a8e5897",
+      "evidence_file": "扫值复核结果.json",
+      "evidence_sha256": "08e404f728f3ca54da50101c6e2a41c4e7bea6e9f7881dab5bff0076afea8bcb"
+    },
+    {
+      "node": "N13",
+      "purpose": "最终控制复核",
+      "directory": "last_n13_d8333a6601824f37a5c4077bf6844e6a",
+      "original_artifact_path": "n13_d8333a6601824f37a5c4077bf6844e6a",
+      "evidence_file": "控制复核结果.json",
+      "evidence_sha256": "a57ca69d7e6f8fbc3c7211dc29c0097ed081924bd292adb78c2053dcdbb5880d"
+    },
+    {
+      "node": "N13",
+      "purpose": "定速稳态复核",
+      "directory": "last_n13_a2d3ebe9016349ee95d0a082b1921ca7",
+      "original_artifact_path": "n13_a2d3ebe9016349ee95d0a082b1921ca7",
+      "evidence_file": "控制复核结果.json",
+      "evidence_sha256": "24fa3bee6a88956308b249941b7169a8c6703857feaeb5ea18230601d05f045f"
+    },
+    {
+      "node": "N13",
+      "purpose": "预期拒绝的不匹配负例",
+      "directory": "last_n13_d122bd22dbe34993af1723375b941127",
+      "original_artifact_path": "n13_d122bd22dbe34993af1723375b941127",
+      "evidence_file": "清理报告.json",
+      "evidence_sha256": "6309d91e6105e0439125f9aeadbec3237aa1082fc888e227dc05bcc0fdf90f42"
+    },
+    {
+      "node": "N13",
+      "purpose": "验收证据",
+      "directory": "last_n13_20261031",
+      "original_artifact_path": "n13_20261031",
+      "evidence_file": "本节点证据索引.json",
+      "evidence_sha256": "d5e7707e968055629feb51f4050ebbad05828bdfec6f4cfcd11960e366d1fac8"
+    },
+    {
+      "node": "N14",
+      "purpose": "三分支及12份独立视频",
+      "directory": "last_n14_711b3da7319d4725a564403bc1cf5ff3",
+      "original_artifact_path": "n14_711b3da7319d4725a564403bc1cf5ff3",
+      "evidence_file": "证据索引.json",
+      "evidence_sha256": "2f55e3fb5e1782d64db4abd8610158ef4f19c8e6ca63b34ff427098c448cb175"
+    },
+    {
+      "node": "N14",
+      "purpose": "分级制动交付证据",
+      "directory": "last_n14_budget_20261101",
+      "original_artifact_path": "n14_budget_20261101",
+      "evidence_file": "交付证据索引.json",
+      "evidence_sha256": "8c7497b919d1259efcbe4a2e67310f68eca8299424c91bd9b24b5d4717f58e34"
+    },
+    {
+      "node": "N14",
+      "purpose": "静态遮挡保留对照",
+      "directory": "last_n14_e2d0d4f09e3f48cdb277872f45ed22c0",
+      "original_artifact_path": "n14_e2d0d4f09e3f48cdb277872f45ed22c0",
+      "evidence_file": "源码版本.json",
+      "evidence_sha256": "d2e2a2797ede617c308d62f51adb664104a7a38158b5ac962395f0c13335379b"
+    },
+    {
+      "node": "N14",
+      "purpose": "静态遮挡移开对照",
+      "directory": "last_n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
+      "original_artifact_path": "n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
+      "evidence_file": "源码版本.json",
+      "evidence_sha256": "d2e2a2797ede617c308d62f51adb664104a7a38158b5ac962395f0c13335379b"
+    }
+  ]
+}
