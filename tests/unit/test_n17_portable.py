@@ -54,6 +54,10 @@ class PortableTests(unittest.TestCase):
                     {'role':'train','key':'../../x','image':'H:/x.jpg'}):
             with self.assertRaises(ValueError):row_paths(row)
 
+    def test_real_spd_sensor_names_allow_hyphens(self):
+        image,label=row_paths({'role':'model_val','key':'spd_infrastructure-side_0016_003367','image':'H:/source.jpg'})
+        self.assertEqual(image,'data/images/model_val/spd_infrastructure-side_0016_003367.jpg')
+
     def test_changed_label_and_extra_test_media_fail(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);_,digest=self.fixture(root)

@@ -44,7 +44,7 @@ def bounded(root, relative):
 def row_paths(row):
     if row['role'] not in ('train', 'model_val'):
         raise ValueError('便携输入禁止test/risk_calibration角色')
-    if not re.fullmatch(r'[A-Za-z0-9_]+', row['key']):
+    if not re.fullmatch(r'[A-Za-z0-9_-]+', row['key']):
         raise ValueError('冻结帧key不能用于安全文件路径')
     ext = PureWindowsPath(row['image']).suffix.lower()
     if ext not in ('.png', '.jpg', '.jpeg'):
