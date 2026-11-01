@@ -19,7 +19,7 @@ from occluactisafe.perception.tracker import ByteTrack, ByteTrackConfig
 from occluactisafe.perception.adapters.ultralytics import UltralyticsDetector
 from .detector_data import load_index
 from .run_store import sha256, read_json, write_json, append_json, now, manifest
-from .selection import select_detector
+from .selection import select_detector, family_candidates
 
 
 def gt_from_row(row):
@@ -182,6 +182,13 @@ def evaluate_one(cfg, model_cfg, weights, stage, seed, root):
             if visualized[(row['domain'],row['camera_side'])] < 2:
                 overlay(rgb, row, det.items, root, index)
                 visualized[(row['domain'],row['camera_side'])] += 1
+            _, missed, _ = _match(frame.ground_truth, tuple(p for p in det.items if p.score >= e['confidence_operating']), .5)
+            if missed and visualized[(row['domain'],'failure')] < 2:
+                overlay(rgb, row, det.items, root, index)
+                append_json(root/'漏检样例索引.jsonl', {'key':row['key'], 'gt_count':len(row['gt']),
+                            'false_negative_count':len(missed), 'image_sha256':row['image_sha256'],
+                            'file':f'检测叠加_{row["domain"]}_{index:04d}.png'})
+                visualized[(row['domain'],'failure')] += 1
             if (index+1)%500 == 0:
                 print(f'{candidate_id}真实验证 {index+1}/{len(rows)}', flush=True)
         domains = {}
@@ -229,6 +236,47 @@ def run_evaluation_matrix(cfg, training_matrix=None):
             outputs.append({'candidate_id':directory.name, 'split':'model_val', 'status':'failed',
                             'family':m['family'], 'stage':stage, 'seed':seed, 'error':repr(exc)})
         write_json(root/'比较矩阵.json', {'run_id':root.name, 'runs':outputs})
-    selection = select_detector(outputs, cfg['gates'])
+    families = family_candidates(outputs, cfg['seeds'])
+    selection = select_detector(families, cfg['gates'])
+    selection['family_metrics'] = families
     write_json(root/'离线预选.json', selection)
+    comparison_plots(root, outputs)
     return root
+
+
+def comparison_plots(root, runs):
+    import csv
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei','DejaVu Sans']
+    plt.rcParams['axes.unicode_minus'] = False
+    rows = []
+    for run in runs:
+        for domain, m in run.get('domains',{}).items():
+            row = dict(candidate=run['candidate_id'], family=run['family'], stage=run['stage'], seed=run['seed'],
+                       domain=domain, frames=m['frames'], gt=m['ground_truth_count'], tp=m['tp'], fp=m['fp'], fn=m['fn'],
+                       map50=m['map50'], map50_95=m['map50_95'], recall=m['recall'], idf1=m['tracking']['idf1'],
+                       id_switches=m['tracking']['id_switches'], track_coverage=m['tracking']['track_coverage'],
+                       detector_p50_ms=m['latency']['detector_ms']['p50'], detector_p95_ms=m['latency']['detector_ms']['p95'],
+                       detection_tracking_p95_ms=m['latency']['detection_tracking_ms']['p95'],
+                       peak_gpu_mib=run['peak_gpu_allocated_mib'], parameter_count=run['parameter_count'])
+            rows.append(row)
+    if not rows:
+        return
+    path = root/'检测跟踪资源对照.csv'
+    with path.open('w',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
+    figs=[]
+    for domain in ('SPD','CARLA'):
+        subset=[r for r in rows if r['domain']==domain]
+        fig,axes=plt.subplots(3,1,figsize=(13,11))
+        labels=[r['candidate'] for r in subset]
+        for ax,key in zip(axes,('map50_95','recall','detector_p95_ms')):
+            ax.bar(labels,[r[key] for r in subset]);ax.set(ylabel=key,title=domain+'模型验证（实际值）')
+            ax.tick_params(axis='x',rotation=45);ax.grid(axis='y',alpha=.2)
+        fig.tight_layout()
+        for ext in ('png','svg'):
+            p=root/(domain+'检测器对比图.'+ext);fig.savefig(p,dpi=160);figs.append({'path':p.name,'sha256':sha256(p)})
+        plt.close(fig)
+    write_json(root/'对比图表来源.json',{'raw_csv_sha256':sha256(path),'figures':figs,'smoothing':False})

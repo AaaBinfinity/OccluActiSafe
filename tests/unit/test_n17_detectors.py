@@ -6,7 +6,7 @@ import unittest
 from occluactisafe.experiments.detector_data import class_box_line, load_config, materialize
 from occluactisafe.experiments.detector_matrix import validate_matrix
 from occluactisafe.experiments.run_store import write_json, read_json, sha256
-from occluactisafe.experiments.selection import select_detector
+from occluactisafe.experiments.selection import select_detector, family_candidates
 from occluactisafe.experiments.detector_evaluation import metric_summary
 from occluactisafe.evaluation.detection_metrics import GroundTruthObject, MetricFrame, score_detections
 from occluactisafe.perception.types import Detection
@@ -92,6 +92,16 @@ class N17Tests(unittest.TestCase):
         self.assertAlmostEqual(result['map50_95'], .5)
         self.assertEqual(result['conditional_strata']['pixel_scale']['small']['gt'], 2)
         self.assertEqual(result['false_positives_per_empty_frame'], 0)
+
+    def test_family_selection_cannot_pick_only_the_best_seed(self):
+        rows=[]
+        for seed in (17,29,43):
+            row=self.candidate('YOLOv8_'+str(seed), .99 if seed!=43 else .8)
+            row.update(family='YOLOv8',stage='finetuned',seed=seed)
+            rows.append(row)
+        groups=family_candidates(rows,[17,29,43])
+        self.assertEqual(groups[0]['seed_count'],3)
+        self.assertEqual(select_detector(groups,self.cfg['gates'])['status'],'no_qualified_candidate')
 
 
 if __name__ == '__main__':
