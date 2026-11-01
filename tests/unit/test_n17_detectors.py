@@ -50,12 +50,12 @@ class N17Tests(unittest.TestCase):
         row['split'] = 'test'
         with self.assertRaises(ValueError):
             select_detector([row], self.cfg['gates'])
-        row.pop('test_map')
-        row['metadata'] = {'hidden_test_metric': 1}
-        with self.assertRaises(ValueError):
-            select_detector([row], self.cfg['gates'])
         row['split'] = 'model_val'
         row['test_map'] = 1
+        with self.assertRaises(ValueError):
+            select_detector([row], self.cfg['gates'])
+        row.pop('test_map')
+        row['metadata'] = {'hidden_test_metric': 1}
         with self.assertRaises(ValueError):
             select_detector([row], self.cfg['gates'])
 
