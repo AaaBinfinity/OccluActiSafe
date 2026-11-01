@@ -61,6 +61,20 @@ def verify_budget_overview(folder,name,config,truth,audit,observations,check):
     identity=lambda source:[(r['index'],r['frame'],r['time_s']) for r in frames if r['source']==source]
     check(name+'新增实景角度完整',all(identity(source)==identity('车端') for source in config['extra_cameras']),
           {'camera_names':list(config['extra_cameras']),'frames_each':len(identity('车端'))})
+    geometry_path=folder/name/'车辆静态几何.json'
+    if geometry_path.is_file():
+        geometry=read(geometry_path);initial=read(folder/name/'初始状态.json');objects=read(folder/name/'评测对象身份.json')
+        pose_errors={}
+        for actor in ('ego','target','occluder'):
+            initial_actor=initial[actor];current=truth[0][actor];yaw=initial_actor['yaw']
+            expected=(initial_actor['x']+config['speed_mps']*.05*math.cos(yaw),initial_actor['y']+config['speed_mps']*.05*math.sin(yaw))
+            pose_errors[actor]=math.hypot(current['x']-expected[0],current['y']-expected[1])
+        valid_geometry=(geometry['tick_calls']==0 and geometry['physics_context']==config['calibration_context']
+            and all(geometry['boxes'][a]['actor_id']==objects[a+'_actor_id']
+                and abs(truth[0][a]['length']-2*geometry['boxes'][a]['extent']['x'])<1e-7
+                and abs(truth[0][a]['width']-2*geometry['boxes'][a]['extent']['y'])<1e-7 for a in ('ego','target','occluder'))
+            and max(pose_errors.values())<=.1)
+        check(name+'活体几何缓存与初态位置',valid_geometry,{'first_step_position_errors_m':pose_errors,'sampler_tick_calls':geometry['tick_calls']})
     if name=='cooperative_aeb':
         first=next((x for x in audit if x['decision']['brake']),None)
         warnings=[x for x in audit if x['decision']['warning'] and not x['decision']['brake']]
