@@ -39,6 +39,11 @@ def validate_scene_groups(config: dict) -> None:
         raise ValueError("场景清单须至少3项且不重复")
     if type(config["frames_per_scene"]) is not int or config["frames_per_scene"] < 1:
         raise ValueError("frames_per_scene必须为正整数")
+    for key in ("moving_target_speed_mps", "pedestrian_speed_mps"):
+        if float(config[key]) <= 0:
+            raise ValueError(f"{key}必须为正数")
+    if len(config["roadside_camera_local_xyz"]) != 3:
+        raise ValueError("路侧相机相对位姿须为xyz三项")
 
 
 def _write_json(path: Path, value) -> None:
@@ -132,8 +137,11 @@ def run(config: dict | None = None) -> dict:
                     if ego is None:
                         raise RuntimeError("ego出生点被占用，保留失败场景")
                     actors.append(ego)
+                    ego.apply_control(carla.VehicleControl(throttle=0.0, brake=1.0, steer=0.0))
                     waypoint = world.get_map().get_waypoint(ego_spawn.location, project_to_road=True)
                     ahead = waypoint.next(18.0)
+                    moving_targets = []
+                    moving_walker = None
                     if scene_kind in {"vehicle", "vehicle_occlusion"}:
                         if not ahead:
                             raise RuntimeError("ego路线前方无可用CARLA waypoint")
@@ -142,8 +150,8 @@ def run(config: dict | None = None) -> dict:
                         target = world.try_spawn_actor(target_bp, ahead[0].transform)
                         if target is None:
                             raise RuntimeError("车辆目标spawn失败")
-                        target.set_simulate_physics(False)
                         actors.append(target)
+                        moving_targets.append(target)
                         scene["actor_catalog"] = [{"actor_id": target.id, "track_id": f"{episode_id}:vehicle",
                                                    "category": "vehicle", "blueprint_id": target.type_id}]
                     elif scene_kind == "cyclist":
@@ -154,8 +162,8 @@ def run(config: dict | None = None) -> dict:
                         bike = world.try_spawn_actor(bike_bp, ahead[0].transform)
                         if bike is None:
                             raise RuntimeError("骑行者目标spawn失败")
-                        bike.set_simulate_physics(False)
                         actors.append(bike)
+                        moving_targets.append(bike)
                         scene["actor_catalog"] = [{"actor_id": bike.id, "track_id": f"{episode_id}:cyclist",
                                                    "category": "bicycle", "blueprint_id": bike.type_id}]
                     elif scene_kind == "pedestrian":
@@ -169,8 +177,8 @@ def run(config: dict | None = None) -> dict:
                         walker = world.try_spawn_actor(walker_bp, carla.Transform(location, ahead[0].transform.rotation))
                         if walker is None:
                             raise RuntimeError("行人目标spawn失败")
-                        walker.set_simulate_physics(False)
                         actors.append(walker)
+                        moving_walker = walker
                         scene["actor_catalog"] = [{"actor_id": walker.id, "track_id": f"{episode_id}:pedestrian",
                                                    "category": "pedestrian", "blueprint_id": walker.type_id}]
                     elif scene_kind == "negative":
@@ -180,9 +188,12 @@ def run(config: dict | None = None) -> dict:
                             raise RuntimeError("CARLA实例相机16位actor ID溢出")
 
                     ego_transform = ego.get_transform()
-                    roadside_location = ego_transform.transform(carla.Location(x=-7.0, y=7.0, z=8.0))
+                    roadside_xyz = config["roadside_camera_local_xyz"]
+                    roadside_location = ego_transform.transform(carla.Location(
+                        x=float(roadside_xyz[0]), y=float(roadside_xyz[1]), z=float(roadside_xyz[2])))
                     roadside_transform = carla.Transform(roadside_location,
-                        carla.Rotation(yaw=ego_transform.rotation.yaw, pitch=-25.0))
+                        carla.Rotation(yaw=ego_transform.rotation.yaw,
+                                       pitch=float(config["roadside_camera_pitch_deg"])))
                     views = (("车端", carla.Transform(carla.Location(x=1.5, z=1.6), carla.Rotation()), ego),
                              ("路侧", roadside_transform, None))
                     for view_name, transform, parent in views:
@@ -209,6 +220,16 @@ def run(config: dict | None = None) -> dict:
                         "camera_to_carla_world": sensor.get_transform().get_matrix()}
                         for name, sensor in (("车端", sensors[0]), ("路侧", sensors[2]))}
                     for local_index in range(int(config["frames_per_scene"])):
+                        for actor in moving_targets:
+                            forward = actor.get_transform().get_forward_vector()
+                            actor.set_target_velocity(carla.Vector3D(
+                                forward.x * float(config["moving_target_speed_mps"]),
+                                forward.y * float(config["moving_target_speed_mps"]), 0.0))
+                        if moving_walker is not None:
+                            crossing = ego_transform.get_right_vector()
+                            moving_walker.apply_control(carla.WalkerControl(
+                                direction=carla.Vector3D(-crossing.x, -crossing.y, 0.0),
+                                speed=float(config["pedestrian_speed_mps"]), jump=False))
                         frame_id = world.tick()
                         frame_record = {"carla_frame_id": frame_id, "source_time_s": None,
                                         "views": {}}
