@@ -101,6 +101,47 @@ def _draw_review(run_dir: Path, group: dict, scene: dict, frame: dict,
             "frame_id": int(frame["carla_frame_id"]), "source_time_s": float(frame["source_time_s"])}
 
 
+def _draw_sequence_sheet(group: dict, scene: dict, output: Path, fonts) -> dict:
+    from PIL import Image, ImageDraw
+    from PIL import ImageFont
+    title_font, body_font, font_identity = fonts
+    small_font = ImageFont.truetype(font_identity["path"], 15)
+    cell_w, cell_h, columns, rows = 384, 216, 5, 6
+    panel_w, panel_h = cell_w * columns, cell_h * rows
+    canvas = Image.new("RGB", (panel_w * 2, panel_h + 104), (24, 29, 37))
+    draw = ImageDraw.Draw(canvas)
+    draw.text((20, 14), f"{ROLE_NAMES[group['project_role']]} · {group['map']} · "
+              f"{SCENE_NAMES[group['scene_kind']]} · 全部30帧 · 车端/路侧同步", font=title_font,
+              fill=(245, 247, 250))
+    for index, frame in enumerate(scene["frames"]):
+        row, column = divmod(index, columns)
+        for view_index, view_name in enumerate(("车端", "路侧")):
+            record = frame["views"][view_name]
+            scene_dir = Path(group["manifest"]).parent
+            label = json.loads((scene_dir / record["label"]).read_text(encoding="utf-8"))
+            image_path = scene_dir / record["rgb"]
+            with Image.open(image_path) as opened:
+                image = opened.convert("RGB")
+            image_draw = ImageDraw.Draw(image)
+            for item in label["labels"]:
+                x1, y1, x2, y2 = item["bbox_xyxy_visible_pixels"]
+                color = CATEGORY_COLORS[item["category"]]
+                image_draw.rectangle((x1, y1, x2 - 1, y2 - 1), outline=color, width=8)
+            image = image.resize((cell_w, cell_h), Image.Resampling.LANCZOS)
+            x = view_index * panel_w + column * cell_w
+            y = 104 + row * cell_h
+            canvas.paste(image, (x, y))
+            tag = f"{view_name} #{index:02d} 可见{len(label['labels'])} 隐藏{len(label['hidden_actor_review'])}"
+            draw.rectangle((x, y, x + cell_w - 1, y + 26), fill=(18, 23, 31))
+            draw.text((x + 8, y + 4), tag, font=small_font, fill=(255, 255, 255))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(output, format="PNG", optimize=True)
+    return {"path": output.name, "sha256": sha256(output), "bytes": output.stat().st_size,
+            "font_sha256": font_identity["sha256"], "frames": len(scene["frames"]),
+            "frame_ids": [int(frame["carla_frame_id"]) for frame in scene["frames"]],
+            "source_group_manifest_sha256": group["manifest_sha256"]}
+
+
 def audit_run(run_dir: Path, *, create_visuals: bool = True) -> dict:
     from PIL import Image
     from scripts.audit_spd import review_font_identity
@@ -124,6 +165,7 @@ def audit_run(run_dir: Path, *, create_visuals: bool = True) -> dict:
     referenced_files = set()
     counters = Counter()
     visual_records = []
+    contact_sheets = []
     fonts = _fonts() if create_visuals else None
     for group in manifest["groups"]:
         if group["status"] != "completed" or group["frames"] != 30:
@@ -201,6 +243,8 @@ def audit_run(run_dir: Path, *, create_visuals: bool = True) -> dict:
             output_dir = run_dir / "双视角中文标注抽查图"
             output = output_dir / f"{ROLE_NAMES[group['project_role']]}_{group['map']}_{SCENE_NAMES[group['scene_kind']]}_双视角标注抽查.png"
             visual_records.append(_draw_review(run_dir, group, scene, frame, output, fonts, 1920, 1080))
+            sequence_sheet = output_dir / f"{ROLE_NAMES[group['project_role']]}_{group['map']}_{SCENE_NAMES[group['scene_kind']]}_三十帧全量抽查.png"
+            contact_sheets.append(_draw_sequence_sheet(group, scene, sequence_sheet, fonts))
     if set(role_by_map.values()) != {"train", "model_val", "test"}:
         raise ValueError("地图级train/model_val/test划分不完整")
     if any(roles != {"train", "model_val", "test"} for roles in scene_groups.values()):
@@ -220,7 +264,7 @@ def audit_run(run_dir: Path, *, create_visuals: bool = True) -> dict:
              "synchronized_view_frames": image_count, "verified_rgb_mask_label_files": len(referenced_files),
              "counts": dict(sorted(counters.items())), "maps": role_by_map,
              "scene_groups": {key: sorted(value) for key, value in scene_groups.items()},
-             "failures": [], "visuals": visual_records,
+             "failures": [], "visuals": visual_records, "all_frame_contact_sheets": contact_sheets,
              "font_sha256": (review_font_identity()["sha256"] if create_visuals else None)}
     audit["verified_rgb_mask_label_files"] = len(referenced_files)
     audit_path = run_dir / "N15双视角完整性复核.json"
