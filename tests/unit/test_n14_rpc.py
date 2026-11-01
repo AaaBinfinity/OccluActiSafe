@@ -5,6 +5,15 @@ from occluactisafe.simulation.scenario_rpc import execute_batch
 
 
 class RPCTests(unittest.TestCase):
+    def test_static_physics_freeze_is_acknowledged_without_advancing_world(self):
+        requests=[]
+        client=SimpleNamespace(apply_batch_sync=lambda commands,tick:(requests.append((commands,tick)) or [SimpleNamespace(error=None)]))
+        carla=SimpleNamespace(command=SimpleNamespace(SetSimulatePhysics=lambda identity,enabled:(identity,enabled)))
+        self.assertEqual(execute_batch(client,carla,[dict(kind='physics',actor_id=1,value=False)],{1}),1)
+        self.assertEqual(requests,[([(1,False)],False)])
+        with self.assertRaises(ValueError):execute_batch(client,carla,[dict(kind='physics',actor_id=1,value=0)],{1})
+        self.assertEqual(len(requests),1)
+
     def test_control_batch_has_acknowledgements_and_never_ticks(self):
         calls=[]
         def apply(commands,do_tick):

@@ -219,9 +219,17 @@ def run_episode(client,output,config):
         for box in measured['boxes'].values():
             boxes[box['actor_id']]=carla.BoundingBox(carla.Location(**box['location']),carla.Vector3D(**box['extent']))
         current=lambda actor:state(actor,boxes[actor.id])
+        if settle_probe:
+            # 静态货车完整落地130帧后，在注册图像回调前由独立RPC确认关闭物理。
+            # 不能在父进程图像回调活跃时调用同步set_simulate_physics，已有真实超时记录。
+            for _ in range(30):advance(held,held)
+            rpc.apply([{'kind':'physics','actor_id':obstacle.id,'value':False}])
+            (output/'静态遮挡物冻结回执.json').write_text(json.dumps({'sequence':rpc.count-1,
+                'actor_id':obstacle.id,'native_command':'SetSimulatePhysics','enabled':False,
+                'acknowledged':True,'image_callbacks_registered':False,'settled_without_camera_frames':130,
+                'parent_frame':runner.frame,'worker_tick_calls':0}),encoding='utf-8')
         spawn_cameras()
         for _ in range(30):advance(held,held)
-        if settle_probe:obstacle.set_simulate_physics(False)
         settled={'ego':ego.get_transform(),'occluder':obstacle.get_transform(),**{r:a.get_transform() for r,a in participants.items()}}
         if moving:
             # 三车均位于同向合法驾驶车道；只在初始化阶段预热大车动力。

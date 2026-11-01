@@ -20,6 +20,9 @@ def execute_batch(client, carla, commands, allowed):
         elif kind=='transform':command=carla.command.ApplyTransform(identity,carla.Transform(carla.Location(**value['location']),carla.Rotation(**value['rotation'])))
         elif kind=='velocity':command=carla.command.ApplyTargetVelocity(identity,carla.Vector3D(**value))
         elif kind=='angular_velocity':command=carla.command.ApplyTargetAngularVelocity(identity,carla.Vector3D(**value))
+        elif kind=='physics':
+            if not isinstance(value,bool):raise ValueError('物理开关必须为bool')
+            command=carla.command.SetSimulatePhysics(identity,value)
         else:raise ValueError('未知批量命令类型')
         native.append(command)
     responses=client.apply_batch_sync(native,False)
