@@ -1,0 +1,3 @@
+# N15 CARLA独立Python 3.11桥接依赖；在CARLA桥接环境显式安装。
+numpy==2.4.6
+PyYAML>=6.0,<7
