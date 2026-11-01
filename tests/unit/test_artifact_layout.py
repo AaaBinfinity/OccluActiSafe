@@ -31,6 +31,9 @@ def fixture(root):
 
 
 class LayoutTests(unittest.TestCase):
+    def test_n15_has_a_named_node_archive_directory(self):
+        self.assertEqual(layout.node_folder('N15').as_posix(), '节点资料/N15_CARLA双视角标注与SPD审计')
+
     def test_preview_classifies_without_moving_or_creating(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp).resolve()/'artifacts'; catalog = fixture(root)

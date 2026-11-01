@@ -17,7 +17,7 @@ ARTIFACTS = Path('H:/OccluActiSafeDataset/artifacts')
 CATALOG = ROOT/'docs/最终结果目录.json'
 NODES = dict(enumerate(('工程安装', '数据契约', '轨迹审计', '窗口预处理', 'CV基线', 'GPU环境',
                         'GRU训练', '通信机制', '状态融合', '几何风险', '解析闭环', '仿真桥接',
-                        '执行器标定', '盲区路口'), 1))
+                        '执行器标定', '盲区路口', 'CARLA双视角标注与SPD审计'), 1))
 
 
 def read(path):
