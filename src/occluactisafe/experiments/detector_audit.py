@@ -2,8 +2,12 @@
 import csv
 import json
 import math
+import ast
+import hashlib
+import subprocess
 from pathlib import Path
 
+from occluactisafe.common.config import PROJECT_ROOT
 from .detector_data import load_index
 from .detector_matrix import validate_matrix
 from .run_store import read_json, sha256
@@ -18,6 +22,8 @@ def audit_training_matrix(cfg, matrix_path):
     expected = set(validate_matrix(cfg))
     seen = set()
     initial_weights = {}
+    algorithm_hashes = {}
+    common_algorithm = None
     checks = []
     for run in matrix['runs']:
         identity = run['family'], run['seed']
@@ -46,9 +52,21 @@ def audit_training_matrix(cfg, matrix_path):
             for field in ('loss','gradient_norm','learning_rate','step_seconds','gpu_allocated_mib','host_rss_mib'):
                 if not math.isfinite(float(row[field])):
                     raise ValueError('训练日志含非有限原值')
+        commit=run['source_commit']
+        if commit not in algorithm_hashes:
+            parts=[]
+            for filename,function in (('detector_training.py','trainer_class'),('detector_matrix.py','train_one')):
+                source=subprocess.check_output(['git','-C',str(PROJECT_ROOT),'show',commit+':src/occluactisafe/experiments/'+filename],encoding='utf-8')
+                node=next(n for n in ast.parse(source).body if isinstance(n,ast.FunctionDef) and n.name==function)
+                parts.append(ast.dump(node,include_attributes=False))
+            algorithm_hashes[commit]=hashlib.sha256('\n'.join(parts).encode()).hexdigest()
+        if common_algorithm is None:common_algorithm=algorithm_hashes[commit]
+        if algorithm_hashes[commit]!=common_algorithm:
+            raise ValueError('各训练run的optimizer/模型训练函数实现不同，拒绝混比')
         checks.append({'family':run['family'],'seed':run['seed'],'status':'passed',
                        'optimizer_steps':len(steps),'image_exposures':exposures,
                        'initial_weight_sha256':run['initial_weight_sha256'],
+                       'source_commit':commit,'training_function_ast_sha256':algorithm_hashes[commit],
                        'step_csv_sha256':sha256(path),'checkpoint_sha256':run['checkpoint_sha256']})
     return {'status':'passed' if seen==expected and all(r['status']=='passed' for r in checks) else 'failed',
             'expected_runs':len(expected),'actual_runs':len(matrix['runs']), 'train_frames':train_frames,
