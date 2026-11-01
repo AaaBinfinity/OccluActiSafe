@@ -178,7 +178,9 @@ def analyze_suite(folder=None,*,reuse_comparisons=False):
         candidates=list(PARENT.glob('n14_suite_*'))
         if not candidates:raise FileNotFoundError('没有本机高画质多场景运行')
         folder=max(candidates,key=lambda p:(p/'多场景运行清单.json').stat().st_mtime)
-    folder=Path(folder).resolve();manifest=read(folder/'多场景运行清单.json')
+    folder=Path(folder).resolve()
+    if (folder/'交付封存.json').is_file():raise FileExistsError('已封存交付结果，拒绝原位覆盖分析；请使用新的运行目录')
+    manifest=read(folder/'多场景运行清单.json')
     if manifest['probe_only'] or manifest['selected_case'] is not None or {c['id'] for c in manifest['cases']}!={'S01','S02','S03','S04'} or len(manifest['cases'])!=4:
         raise ValueError('静态/单场景探针不能提交为完整多场景验收')
     report={'analysis_commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),

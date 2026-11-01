@@ -23,6 +23,17 @@ ROOT=Path(__file__).resolve().parents[2]
 
 
 class SuiteTests(unittest.TestCase):
+    def test_sealed_results_cannot_be_overwritten_by_either_analyzer(self):
+        sys.path.insert(0,str(ROOT/'scripts'))
+        from analyze_occluded_junction import analyze
+        from analyze_n14_scenarios import analyze_suite
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp);(path/'交付封存.json').write_text('{}',encoding='utf-8')
+            canary=path/'配对验收报告.json';canary.write_bytes(b'original evidence')
+            for entry in (analyze,analyze_suite):
+                with self.assertRaisesRegex(FileExistsError,'拒绝原位覆盖'):entry(path)
+                self.assertEqual(canary.read_bytes(),b'original evidence')
+
     def test_collision_contract_keeps_real_events_and_does_not_force_pedestrian_local_failure(self):
         sys.path.insert(0,str(ROOT/'scripts'))
         from analyze_occluded_junction import collision_requirement

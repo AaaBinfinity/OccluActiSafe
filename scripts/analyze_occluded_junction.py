@@ -178,7 +178,9 @@ def follow_comparison(folder,data,config):
 
 
 def analyze(folder,encode=True):
-    folder=Path(folder);config=read(folder/'冻结配置.json');checks=[];data={};metrics=[]
+    folder=Path(folder)
+    if (folder/'交付封存.json').is_file():raise FileExistsError('已封存交付结果，拒绝原位覆盖分析；请使用新的运行目录')
+    config=read(folder/'冻结配置.json');checks=[];data={};metrics=[]
     def check(name,condition,detail):checks.append({'name':name,'passed':bool(condition),'detail':detail})
     initial=[];prefix=[]
     for name in STRATEGIES:
