@@ -72,6 +72,15 @@ def score_detections(frames: list[MetricFrame], *, iou_threshold: float = 0.5) -
             row = by_class[pred.class_id]; row["pred"] += 1
             is_tp = index in matched_pred
             row["tp" if is_tp else "fp"] += 1
+        # AP必须按置信度贪心匹配；操作点的最大IoU分配不能决定AP的TP顺序。
+        remaining = set(range(len(frame.ground_truth)))
+        for pred in sorted(frame.detections, key=lambda p: -p.score):
+            possible = [(box_iou(frame.ground_truth[i].xyxy, pred.xyxy), i) for i in remaining
+                        if frame.ground_truth[i].class_id == pred.class_id]
+            overlap, index = max(possible, default=(0.0, -1))
+            is_tp = overlap >= iou_threshold
+            if is_tp:
+                remaining.remove(index)
             ap_data[pred.class_id].append((pred.score, is_tp))
     for row in by_class.values():
         denom = row["tp"] + row["fn"]
@@ -89,7 +98,7 @@ def score_detections(frames: list[MetricFrame], *, iou_threshold: float = 0.5) -
             continue
         tp_cum = fp_cum = 0
         points = []
-        for _, is_tp in sorted(entries, key=lambda item: (-item[0], not item[1])):
+        for _, is_tp in sorted(entries, key=lambda item: -item[0]):
             tp_cum += int(is_tp); fp_cum += int(not is_tp)
             points.append((tp_cum/positives, tp_cum/(tp_cum+fp_cum)))
         aps[class_id] = sum((recall-prev_recall)*max((p for r, p in points if r >= recall), default=0.0)
