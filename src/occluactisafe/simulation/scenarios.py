@@ -67,11 +67,11 @@ def state(actor,bounding_box=None):
             'length':2*bb.extent.x,'width':2*bb.extent.y}
 
 
-def restricted_track(actor,source,now,bounding_box=None):
+def restricted_track(actor,source,now,bounding_box=None,*,track_id='crossing-1',category='vehicle'):
     from occluactisafe.common.schemas import SourceTrack
     s=state(actor,bounding_box)
-    return SourceTrack.from_dict(dict(source_track_id='crossing-1',source_id=source,session_id='session-1',sensor_id=source,
-        category='vehicle',role='target',clock_domain='carla-n14',coordinate_frame_id='map-right-handed',reference_point='geometric_center',
+    return SourceTrack.from_dict(dict(source_track_id=track_id,source_id=source,session_id='session-1',sensor_id=source,
+        category=category,role='target',clock_domain='carla-n14',coordinate_frame_id='map-right-handed',reference_point='geometric_center',
         observation_time=now,last_seen_time=now,source_available_time=now,state_time=now,**s,
         size_source='annotation',size_uncertainty=0.,covariance_xy=[[0.,0.],[0.,0.]],observed_mask=True,
         state_valid_mask=True,size_valid=True,velocity_valid=True,yaw_valid=True,quality=1.))
@@ -121,6 +121,10 @@ def run_episode(client,output,config):
     from occluactisafe.communication.protocol import ChannelConfig
     from occluactisafe.control.actuator import CalibratedActuator
     from occluactisafe.simulation.occluder_driver import OccluderDriver
+    from occluactisafe.simulation.n14_participants import participant_specs,walker_action,batch_control
+    specs=participant_specs(config);spec_by_role={s['role']:s for s in specs};extra_actions={}
+    rgb_width,rgb_height=config.get('rgb_size',(1280,720))
+    mask_width,mask_height=config.get('visibility_size',(1280,720))
     # 每分支完整重载，世界帧由一个runner推进。无背景交通，无TM。
     client.set_timeout(20)
     moving=bool(config.get('occluder_motion')) and not config.get('probe_static',False)
@@ -145,9 +149,11 @@ def run_episode(client,output,config):
         def spawn(blueprint,pose):
             bp=world.get_blueprint_library().find(blueprint);bp.set_attribute('role_name','oas:'+run_id)
             if bp.has_attribute('color'):bp.set_attribute('color','168,0,27')
+            if bp.has_attribute('is_invincible'):bp.set_attribute('is_invincible','false')
             actor=world.spawn_actor(bp,transform(pose));runner.register_owned(actor);return actor
-        ego=spawn('vehicle.audi.a2',config['ego_spawn']);target=spawn('vehicle.audi.a2',config['target_spawn'])
-        settle_probe=bool(config.get('probe_static') and config.get('probe_settle_occluder'))
+        ego=spawn('vehicle.audi.a2',config['ego_spawn'])
+        participants={s['role']:spawn(s['blueprint'],s['spawn']) for s in specs};target=participants['target']
+        settle_probe=bool(config.get('probe_static') and config.get('probe_settle_occluder')) or config.get('settle_static_occluder',False)
         obstacle=spawn(config['occluder_blueprint'],config['occluder']);obstacle.set_simulate_physics(moving or settle_probe)
         truck_driver=OccluderDriver(config['occluder'],config['conflict_xy'],**config['occluder_motion']) if moving else None
         sensor_bp=world.get_blueprint_library().find('sensor.other.collision')
@@ -155,8 +161,9 @@ def run_episode(client,output,config):
         sensor=world.spawn_actor(sensor_bp,carla.Transform(),attach_to=ego);runner.register_owned(sensor)
         sensor.listen(lambda event:collisions.append({'frame':event.frame,'other_id':event.other_actor.id,'other_type':event.other_actor.type_id,
             'impulse':math.sqrt(event.normal_impulse.x**2+event.normal_impulse.y**2+event.normal_impulse.z**2)}))
-        if moving:
-            for role,actor in [('occluder',obstacle),('target',target)]:
+        if moving or config.get('suite_case'):
+            for role,actor in [('occluder',obstacle),*participants.items()]:
+                if not actor.type_id.startswith('vehicle.'):continue
                 bp=world.get_blueprint_library().find('sensor.other.collision');bp.set_attribute('role_name','oas:'+run_id)
                 extra=world.spawn_actor(bp,carla.Transform(),attach_to=actor);runner.register_owned(extra)
                 extra.listen(lambda event,r=role:environment_collisions.append({'role':r,'frame':event.frame,'other_id':event.other_actor.id,'other_type':event.other_actor.type_id}))
@@ -168,12 +175,12 @@ def run_episode(client,output,config):
             for name,pose,attached in camera_specs:
                 bp=world.get_blueprint_library().find('sensor.camera.rgb')
                 bp.set_attribute('role_name','oas:'+run_id)
-                for key,value in {'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():bp.set_attribute(key,value)
+                for key,value in {'image_size_x':str(rgb_width),'image_size_y':str(rgb_height),'fov':'90','sensor_tick':'0.05'}.items():bp.set_attribute(key,value)
                 camera=world.spawn_actor(bp,transform(pose),attach_to=ego if attached else None);runner.register_owned(camera)
                 camera.listen(lambda image,n=name:frames[n].put(image.frame,image));cameras[name]=camera
                 if name not in masks:continue
                 label_bp=world.get_blueprint_library().find('sensor.camera.instance_segmentation')
-                for key,value in {'role_name':'oas:'+run_id,'image_size_x':'1280','image_size_y':'720','fov':'90','sensor_tick':'0.05'}.items():label_bp.set_attribute(key,value)
+                for key,value in {'role_name':'oas:'+run_id,'image_size_x':str(mask_width),'image_size_y':str(mask_height),'fov':'90','sensor_tick':'0.05'}.items():label_bp.set_attribute(key,value)
                 labels=world.spawn_actor(label_bp,transform(pose),attach_to=ego if name=='车端' else None);runner.register_owned(labels)
                 labels.listen(lambda image,n=name:masks[n].put(image.frame,image))
         rpc=None;rpc_ready=False
@@ -184,23 +191,22 @@ def run_episode(client,output,config):
             request={'schema_version':'1.0','run_id':run_id,'episode_id':config['scenario_id'],'generation':1,
                 'target_frame_id':runner.frame+1,'clock_domain':'carla-n14','request_time':now,'valid_until':now+1,'control':control}
             def apply(c):
-                commands=[carla.command.ApplyVehicleControl(ego.id,carla.VehicleControl(throttle=c.throttle,brake=c.brake,steer=c.steer)),
-                          carla.command.ApplyVehicleControl(target.id,carla.VehicleControl(**target_action))]
-                if moving or settle_probe:commands.append(carla.command.ApplyVehicleControl(obstacle.id,carla.VehicleControl(**(occluder_action or {'throttle':0.,'brake':1.,'steer':0.}))))
+                payload=[{'kind':'control','actor_id':ego.id,'value':{'throttle':c.throttle,'brake':c.brake,'steer':c.steer}}]
+                for role,actor in participants.items():
+                    value=target_action if role=='target' else extra_actions.get(role,{'throttle':0.,'brake':1.,'steer':0.})
+                    payload.append(batch_control(role,actor.id,spec_by_role[role],value))
+                if moving or settle_probe:payload.append({'kind':'control','actor_id':obstacle.id,'value':occluder_action or {'throttle':0.,'brake':1.,'steer':0.}})
                 if not rpc_ready:
                     # 此时尚未注册图像回调；固定100帧确认保持控制并预热RPC子进程。
-                    responses=client.apply_batch_sync(commands,False)
-                    if any(r.error for r in responses):raise RuntimeError('无相机预热批次失败')
+                    from occluactisafe.simulation.scenario_rpc import execute_batch
+                    execute_batch(client,carla,payload,{ego.id,obstacle.id,*(a.id for a in participants.values())})
                 else:
-                    payload=[{'kind':'control','actor_id':ego.id,'value':{'throttle':c.throttle,'brake':c.brake,'steer':c.steer}},
-                             {'kind':'control','actor_id':target.id,'value':target_action}]
-                    if moving or settle_probe:payload.append({'kind':'control','actor_id':obstacle.id,'value':occluder_action or {'throttle':0.,'brake':1.,'steer':0.}})
                     rpc.apply(payload)
             runner.advance(json.dumps(request),apply_control=apply)
         held={'throttle':0.,'brake':1.,'steer':0.}
         # 0.9.16 bounding_box会发同步RPC；独立进程采样避免与父进程tick的GIL/等待互锁。
         geometry_request=output/'几何采样请求.json'
-        geometry_request.write_text(json.dumps({'world_id':world.id,'actor_ids':{'ego':ego.id,'target':target.id,'occluder':obstacle.id}}),encoding='utf-8')
+        geometry_request.write_text(json.dumps({'world_id':world.id,'actor_ids':{'ego':ego.id,'occluder':obstacle.id,**{r:a.id for r,a in participants.items()}}}),encoding='utf-8')
         from occluactisafe.simulation.scenario_rpc import ScenarioRPC
         rpc=ScenarioRPC(output,geometry_request);resources.callback(rpc.close)
         for _ in range(100):advance(held,held)
@@ -213,7 +219,7 @@ def run_episode(client,output,config):
         spawn_cameras()
         for _ in range(30):advance(held,held)
         if settle_probe:obstacle.set_simulate_physics(False)
-        settled={'ego':ego.get_transform(),'target':target.get_transform(),'occluder':obstacle.get_transform()}
+        settled={'ego':ego.get_transform(),'occluder':obstacle.get_transform(),**{r:a.get_transform() for r,a in participants.items()}}
         if moving:
             # 三车均位于同向合法驾驶车道；只在初始化阶段预热大车动力。
             lane_metadata={}
@@ -226,14 +232,16 @@ def run_episode(client,output,config):
         oc=current(obstacle);route_clear=[]
         from occluactisafe.risk.obb import intersects
         for name in ('ego','target'):
+            dimensions=(current(target)['length'],current(target)['width']) if name=='target' and specs[0]['category']=='pedestrian' else (4.,2.)
             for p in config[name+'_route']:
-                if intersects(OBB((p['x'],-p['y']),-math.radians(p['yaw']),4.,2.),OBB((oc['x'],oc['y']),oc['yaw'],oc['length'],oc['width'])):
+                if intersects(OBB((p['x'],-p['y']),-math.radians(p['yaw']),*dimensions),OBB((oc['x'],oc['y']),oc['yaw'],oc['length'],oc['width'])):
                     raise ValueError('遮挡物侵入测试路线')
             route_clear.append(name)
         actual_context=measured['physics_context']
         if actual_context!=config['calibration_context']:raise ValueError('地图天气或物理上下文不符合N13标定')
         metadata={'ego':current(ego),'target':current(target),'occluder':current(obstacle),'mass_kg':actual_context['mass_kg'],
                   'tire_friction':[w['tire_friction'] for w in actual_context['wheels']],'weather':actual_context['weather'],'route_clear':route_clear}
+        if config.get('suite_case'):metadata['participants']={s['track_id']:{'category':s['category'],'state':current(participants[s['role']])} for s in specs}
         (output/'初始状态.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
         if moving:
             for _ in range(300):
@@ -243,31 +251,41 @@ def run_episode(client,output,config):
         # N13表来自真实加速后的动力状态。只赋速度会保留低转速/挡位而失配。
         for warmup in range(200):
             if config.get('probe_static',False):break
-            if min(math.hypot(a.get_velocity().x,a.get_velocity().y) for a in (ego,target))>=config['speed_mps']:break
+            vehicles=[ego,*[a for role,a in participants.items() if spec_by_role[role]['category']=='vehicle']]
+            if min(math.hypot(a.get_velocity().x,a.get_velocity().y) for a in vehicles)>=config['speed_mps']:break
+            extra_actions={r:{'throttle':1.,'brake':0.,'steer':0.} for r in participants if r!='target'}
             full={'throttle':1.,'brake':0.,'steer':0.};advance(full,full,truck_driver.step(current(obstacle),initializing=True) if moving else None)
         else:raise RuntimeError('动力预热未达到初速')
         initial_commands=[]
-        for actor,name in ((ego,'ego'),(target,'target')):
+        for name,actor in [('ego',ego),*participants.items()]:
             if not config.get('probe_static',False):
                 pose=settled[name];initial_commands.append({'kind':'transform','actor_id':actor.id,'value':{'location':dict(x=pose.location.x,y=pose.location.y,z=pose.location.z),'rotation':dict(pitch=pose.rotation.pitch,yaw=pose.rotation.yaw,roll=pose.rotation.roll)}})
-            yaw=math.radians(config[name+'_spawn']['yaw']);initial_speed=0. if config.get('probe_static',False) else config['speed_mps']
-            initial_commands.append({'kind':'velocity','actor_id':actor.id,'value':dict(x=initial_speed*math.cos(yaw),y=initial_speed*math.sin(yaw),z=0.)})
-            initial_commands.append({'kind':'angular_velocity','actor_id':actor.id,'value':dict(x=0.,y=0.,z=0.)})
+            spec=spec_by_role.get(name);pose=config['ego_spawn'] if name=='ego' else spec['spawn']
+            if spec is None or spec['category']=='vehicle':
+                yaw=math.radians(pose['yaw']);initial_speed=0. if config.get('probe_static',False) else config['speed_mps']
+                initial_commands.append({'kind':'velocity','actor_id':actor.id,'value':dict(x=initial_speed*math.cos(yaw),y=initial_speed*math.sin(yaw),z=0.)})
+                initial_commands.append({'kind':'angular_velocity','actor_id':actor.id,'value':dict(x=0.,y=0.,z=0.)})
         if moving:
             pose=settled['occluder'];initial_commands.append({'kind':'transform','actor_id':obstacle.id,'value':{'location':dict(x=pose.location.x,y=pose.location.y,z=pose.location.z),'rotation':dict(pitch=pose.rotation.pitch,yaw=pose.rotation.yaw,roll=pose.rotation.roll)}});yaw=math.radians(config['occluder']['yaw'])
             initial_commands.append({'kind':'velocity','actor_id':obstacle.id,'value':dict(x=config['speed_mps']*math.cos(yaw),y=config['speed_mps']*math.sin(yaw),z=0.)})
             initial_commands.append({'kind':'angular_velocity','actor_id':obstacle.id,'value':dict(x=0.,y=0.,z=0.)})
             truck_driver=OccluderDriver(config['occluder'],config['conflict_xy'],**config['occluder_motion'])
         rpc.apply(initial_commands)
-        normal=held if config.get('probe_static',False) else {'throttle':.53,'brake':0.,'steer':0.};advance(normal,normal,truck_driver.step(current(obstacle),initializing=True) if moving else None)
-        if target.id>=65536:raise RuntimeError('实例相机16位ID范围不足，拒绝混淆实例')
+        normal=held if config.get('probe_static',False) else {'throttle':.53,'brake':0.,'steer':0.}
+        extra_actions={r:normal for r in participants if r!='target'}
+        primary_initial=walker_action(specs[0],0.,held=config.get('probe_static',False)) if specs[0]['category']=='pedestrian' else normal
+        advance(normal,primary_initial,truck_driver.step(current(obstacle),initializing=True) if moving else None)
+        if any(a.id>=65536 for a in participants.values()):raise RuntimeError('实例相机16位ID范围不足，拒绝混淆实例')
         (output/'评测对象身份.json').write_text(json.dumps({'ego_actor_id':ego.id,'target_actor_id':target.id,
             'occluder_actor_id':obstacle.id,'origin_frame':runner.frame,'origin_sim_time_s':runner.sim_time,
             'instance_decoder':'官方bounding_boxes.py: G + (B << 8)',
-            'camera_calibration':{name:{'width':1280,'height':720,'horizontal_fov_deg':90,
-                'K':[[640.,0.,640.],[0.,640.,360.],[0.,0.,1.]],'camera_to_carla_world':camera.get_transform().get_matrix()}
+            'participants':{s['track_id']:{'actor_id':participants[s['role']].id,'category':s['category'],'role':s['role']} for s in specs},
+            'visibility_size':[mask_width,mask_height],
+            'camera_calibration':{name:{'width':rgb_width,'height':rgb_height,'horizontal_fov_deg':90,
+                'K':[[rgb_width/2,0.,rgb_width/2],[0.,rgb_width/2,rgb_height/2],[0.,0.,1.]],'camera_to_carla_world':camera.get_transform().get_matrix()}
                 for name,camera in cameras.items()}},ensure_ascii=False,indent=2),encoding='utf-8')
         target_actuator=CalibratedActuator(config['calibration'],kp=.05,ki=.02,steering_rate_per_s=1.)
+        extra_actuators={r:CalibratedActuator(config['calibration'],kp=.05,ki=.02,steering_rate_per_s=1.) for r in participants if r!='target'}
         def lane_angle(s,spawn):
             yaw=-math.radians(spawn['yaw']);dx=s['x']-spawn['x'];dy=s['y']+spawn['y']
             cross=-math.sin(yaw)*dx+math.cos(yaw)*dy;error=(yaw-s['yaw']+math.pi)%(2*math.pi)-math.pi
@@ -284,22 +302,29 @@ def run_episode(client,output,config):
                 break
             now=index*.05;es=current(ego);ts=current(target)
             import numpy as np
-            pixels={};mask_hashes={}
+            pixels={};mask_hashes={};all_pixels={}
             for name,buffer in masks.items():
                 captured=buffer.get(runner.frame,3.)
                 if not captured['valid']:raise RuntimeError('当前帧实例可见性核验缺失')
                 image=captured['value'];raw=np.frombuffer(image.raw_data,dtype=np.uint8).reshape(image.height,image.width,4)
                 identities=raw[:,:,1].astype(np.uint16)+(raw[:,:,0].astype(np.uint16)<<8)
-                pixels[name]=int(np.count_nonzero(identities==target.id))
+                all_pixels[name]={s['track_id']:int(np.count_nonzero(identities==participants[s['role']].id)) for s in specs}
+                pixels[name]=all_pixels[name][specs[0]['track_id']]
                 mask_hashes[name]=__import__('hashlib').sha256(image.raw_data).hexdigest()
             # 部分车体在画面边缘出现也算可见，不能用中心点FOV误判为完全遮挡。
-            offset=boxes[target.id].location
-            target_center=target.get_transform().transform(carla.Location(x=offset.x,y=offset.y,z=offset.z))
-            local_visible=pixels['车端']>0 and cameras['车端'].get_location().distance(target_center)<=config['local_range_m']
-            road_visible=pixels['路侧']>0 and cameras['路侧'].get_location().distance(target_center)<=config['roadside_range_m']
-            local=ObservationPacket('map-A','1','map-right-handed',index,'carla-n14',now,now,(restricted_track(target,'vehicle-A',now,boxes[target.id]),)).to_dict() if local_visible else None
-            if index%2==0 and road_visible:
-                message=make_prediction((restricted_track(target,'roadside-1',now,boxes[target.id]),),now,sequence,domain='carla-n14')
+            visible={};local_tracks=[];road_tracks=[]
+            for spec in specs:
+                actor=participants[spec['role']];offset=boxes[actor.id].location
+                center=actor.get_transform().transform(carla.Location(x=offset.x,y=offset.y,z=offset.z))
+                local_ok=all_pixels['车端'][spec['track_id']]>0 and cameras['车端'].get_location().distance(center)<=config['local_range_m']
+                road_ok=all_pixels['路侧'][spec['track_id']]>0 and cameras['路侧'].get_location().distance(center)<=config['roadside_range_m']
+                visible[spec['track_id']]={'local':local_ok,'roadside':road_ok}
+                for ok,source,destination in ((local_ok,'vehicle-A',local_tracks),(road_ok,'roadside-1',road_tracks)):
+                    if ok:destination.append(restricted_track(actor,source,now,boxes[actor.id],track_id=spec['track_id'],category=spec['category']))
+            local_visible=visible[specs[0]['track_id']]['local'];road_visible=visible[specs[0]['track_id']]['roadside']
+            local=ObservationPacket('map-A','1','map-right-handed',index,'carla-n14',now,now,tuple(local_tracks)).to_dict() if local_tracks else None
+            if index%2==0 and road_tracks:
+                message=make_prediction(tuple(road_tracks),now,sequence,domain='carla-n14')
                 message=replace(message,model_hash='n14-cv-current-observation-only');sequence+=1
                 channel.send(message,Timestamp(now,'carla-n14'))
             pending.extend(channel.deliver(Timestamp(now,'carla-n14')))
@@ -311,10 +336,19 @@ def run_episode(client,output,config):
             response=json.loads(sys.stdin.readline())
             if set(response)!={'throttle','brake','steer'}:raise ValueError('控制字段非法')
             action=response
-            ta=held if config.get('probe_static',False) else target_actuator.step(speed_mps=math.hypot(ts['vx'],ts['vy']),target_speed_mps=config['speed_mps'],
-                acceleration_mps2=0.,angle_rad=-lane_angle(ts,config['target_spawn']),dt_s=.05,
-                vehicle_blueprint='vehicle.audi.a2',surface_id=config['calibration']['surface_id'])
-            target_action={k:ta[k] for k in ('throttle','brake','steer')}
+            participant_states={s['track_id']:current(participants[s['role']]) for s in specs}
+            participant_actions={}
+            for spec in specs:
+                actor=participants[spec['role']];s=participant_states[spec['track_id']]
+                if spec['category']=='pedestrian':value=walker_action(spec,now,held=config.get('probe_static',False))
+                else:
+                    actuator=target_actuator if spec['role']=='target' else extra_actuators[spec['role']]
+                    ta=held if config.get('probe_static',False) else actuator.step(speed_mps=math.hypot(s['vx'],s['vy']),target_speed_mps=spec['speed_mps'],
+                        acceleration_mps2=0.,angle_rad=-lane_angle(s,spec['spawn']),dt_s=.05,
+                        vehicle_blueprint='vehicle.audi.a2',surface_id=config['calibration']['surface_id'])
+                    value={k:ta[k] for k in ('throttle','brake','steer')}
+                participant_actions[spec['role']]=value
+            target_action=participant_actions['target'];extra_actions={r:v for r,v in participant_actions.items() if r!='target'}
             truck_action=truck_driver.step(current(obstacle)) if moving else None
             actual=ego.get_control();acc=ego.get_acceleration();forward=ego.get_transform().get_forward_vector()
             row={'index':index,'time_s':now,'frame':runner.frame,'ego':es,'target':ts,'local_visible':local_visible,
@@ -324,6 +358,11 @@ def run_episode(client,output,config):
                  'longitudinal_acceleration_mps2':acc.x*forward.x+acc.y*forward.y+acc.z*forward.z,
                  'occluder':current(obstacle),'occluder_control':truck_action,
                  'occluder_target_overlap':overlap(current(obstacle),ts),'occluder_ego_overlap':overlap(current(obstacle),es)}
+            if config.get('suite_case'):
+                row.update(participants=participant_states,participant_visibility=visible,participant_pixels=all_pixels,
+                    participant_controls=participant_actions,
+                    participant_overlaps={identity:overlap(es,s) for identity,s in participant_states.items()},
+                    participant_occluder_overlaps={identity:overlap(current(obstacle),s) for identity,s in participant_states.items()})
             truth.append(row);observations.append(observation)
             with (output/'评测真值.jsonl').open('a',encoding='utf-8') as evidence:evidence.write(json.dumps(row,ensure_ascii=False)+'\n')
             if now<config['prefix_s']:prefix.append({'observation':observation,'control':action,'target_control':target_action,'occluder_control':truck_action})

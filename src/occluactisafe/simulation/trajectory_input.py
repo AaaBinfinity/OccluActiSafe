@@ -58,7 +58,7 @@ class TrajectoryAEB:
                 dot=dx*vx+dy*vy;c=dx*dx+dy*dy-radius*radius
                 entry=0. if c<=0 else max(0.,(-dot-math.sqrt(max(0.,dot*dot-den*c)))/den)
                 conflicts.append({'entry_s':entry,'distance_m':speed*entry,'source_id':t.source_id})
-            known.append({'source_id':t.source_id,'track_id':t.source_track_id,'state_time':t.state_time,'age_s':age,
+            known.append({'source_id':t.source_id,'track_id':t.source_track_id,'category':t.category,'state_time':t.state_time,'age_s':age,
                 'x':ego['x']+dx,'y':ego['y']+dy,'vx':t.vx,'vy':t.vy,'yaw':t.yaw,'length':t.length,'width':t.width,
                 'predicted_entry_s':entry,'prediction_xy':[[t.x+t.vx*(age+i*.1),t.y+t.vy*(age+i*.1)] for i in range(round(self.horizon/.1)+1)]})
         warning=bool(conflicts)

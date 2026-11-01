@@ -14,6 +14,9 @@ def execute_batch(client, carla, commands, allowed):
         if identity not in allowed:raise ValueError('命令actor不属于本轮')
         kind=item['kind'];value=item['value']
         if kind=='control':command=carla.command.ApplyVehicleControl(identity,carla.VehicleControl(**value))
+        elif kind=='walker_control':
+            command=carla.command.ApplyWalkerControl(identity,carla.WalkerControl(
+                direction=carla.Vector3D(**value['direction']),speed=value['speed'],jump=value['jump']))
         elif kind=='transform':command=carla.command.ApplyTransform(identity,carla.Transform(carla.Location(**value['location']),carla.Rotation(**value['rotation'])))
         elif kind=='velocity':command=carla.command.ApplyTargetVelocity(identity,carla.Vector3D(**value))
         elif kind=='angular_velocity':command=carla.command.ApplyTargetAngularVelocity(identity,carla.Vector3D(**value))
