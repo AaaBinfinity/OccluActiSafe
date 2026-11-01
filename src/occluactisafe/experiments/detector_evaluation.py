@@ -253,6 +253,7 @@ def run_evaluation_matrix(cfg, training_matrix=None):
 
 def comparison_plots(root, runs):
     import csv
+    import statistics
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -274,6 +275,33 @@ def comparison_plots(root, runs):
     path = root/'检测跟踪资源对照.csv'
     with path.open('w',encoding='utf-8-sig',newline='') as f:
         w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
+    for stage,label in (('pretrained','预训练'),('finetuned','微调')):
+        with (root/(label+'检测跟踪资源.csv')).open('w',encoding='utf-8-sig',newline='') as f:
+            w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(r for r in rows if r['stage']==stage)
+    grouped=defaultdict(list)
+    for row in rows:grouped[(row['family'],row['stage'],row['domain'])].append(row)
+    summary=[]
+    for (family,stage,domain),items in grouped.items():
+        entry=dict(family=family,stage=stage,domain=domain,seeds=[r['seed'] for r in items],runs=len(items),metrics={})
+        for name in ('map50','map50_95','recall','idf1','id_switches','track_coverage','detector_p95_ms','peak_gpu_mib'):
+            values=[r[name] for r in items if r[name] is not None]
+            entry['metrics'][name]={'n':len(values),'mean':statistics.mean(values) if values else None,
+                                    'sample_sd':statistics.stdev(values) if len(values)>1 else None,
+                                    'minimum':min(values) if values else None,'maximum':max(values) if values else None}
+        summary.append(entry)
+    write_json(root/'各族种子统计.json',{'rows':summary,'independent_scenario_repetitions_claimed':False})
+    differences=[]
+    for i,left in enumerate(rows):
+        for right in rows[i+1:]:
+            if left['family']==right['family'] or (left['stage'],left['seed'],left['domain']) != (right['stage'],right['seed'],right['domain']):
+                continue
+            differences.append(dict(left=left['candidate'],right=right['candidate'],domain=left['domain'],seed=left['seed'],
+                                    frames=left['frames'],gt=left['gt'],
+                                    map50_95_difference=left['map50_95']-right['map50_95'],
+                                    recall_difference=left['recall']-right['recall'],
+                                    latency_p95_ms_difference=left['detector_p95_ms']-right['detector_p95_ms']))
+    write_json(root/'同片段配对差值.json',{'rows':differences,'statistical_significance_claimed':False,
+                                             'scope':'相同验证片段与同seed的原始差值，非总体因果收益'})
     figs=[]
     for domain in ('SPD','CARLA'):
         subset=[r for r in rows if r['domain']==domain]
