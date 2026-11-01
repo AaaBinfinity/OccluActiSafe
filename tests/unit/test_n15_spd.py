@@ -5,6 +5,7 @@ import unittest
 
 from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
                                              normalize_visible_box, resolve_index_path)
+from occluactisafe.data.adapters.carla import extract_visible_instances
 
 
 class SpdPathTests(unittest.TestCase):
@@ -77,6 +78,39 @@ class SpdSplitTests(unittest.TestCase):
         self.assertEqual(raw["2d_box"]["xmax"], 1920.000061)
         with self.assertRaisesRegex(ValueError, "outside_image"):
             normalize_visible_box({"2d_box": {"xmin": 0, "ymin": 0, "xmax": 1921, "ymax": 10}}, 1920, 1080)
+
+
+class CarlaVisibleLabelTests(unittest.TestCase):
+    def test_visible_boxes_come_from_instance_pixels_and_hidden_target_has_no_box(self):
+        import numpy as np
+        image = np.zeros((5, 7, 3), dtype=np.uint8)
+        # RGB semantic tag in R; actor id is G + (B << 8), matching saved CARLA PNG.
+        image[1:4, 2:5, 0] = 10
+        image[1:4, 2:5, 1] = 7
+        result = extract_visible_instances(image, [
+            {"actor_id": 7, "track_id": "episode:a7", "category": "vehicle",
+             "blueprint_id": "vehicle.tesla.model3"},
+            {"actor_id": 8, "track_id": "episode:a8", "category": "pedestrian",
+             "blueprint_id": "walker.pedestrian.0001"}], frame_id=11, episode_id="episode",
+            source_time_s=0.5, rgb_path="rgb.png", instance_path="instance.png")
+        self.assertEqual(len(result["labels"]), 1)
+        self.assertEqual(result["labels"][0]["bbox_xyxy_visible_pixels"], [2, 1, 5, 4])
+        self.assertEqual(result["labels"][0]["visible_pixel_count"], 9)
+        self.assertEqual(len(result["hidden_actor_review"]), 1)
+        self.assertFalse(result["projected_3d_boxes_used_as_visible_gt"])
+        self.assertFalse(result["negative_frame"])
+
+    def test_empty_mask_is_a_negative_frame_and_duplicate_actor_ids_rejected(self):
+        import numpy as np
+        image = np.zeros((3, 4, 3), dtype=np.uint8)
+        result = extract_visible_instances(image, [], frame_id=1, episode_id="e", source_time_s=0,
+                                           rgb_path="rgb.png", instance_path="instance.png")
+        self.assertTrue(result["negative_frame"])
+        actors = [{"actor_id": 1, "track_id": "a", "category": "vehicle", "blueprint_id": "vehicle.a"},
+                  {"actor_id": 1, "track_id": "b", "category": "vehicle", "blueprint_id": "vehicle.b"}]
+        with self.assertRaisesRegex(ValueError, "actor_id"):
+            extract_visible_instances(image, actors, frame_id=1, episode_id="e", source_time_s=0,
+                                      rgb_path="rgb.png", instance_path="instance.png")
 
 
 if __name__ == "__main__":
