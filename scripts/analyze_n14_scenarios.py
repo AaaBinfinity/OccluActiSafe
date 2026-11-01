@@ -9,11 +9,12 @@ import subprocess
 
 from PIL import Image
 from analyze_occluded_junction import analyze,read,rows,STRATEGIES,speed
-from export_n14_camera_videos import export
+from export_n14_camera_videos import export,decode_check
 from occluactisafe.common.schemas import ObservationPacket,ReceivedMessage
 from occluactisafe.simulation.n14_participants import participant_specs
 
 PARENT=Path('H:/OccluActiSafeDataset/artifacts/节点资料/N14_盲区路口/02_运行产物')
+ROOT=Path(__file__).resolve().parents[1]
 
 
 def additional_checks(folder):
@@ -59,7 +60,7 @@ def additional_checks(folder):
                 if command is not None:controls=controls and command['kind']==('walker_control' if value['category']=='pedestrian' else 'control')
         check(branch+'逐目标本地可见性白名单',causal,{'target_count':len(classes),'frames':len(truth)})
         check(branch+'逐目标路侧消息观测溯源',road_causal,{'first_usable_by_target_s':first_usable})
-        check(branch+'全部外部参与者控制回执',controls,{'formal_batches':len(commands)})
+        check(branch+'全部外部参与者控制回执',controls and len(commands)==len(truth),{'formal_batches':len(commands)})
         no_static_contact=all(not any(t['participant_occluder_overlaps'].values())
             and not any(t['static_occluder_overlaps'].values()) for t in truth)
         expected_contacts={v['actor_id'] for v in identities['participants'].values()}
@@ -102,12 +103,25 @@ def additional_checks(folder):
                          **{k:(left['participants'][k],right['participants'][k]) for k in classes},
                          **{k:(left['static_occluders'][k],right['static_occluders'][k]) for k in left['static_occluders']}}
             for identity,(a,b) in actor_pairs.items():
+                if identity=='ego':ca,cb=left['control'],right['control']
+                elif identity=='occluder':ca,cb=left['occluder_control'],right['occluder_control']
+                elif identity in classes:
+                    role=next(s['role'] for s in specs if s['track_id']==identity)
+                    ca,cb=left['participant_controls'][role],right['participant_controls'][role]
+                else:ca=cb={}
+                vehicle_control=max((abs(ca[k]-cb[k]) for k in ('throttle','brake','steer') if k in ca),default=0.)
+                # walker原生命令无归一化油门/制动；同一外生调度须完全一致。
+                walker_equal=not ('speed' in ca) or ca==cb
                 differences.append(dict(branch=branch,time_s=left['time_s'],actor=identity,
                     position_m=math.hypot(a['x']-b['x'],a['y']-b['y']),velocity_mps=math.hypot(a['vx']-b['vx'],a['vy']-b['vy']),
-                    yaw_rad=abs((a['yaw']-b['yaw']+math.pi)%(2*math.pi)-math.pi)))
+                    yaw_rad=abs((a['yaw']-b['yaw']+math.pi)%(2*math.pi)-math.pi),
+                    normalized_control_difference=vehicle_control,walker_command_equal=walker_equal,
+                    time_equal=left['time_s']==right['time_s']))
     expected_rows=2*round(config['prefix_s']/.05)*(2+len(classes)+len(branches['reference'][0]['static_occluders']))
     check('所有动态及静态对象公共前缀',len(differences)==expected_rows and all(r['position_m']<=tolerance['position_m']
-          and r['velocity_mps']<=tolerance['velocity_mps'] and r['yaw_rad']<=tolerance['yaw_rad'] for r in differences),
+          and r['velocity_mps']<=tolerance['velocity_mps'] and r['yaw_rad']<=tolerance['yaw_rad']
+          and r['normalized_control_difference']<=tolerance['control'] and r['walker_command_equal']
+          and r['time_equal'] for r in differences),
           {'rows':len(differences),'tolerance':tolerance,'maxima':{key:max(r[key] for r in differences) for key in ('position_m','velocity_mps','yaw_rad')}})
     for file,records in (('全参与者公共前缀差异.csv',differences),('逐参与者可见性与事件.csv',raw)):
         with (folder/file).open('w',encoding='utf-8-sig',newline='') as handle:
@@ -115,6 +129,39 @@ def additional_checks(folder):
     report={'passed':sum(c['passed'] for c in checks),'failed':sum(not c['passed'] for c in checks),'checks':checks}
     (folder/'多参与者追加验收.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     return report
+
+
+def comparison_decode(folder):
+    records=read(folder/'视频来源与哈希.json');results=[]
+    for name,record in records.items():
+        path=folder/record['video'] if name=='follow_comparison' else folder/name/record['video']
+        proof=decode_check(path,record['frames'],record['fps'],(record['width'],record['height']))
+        results.append(dict(video=str(path.relative_to(folder)),sha256=hashlib.sha256(path.read_bytes()).hexdigest(),**proof))
+    report=dict(passed=sum(r['passed'] for r in results),failed=sum(not r['passed'] for r in results),videos=results)
+    (folder/'对照视频完整解码.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    if report['failed']:raise RuntimeError('对照视频完整解码失败')
+    return report
+
+
+def plot_summary(folder,metrics):
+    """逐案例原值，不将四个人工开发场景当独立统计样本估计总体收益。"""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    plt.rcParams['font.sans-serif']=['Microsoft YaHei']
+    fig,axes=plt.subplots(2,1,figsize=(12,9),constrained_layout=True)
+    positions=list(range(len(metrics)));labels=[r['case_id']+'\n'+r['strategy'] for r in metrics]
+    axes[0].bar(positions,[r['collision_sensor_events'] for r in metrics],color='#c65645',label='实际碰撞传感器事件数')
+    axes[0].set_ylabel('事件数 / 单分支');axes[0].legend();axes[0].set_xticks(positions,labels,fontsize=8)
+    for key,label,marker in [('first_message_usable_s','首包可用','o'),('first_local_seen_s','本地首次可见','x'),('first_warning_s','首次预警','^'),('first_brake_s','请求紧急制动','s')]:
+        selected=[(i,r[key]) for i,r in enumerate(metrics) if r.get(key) is not None]
+        axes[1].scatter([p[0] for p in selected],[p[1] for p in selected],label=label,marker=marker)
+    axes[1].set_ylabel('仿真时间 / s');axes[1].set_xticks(positions,labels,fontsize=8);axes[1].legend(ncols=4)
+    fig.suptitle('N14高画质开发案例原值：每类1案例×1种子；非统计收益，未发生事件不绘点')
+    for extension in ('png','svg'):fig.savefig(folder/f'四场景碰撞与信息时序原值.{extension}',dpi=180)
+    plt.close(fig)
+    sources={r['case_id']:hashlib.sha256((Path(r['run_dir'])/'配对事件指标.csv').read_bytes()).hexdigest() for r in read(folder/'多场景验收报告.json')['cases'] if r.get('run_dir') and (Path(r['run_dir'])/'配对事件指标.csv').is_file()}
+    (folder/'图表来源与哈希.json').write_text(json.dumps(dict(raw_csv='多场景原始指标.csv',raw_sha256=hashlib.sha256((folder/'多场景原始指标.csv').read_bytes()).hexdigest(),case_metric_sha256=sources),ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 
 
 def analyze_suite(folder=None):
@@ -125,16 +172,25 @@ def analyze_suite(folder=None):
     folder=Path(folder).resolve();manifest=read(folder/'多场景运行清单.json')
     if manifest['probe_only'] or manifest['selected_case'] is not None or len(manifest['cases'])!=4:
         raise ValueError('静态/单场景探针不能提交为完整多场景验收')
-    report={'analysis_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'cases':[],'scope':'四个开发场景/一个种子，受限轨迹输入；非N27完整专项或统计收益'}
+    report={'analysis_commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),'cases':[],'scope':'四个开发场景/一个种子，受限轨迹输入；非N27完整专项或统计收益'}
     all_metrics=[]
     for case in manifest['cases']:
         result=dict(id=case['id'],name=case['name'],status='failed')
         try:
             if case['status']!='completed':raise RuntimeError('物理分支未完成：'+str(case))
-            run=Path(case['run_dir']);base=analyze(run);extra=additional_checks(run)
+            run=Path(case['run_dir']);result['run_dir']=str(run)
+            extra=additional_checks(run)
+            result.update(additional_checks=extra['passed'],additional_failed=extra['failed'])
+            try:base=analyze(run)
+            except RuntimeError:
+                base=read(run/'配对验收报告.json')
+                result.update(base_checks=base['passed'],base_failed=base['failed'])
+                for row in base['metrics']:all_metrics.append(dict(case_id=case['id'],case_name=case['name'],**row))
+                raise
             result.update(run_dir=str(run),base_checks=base['passed'],additional_checks=extra['passed'],additional_failed=extra['failed'])
             for row in base['metrics']:all_metrics.append(dict(case_id=case['id'],case_name=case['name'],**row))
             if extra['failed']:raise RuntimeError('多目标/原生画质追加断言失败')
+            result['comparison_decode']=comparison_decode(run)
             result['independent_videos']=str(export(run));result['status']='passed'
         except Exception as error:result['error']=repr(error)
         report['cases'].append(result)
@@ -144,6 +200,7 @@ def analyze_suite(folder=None):
     if all_metrics:
         with (folder/'多场景原始指标.csv').open('w',encoding='utf-8-sig',newline='') as handle:
             fields=list(dict.fromkeys(k for row in all_metrics for k in row));writer=csv.DictWriter(handle,fieldnames=fields);writer.writeheader();writer.writerows(all_metrics)
+        plot_summary(folder,all_metrics)
     if report['failed_cases']:raise RuntimeError('多场景验收存在失败，证据保留：'+str(folder))
     return report
 
