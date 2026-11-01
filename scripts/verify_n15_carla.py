@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import datetime
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import sys
@@ -227,7 +228,21 @@ def audit_run(run_dir: Path, *, create_visuals: bool = True) -> dict:
                         raise ValueError(f"可见框/像素数与CARLA实例掩码不符：{label_path}")
                     counters[f"visible_{item['category']}"] += 1
                     counters["visible_labels"] += 1
-                    counters[f"occlusion_degree_unknown_{item['category']}"] += 1
+                    proxy = item.get("occlusion_fraction_proxy")
+                    proxy_bin = item.get("occlusion_bin")
+                    if item.get("occlusion_proxy_method") != "visible_instance_pixels_vs_projected_3d_bbox_area":
+                        raise ValueError(f"遮挡代理方法标记缺失：{label_path}")
+                    if proxy is None:
+                        expected_bin = "unknown"
+                    else:
+                        proxy = float(proxy)
+                        if not math.isfinite(proxy) or not 0.0 <= proxy <= 1.0:
+                            raise ValueError(f"遮挡比例代理不在[0,1]：{label_path}")
+                        expected_bin = ("low_0_10pct" if proxy < 0.10 else
+                                        "medium_10_50pct" if proxy < 0.50 else "high_50_100pct")
+                    if proxy_bin != expected_bin:
+                        raise ValueError(f"遮挡代理分箱与比例不一致：{label_path}")
+                    counters[f"occlusion_proxy_{proxy_bin}"] += 1
                 hidden_ids = {int(item["actor_id"]) for item in label["hidden_actor_review"]}
                 if (visible_ids & hidden_ids or visible_ids | hidden_ids != set(catalog_by_id)
                         or any(np.any(instance_ids == actor_id) for actor_id in hidden_ids)):
@@ -266,7 +281,7 @@ def audit_run(run_dir: Path, *, create_visuals: bool = True) -> dict:
              "scene_groups": {key: sorted(value) for key, value in scene_groups.items()},
              "result_scope": "CARLA数据完整性及标注来源复核；不代表N15全部标准通过或模型效果通过",
              "limitations": [
-                 "可见目标遮挡程度未量化；所有可见框保守标记为visible_occlusion_degree_unknown",
+                 "遮挡分层使用可见实例像素数与投影3D轴对齐包围框面积比值，仅是可见率代理；受框与目标真实轮廓差异影响，不能当作真实遮挡率或统一跨类别视觉遮挡真值",
                  "hidden_actor_review只能区分零实例像素，无法仅据此区分完全遮挡和画外目标",
                  "每个split仅一个地图且地图与天气绑定，不能分离地图/天气泛化效果"],
              "failures": [], "visuals": visual_records, "all_frame_contact_sheets": contact_sheets,
