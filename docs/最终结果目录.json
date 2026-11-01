@@ -354,6 +354,62 @@
       "evidence_file": "交付数据证据索引.json",
       "evidence_sha256": "ae5a78721ad6bd0d9effe55fc5bc57378b72a26d3fd00b071464a1c881e491d5",
       "status": "current"
+    },
+    {
+      "node": "N15",
+      "purpose": "补充CARLA可见率代理双视角采集（用户已验收，研究限制保留）",
+      "directory": "节点资料/N15_CARLA双视角标注与SPD审计/01_最终结果/last_n15_carla_b27b994ed8a74239ae3d4ac7ff484af6",
+      "original_artifact_path": "节点资料/N15_CARLA双视角标注与SPD审计/02_运行产物/n15_carla_b27b994ed8a74239ae3d4ac7ff484af6",
+      "evidence_file": "CARLA双视角数据清单.json",
+      "evidence_sha256": "b452318fdfd5803273bae7f61dd66a6ab8d90ca0b2c89fdcf395229fc3b98b15",
+      "legacy_directory": "last_n15_carla_b27b994ed8a74239ae3d4ac7ff484af6",
+      "status": "current",
+      "physical_artifact_path": "节点资料/N15_CARLA双视角标注与SPD审计/02_运行产物/n15_carla_b27b994ed8a74239ae3d4ac7ff484af6"
+    },
+    {
+      "node": "N15",
+      "purpose": "N15证据索引与环境/测试摘要（用户已验收，研究限制保留）",
+      "directory": "节点资料/N15_CARLA双视角标注与SPD审计/01_最终结果/last_n15_evidence_20261101",
+      "original_artifact_path": "节点资料/N15_CARLA双视角标注与SPD审计/03_验收证据/n15_20261101",
+      "evidence_file": "N15源码版本与哈希.json",
+      "evidence_sha256": "4c77d71181707e6a63dac73d7d24a596e93f11c1a927bceda4d22cda02681d74",
+      "legacy_directory": "last_n15_evidence_20261101",
+      "status": "current",
+      "physical_artifact_path": "节点资料/N15_CARLA双视角标注与SPD审计/03_验收证据/n15_20261101"
+    },
+    {
+      "node": "N16",
+      "purpose": "SPD model_val统一感知数据适配与中文GT叠加",
+      "directory": "节点资料/N16检测器与ByteTrack统一适配/01_最终结果/last_n16_spd_56effca0a7f44acc918e70871d1e3fe0",
+      "original_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_56effca0a7f44acc918e70871d1e3fe0",
+      "evidence_file": "model_val适配审计.json",
+      "evidence_sha256": "bc59092ae59d532ad645938d982989c7b50f2fe67021817cd7a9952945767b5b",
+      "legacy_directory": "last_n16_spd_56effca0a7f44acc918e70871d1e3fe0",
+      "physical_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_56effca0a7f44acc918e70871d1e3fe0",
+      "status": "historical_reference",
+      "superseded_by": "last_n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481"
+    },
+    {
+      "node": "N16",
+      "purpose": "N16源码哈希、环境、测试和适配证据索引",
+      "directory": "节点资料/N16检测器与ByteTrack统一适配/01_最终结果/last_n16_evidence_20261101",
+      "original_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/03_验收证据/n16_20261101",
+      "evidence_file": "N16证据索引.json",
+      "evidence_sha256": "87ec2e2278eedaf8641d5bc63d0354b90bb74acc0370621160ccbccafca76ff2",
+      "legacy_directory": "last_n16_evidence_20261101",
+      "physical_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/03_验收证据/n16_20261101",
+      "status": "current"
+    },
+    {
+      "node": "N16",
+      "purpose": "SPD model_val统一适配与中文GT叠加图（无模型推理）",
+      "directory": "节点资料/N16检测器与ByteTrack统一适配/01_最终结果/last_n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481",
+      "original_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481",
+      "evidence_file": "model_val适配审计.json",
+      "evidence_sha256": "fafbe570f2150b2592cb84d63389a34726f4f8aaab41d7432a684a7a7e05a62c",
+      "legacy_directory": "last_n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481",
+      "physical_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481",
+      "status": "current"
     }
   ]
 }
