@@ -1,0 +1,59 @@
+schema_version: 1
+node: N16
+dataset:
+  type: spd
+  root: H:/OccluActiSafeDataset/V2X-Seq-SPD
+  frozen_split_manifest: H:/OccluActiSafeDataset/artifacts/节点资料/N15_CARLA双视角标注与SPD审计/02_运行产物/n15_spd_44e46d24cda44ff7b3154c5d72abce5a/SPD冻结分组清单.json
+  frozen_audit_report: H:/OccluActiSafeDataset/artifacts/节点资料/N15_CARLA双视角标注与SPD审计/02_运行产物/n15_spd_44e46d24cda44ff7b3154c5d72abce5a/SPD完整审计报告.json
+  project_role: model_val
+  verify_image_sha256: true
+classes:
+  canonical:
+    Car: vehicle
+    Truck: vehicle
+    Van: vehicle
+    Bus: vehicle
+    Pedestrian: pedestrian
+    Cyclist: cyclist
+    Tricyclist: cyclist
+    Motorcyclist: cyclist
+    Barrowlist: barrowlist
+    TrafficCone: traffic_cone
+  unsupported: reject_and_report
+  preserve_raw_category: true
+detector:
+  default_adapter: ultralytics
+  confidence: 0.01
+  image_size: 960
+  batch_size: 1
+  weights: null
+  allow_implicit_download: false
+tracker:
+  algorithm: bytetrack_two_stage
+  high_threshold: 0.5
+  low_threshold: 0.1
+  new_track_threshold: 0.5
+  high_iou_threshold: 0.3
+  low_iou_threshold: 0.2
+  min_hits: 2
+  max_lost_frames: 30
+  max_lost_seconds: 1.0
+metrics:
+  iou_threshold: 0.5
+  empty_prediction_frame_is_false_negative: true
+  report_by: [class, camera_side, pixel_scale, official_occlusion]
+visualization:
+  maximum_examples_per_camera: 6
+  output_root: H:/OccluActiSafeDataset/artifacts/节点资料/N16检测器与ByteTrack统一适配/02_运行产物
+  output_chinese_names: true
+  save_ground_truth_overlay: true
+  save_raw_metric_json: true
+# 以下是待用户确认的N17模型验证入围建议值；不参与本次测试断言或模型选择。
+proposed_validation_gates:
+  status: proposed_pending_user_confirmation
+  minimum_recall_iou50: {vehicle: 0.95, pedestrian: 0.90, cyclist: 0.90}
+  maximum_false_positives_per_empty_frame: 0.10
+  detector_end_to_end_p95_ms: 100
+  projection_error_p95_m_by_distance: {0_20m: 0.5, 20_40m: 1.0}
+  gpu: RTX 5060 Ti 16GB
+  input: 960px_batch1

@@ -1,1 +1,5 @@
-"""N10只有分类纯几何和网格射线；无检测器或图像感知实现。"""
+"""统一检测与跟踪契约。"""
+from occluactisafe.perception.registry import register_detector
+from occluactisafe.perception.adapters.ultralytics import UltralyticsDetector
+
+register_detector("ultralytics", UltralyticsDetector)
