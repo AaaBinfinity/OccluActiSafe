@@ -210,7 +210,7 @@ def run(config: dict | None = None) -> dict:
                         for name, sensor in (("车端", sensors[0]), ("路侧", sensors[2]))}
                     for local_index in range(int(config["frames_per_scene"])):
                         frame_id = world.tick()
-                        frame_record = {"carla_frame_id": frame_id, "source_time_s": frame_id * float(config["fixed_delta_s"]),
+                        frame_record = {"carla_frame_id": frame_id, "source_time_s": None,
                                         "views": {}}
                         for view_name, _, _ in views:
                             rgb = buffers[view_name + "_rgb"].get(frame_id, 5.0)
@@ -222,13 +222,20 @@ def run(config: dict | None = None) -> dict:
                                 raise ValueError("RGB与实例分割图像尺寸不一致")
                             if rgb_image.frame != mask_image.frame:
                                 raise ValueError("RGB与实例分割frame不一致")
+                            timestamp = float(rgb_image.timestamp)
+                            if abs(timestamp - float(mask_image.timestamp)) > 1e-6:
+                                raise ValueError("RGB与实例分割时间戳不一致")
+                            if frame_record["source_time_s"] is None:
+                                frame_record["source_time_s"] = timestamp
+                            elif abs(frame_record["source_time_s"] - timestamp) > 1e-6:
+                                raise ValueError("车端与路侧图像时间戳不一致")
                             stem = f"{view_name}_帧{local_index:04d}"
                             rgb_path, mask_path = scene_dir / f"{stem}_RGB.png", scene_dir / f"{stem}_实例掩码.png"
                             rgb_proof, mask_proof = save_rgb_frame(rgb_image, rgb_path), save_rgb_frame(mask_image, mask_path)
                             raw = np.frombuffer(mask_image.raw_data, dtype=np.uint8).reshape(height, width, 4)
                             mask_rgb = raw[:, :, :3][:, :, ::-1].copy()
                             label = extract_visible_instances(mask_rgb, scene["actor_catalog"],
-                                frame_id=frame_id, episode_id=episode_id, source_time_s=float(rgb_image.timestamp),
+                                frame_id=frame_id, episode_id=episode_id, source_time_s=timestamp,
                                 rgb_path=rgb_path.name, instance_path=mask_path.name)
                             label["view"] = view_name
                             label["rgb_sha256"] = rgb_proof["sha256"]
