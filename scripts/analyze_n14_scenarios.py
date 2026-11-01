@@ -62,6 +62,14 @@ def additional_checks(folder):
         check(branch+'逐目标本地可见性白名单',causal,{'target_count':len(classes),'frames':len(truth)})
         check(branch+'逐目标路侧消息观测溯源',road_causal,{'first_usable_by_target_s':first_usable})
         check(branch+'全部外部参与者控制回执',controls and len(commands)==len(truth),{'formal_batches':len(commands)})
+        if config.get('settle_static_occluder'):
+            freeze=read(location/'静态遮挡物冻结回执.json')
+            batches=rows(location/'批量RPC请求.jsonl')
+            matched=next((r for r in batches if r['sequence']==freeze['sequence']),None)
+            expected=[dict(kind='physics',actor_id=identities['occluder_actor_id'],value=False)]
+            check(branch+'相机启动前确认实体物理冻结',freeze['acknowledged'] and not freeze['image_callbacks_registered']
+                  and freeze['settled_without_camera_frames']==130 and freeze['worker_tick_calls']==0
+                  and matched is not None and matched['commands']==expected and matched['response_count']==1,freeze)
         no_static_contact=all(not any(t['participant_occluder_overlaps'].values())
             and not any(t['static_occluder_overlaps'].values()) for t in truth)
         expected_contacts={v['actor_id'] for v in identities['participants'].values()}
