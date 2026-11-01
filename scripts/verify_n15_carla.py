@@ -264,6 +264,11 @@ def audit_run(run_dir: Path, *, create_visuals: bool = True) -> dict:
              "synchronized_view_frames": image_count, "verified_rgb_mask_label_files": len(referenced_files),
              "counts": dict(sorted(counters.items())), "maps": role_by_map,
              "scene_groups": {key: sorted(value) for key, value in scene_groups.items()},
+             "result_scope": "CARLA数据完整性及标注来源复核；不代表N15全部标准通过或模型效果通过",
+             "limitations": [
+                 "可见目标遮挡程度未量化；所有可见框保守标记为visible_occlusion_degree_unknown",
+                 "hidden_actor_review只能区分零实例像素，无法仅据此区分完全遮挡和画外目标",
+                 "每个split仅一个地图且地图与天气绑定，不能分离地图/天气泛化效果"],
              "failures": [], "visuals": visual_records, "all_frame_contact_sheets": contact_sheets,
              "font_sha256": (review_font_identity()["sha256"] if create_visuals else None)}
     audit["verified_rgb_mask_label_files"] = len(referenced_files)
