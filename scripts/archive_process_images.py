@@ -99,6 +99,11 @@ def archive(artifacts_root=ARTIFACTS_ROOT, archive_root=ARCHIVE_ROOT, *, verify_
     def transfer(source, target, entry):
         nonlocal moved
         if not source.is_file() or sha(source) != entry["sha256"]: raise ValueError(f"源图片缺失或哈希不符：{source}")
+        if source == target:
+            # 已在硬盘原位且中文命名的新增帧不移动/删除；最后统一原子登记。
+            # 中途清单写入失败时原图仍在原路径，可直接重扫续传，避免逐帧重写整个清单。
+            indexed[entry["original_artifact_path"]] = entry
+            return
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists():
             if sha(target) != entry["sha256"]: raise ValueError(f"目标同名内容冲突：{target}")
