@@ -18,6 +18,57 @@ def rows(path):return [json.loads(s) for s in path.read_text(encoding='utf-8').s
 def speed(s):return math.hypot(s['vx'],s['vy'])
 
 
+def verify_budget_overview(folder,name,config,truth,audit,observations,check):
+    from occluactisafe.common.schemas import ObservationPacket,ReceivedMessage
+    b=config['braking'];cache={};causal=True;rule=True;latched=False
+    for t,o,a in zip(truth,observations,audit):
+        now=t['time_s'];allowed={}
+        def remember(track,until,table):table[(track.source_id,track.source_track_id,track.state_time)]=(track,until)
+        if o['local'] is not None:
+            for track in ObservationPacket.from_dict(o['local']).tracks:remember(track,now,allowed)
+        if name=='cooperative_aeb':
+            for raw in o['received']:
+                record=ReceivedMessage.from_dict(raw)
+                if record.usable_time>now or record.arrival_time>now:causal=False
+                for target in record.payload.targets:remember(target.track,record.payload.valid_until,cache)
+            for key,(track,until) in cache.items():
+                if until>=now and now-track.state_time<=b['max_track_age_s']:allowed[key]=(track,until)
+        d=a['decision'];v=speed(t['ego'])
+        expected_budget=v*(b['response_delay_s']+b['control_period_s'])+v*v/(2*b['deceleration_mps2'])+b['margin_m']
+        rule=rule and abs(d['stopping_budget_m']-expected_budget)<1e-8
+        for known in d['known_targets']:
+            key=(known['source_id'],known['track_id'],known['state_time'])
+            if key not in allowed:causal=False;continue
+            track,_=allowed[key];age=now-track.state_time
+            causal=causal and age>=0 and abs(known['age_s']-age)<1e-8
+            causal=causal and abs(known['x']-(track.x+track.vx*age))<1e-6 and abs(known['y']-(track.y+track.vy*age))<1e-6
+            expected=[[track.x+track.vx*(age+i*.1),track.y+track.vy*(age+i*.1)] for i in range(31)]
+            causal=causal and known['prediction_xy']==expected
+        if name!='reference' and now>=config['prefix_s'] and d['distance_to_conflict_envelope_m'] is not None and d['distance_to_conflict_envelope_m']<=expected_budget:latched=True
+        rule=rule and bool(d['brake'])==latched
+    check(name+'合法已知目标及CV路径',causal,{'frames':len(audit),'max_cache_age_s':b['max_track_age_s']})
+    check(name+'动态制动预算规则',rule,{'parameters':b,'frames':len(audit)})
+    display=rows(folder/name/'示意在线状态.jsonl');visual=read(folder/name/'示意帧索引.json')
+    same=len(display)==len(audit)==len(visual) and all(v['decision']==a['decision'] and v['ego']==o['ego'] and v['time_s']==o['time_s']
+        and v['legal_observation_sha256']==hashlib.sha256(json.dumps(o,sort_keys=True).encode()).hexdigest()
+        for v,a,o in zip(display,audit,observations))
+    check(name+'在线示意来源一致',same,{'frames':len(display),'evaluation_truth_used':False})
+    window=read(folder/name/'实时示意窗口复核.json')
+    shown=window['displayed_frames']==len(audit) and not window['closed_by_user'] and bool(window['snapshots'])
+    shown=shown and all(hashlib.sha256(Path(s['path']).read_bytes()).hexdigest()==s['sha256'] for s in window['snapshots'])
+    check(name+'实时窗口逐帧显示',shown,window)
+    frames=read(folder/name/'相机帧索引.json')
+    identity=lambda source:[(r['index'],r['frame'],r['time_s']) for r in frames if r['source']==source]
+    check(name+'新增实景角度完整',all(identity(source)==identity('车端') for source in config['extra_cameras']),
+          {'camera_names':list(config['extra_cameras']),'frames_each':len(identity('车端'))})
+    if name=='cooperative_aeb':
+        first=next((x for x in audit if x['decision']['brake']),None)
+        warnings=[x for x in audit if x['decision']['warning'] and not x['decision']['brake']]
+        check('协同先预警再按预算紧急制动',bool(warnings) and first is not None and warnings[0]['time_s']<first['time_s']
+              and all(x['decision']['stopping_margin_m']>0 for x in warnings if x['time_s']>=config['prefix_s']),
+              {'first_warning_s':warnings[0]['time_s'] if warnings else None,'first_emergency_s':first['time_s'] if first else None})
+
+
 def video(folder):
     import imageio_ffmpeg
     from PIL import Image,ImageDraw,ImageFont
@@ -132,13 +183,21 @@ def analyze(folder,encode=True):
             'lane_half_width_m':lane_half,'raw_prefix_sha256':pref['sha256']}
         if first_brake is not None:
             triggered=next(t for t in truth if t['time_s']==first_brake);v=speed(triggered['ego']);B=config['calibration']['capabilities']['effective_deceleration_mps2']
-            budget=v*v/(2*B)+v*config['calibration']['capabilities']['observed_response_delay_s']+5.
+            budget=v*v/(2*B)+v*(config['calibration']['capabilities']['observed_response_delay_s']+config.get('braking',{}).get('control_period_s',0.))+5.
             result.update(brake_start_speed_mps=v,available_distance_m=-projection(triggered['ego']),stopping_budget_with_margin_m=budget)
             if config.get('occluder_motion'):
                 physical=[r for r in truth if r['time_s']>=first_brake and r['actual_control']['brake']>0]
                 no_jump=all(math.hypot(b['ego']['x']-a['ego']['x'],b['ego']['y']-a['ego']['y'])<=max(speed(a['ego']),speed(b['ego']))*.05+.1 for a,b in zip(truth,truth[1:]))
                 check(name+'真实连续制动响应',len(physical)>=2 and speed(truth[-1]['ego'])<v-.3 and no_jump,
                       {'actual_brake_samples':len(physical),'brake_start_speed_mps':v,'last_speed_mps':speed(truth[-1]['ego']),'no_position_jump':no_jump})
+        if 'braking' in config and config.get('overview',{}).get('enabled'):
+            result.update(first_warning_s=audit[-1]['decision']['first_warning_s'],
+                first_target_available_s=audit[-1]['decision']['first_target_available_s'])
+            if first_brake is not None:
+                first_decision=next(x['decision'] for x in audit if x['decision']['brake'])
+                result.update(emergency_envelope_distance_m=first_decision['distance_to_conflict_envelope_m'],
+                              emergency_stopping_budget_m=first_decision['stopping_budget_m'])
+            verify_budget_overview(folder,name,config,truth,audit,observations,check)
         metrics.append(result)
         if config.get('require_local_collision') and name=='local_aeb':check('仅车端实际碰撞案例',bool(collisions) and bool(geo),result)
         if name=='reference':check('参考实际危险事件',bool(collisions) and bool(geo),result)
@@ -207,7 +266,7 @@ def plot(folder,data,config):
         axes[1].plot([r['time_s'] for r in truth],[speed(r['ego']) for r in truth],label=NAMES[name])
     reference=data['reference'][0];axes[0].plot([r['target']['x'] for r in reference],[r['target']['y'] for r in reference],'--',color='gray',label='参考分支横向车')
     o=read(folder/'reference'/'初始状态.json')['occluder'];box=OBB((o['x'],o['y']),o['yaw'],o['length'],o['width'])
-    axes[0].add_patch(Polygon(obb_corners(box),color='#e89b39',alpha=.7,label='实体遮挡大车'))
+    axes[0].add_patch(Polygon(obb_corners(box),color='#e89b39',alpha=.7,label='遮挡大车初始车体'))
     axes[0].set_aspect('equal');axes[0].set_xlabel('项目X (m)');axes[0].set_ylabel('项目Y (m)')
     axes[1].set_xlabel('场景时间 (s)');axes[1].set_ylabel('自车速度 (m/s)')
     for ax in axes:ax.grid(alpha=.25);ax.legend()
@@ -230,6 +289,26 @@ def plot(folder,data,config):
         for ext in ('png','svg'):fig.savefig(folder/f'制动时序与实际响应.{ext}',dpi=180)
         plt.close(fig)
         with (folder/'制动响应原始.csv').open('w',encoding='utf-8-sig',newline='') as f:
+            writer=csv.DictWriter(f,fieldnames=list(raw[0]));writer.writeheader();writer.writerows(raw)
+    if 'braking' in config:
+        fig,axes=plt.subplots(2,1,figsize=(12,8),sharex=True,constrained_layout=True);raw=[]
+        for name,(_,audit,_) in data.items():
+            if name=='reference':continue
+            ts=[r['time_s'] for r in audit];ds=[r['decision'] for r in audit]
+            axes[0].plot(ts,[d['distance_to_conflict_envelope_m'] for d in ds],label=NAMES[name]+' 预测包络剩余距离')
+            axes[0].plot(ts,[d['stopping_budget_m'] for d in ds],'--',label=NAMES[name]+' 停车预算')
+            phase=lambda d:3 if d['mode']=='停车保持' else 2 if d['brake'] else 1 if d['warning'] else 0
+            axes[1].step(ts,[phase(d) for d in ds],where='post',label=NAMES[name])
+            for r in audit:raw.append({'strategy':name,'time_s':r['time_s'],'mode':r['decision']['mode'],
+                'warning':r['decision']['warning'],'emergency':r['decision']['brake'],
+                'envelope_distance_m':r['decision']['distance_to_conflict_envelope_m'],
+                'stopping_budget_m':r['decision']['stopping_budget_m'],'margin_m':r['decision']['stopping_margin_m']})
+        axes[0].set_ylabel('距离 (m)');axes[1].set_ylabel('决策阶段');axes[1].set_yticks([0,1,2,3],['正常','预警','紧急制动','停车保持'])
+        axes[1].set_xlabel('仿真时间 (s)；仅当时合法输入，原值不平滑')
+        for ax in axes:ax.grid(alpha=.25);ax.legend()
+        for ext in ('png','svg'):fig.savefig(folder/f'预警与制动距离预算.{ext}',dpi=180)
+        plt.close(fig)
+        with (folder/'预警与制动预算原始.csv').open('w',encoding='utf-8-sig',newline='') as f:
             writer=csv.DictWriter(f,fieldnames=list(raw[0]));writer.writeheader();writer.writerows(raw)
 
 

@@ -1,4 +1,4 @@
-"""N14两种AEB×三相机独立视频；IDE直接运行，CLI可选择原运行目录。"""
+"""N14两种AEB×已采集角度/在线示意独立视频；IDE默认最近完整运行。"""
 import argparse
 from datetime import datetime
 import hashlib
@@ -16,9 +16,10 @@ from PIL import Image, __version__ as pillow_version
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_RUN = Path('H:/OccluActiSafeDataset/artifacts/n14_110af5fc4b354cf7b149030bf4c15921')
+ARTIFACTS = Path('H:/OccluActiSafeDataset/artifacts')
 BRANCHES = {'local_aeb': '仅车端AEB', 'cooperative_aeb': '车路协同AEB'}
-VIEWS = {'车端': '车内前向视角', '路侧': '路侧视角', '跟车': '跟车视角'}
+VIEWS = {'车端': '车内前向视角', '路侧': '路侧视角', '跟车': '跟车视角',
+         '俯瞰': '俯瞰实景视角', '前侧': '前侧观察视角', '示意': '实时俯瞰示意图'}
 SIZE = (1280, 720)
 
 
@@ -49,8 +50,14 @@ def decode_check(path, expected_frames, fps):
             'encoded_duration_s': metadata['duration']}
 
 
-def export(run_dir=DEFAULT_RUN, output_dir=None):
+def export(run_dir=None, output_dir=None):
+    if run_dir is None:
+        candidates=[p for p in ARTIFACTS.glob('n14_*') if (p/'配对验收报告.json').is_file()
+                    and all((p/b/'公共前缀.json').is_file() for b in ('reference',*BRANCHES))]
+        if not candidates:raise FileNotFoundError('没有已分析的完整N14三分支运行')
+        run_dir=max(candidates,key=lambda p:(p/'源码版本.json').stat().st_mtime)
     run_dir = Path(run_dir).resolve()
+    if read(run_dir/'配对验收报告.json')['failed']:raise ValueError('最近运行验收失败，拒绝回退旧结果冒充本轮成功')
     original_index = run_dir / '证据索引.json'
     frozen = read(original_index)['files']
     identifier = datetime.now().astimezone().strftime('%Y%m%d_%H%M%S') + '_' + uuid.uuid4().hex[:8]
@@ -68,7 +75,7 @@ def export(run_dir=DEFAULT_RUN, output_dir=None):
               'environment': {'os': platform.platform(), 'python': sys.version,
                               'pillow': pillow_version, 'imageio_ffmpeg': imageio_ffmpeg.__version__},
               'camera_note': '车内前向为既有车端前向相机(1.5,0,1.6)m、yaw=-12度，不含仪表台内饰',
-              'processing': '原始RGB独立编码；不拼接、不裁剪、不缩放、不插帧、不补齐碰撞后未来；无新增仿真',
+              'processing': '实际RGB及在线生成示意各自独立编码；不拼接、不裁剪、不缩放、不插帧、不补齐碰撞后未来',
               'videos': []}
     manifest = output / '独立视频来源与复核.json'
 
@@ -89,15 +96,26 @@ def export(run_dir=DEFAULT_RUN, output_dir=None):
             if sha(config_path) != frozen[config_path.relative_to(run_dir).as_posix()]:
                 raise ValueError('原始运行配置哈希不符')
             interval = read(config_path)['image_interval_ticks']
+            source_indexes={camera:index_path for camera in ('车端','路侧','跟车',*read(config_path).get('extra_cameras',{}))}
+            schematic=folder/'示意帧索引.json'
+            if schematic.is_file():
+                if sha(schematic)!=frozen[schematic.relative_to(run_dir).as_posix()]:raise ValueError('在线示意索引哈希不符')
+                index.extend(read(schematic));source_indexes['示意']=schematic
+            available={r['source'] for r in index}
+            expected=set(source_indexes)
+            if read(config_path).get('overview',{}).get('enabled'):expected.add('示意')
+            if not expected<=available or not available<=set(VIEWS):raise ValueError('实际角度缺失或未声明')
             period = .05 * interval
             fps = 1 / period
             for camera, view_name in VIEWS.items():
+                if camera not in available:continue
+                index_path=source_indexes[camera]
                 records = sorted((r for r in index if r['source'] == camera), key=lambda r: r['index'])
                 if not records or records[0]['index'] != 0:
                     raise ValueError(f'{branch}/{camera}缺少起始相机帧')
                 for left, right in zip(records, records[1:]):
                     if (right['index'] - left['index'] != interval
-                            or right['frame'] - left['frame'] != interval
+                            or (camera!='示意' and right['frame'] - left['frame'] != interval)
                             or not math.isclose(right['time_s'] - left['time_s'], period, abs_tol=1e-6)):
                         raise ValueError(f'{branch}/{camera}存在重复、缺失或不等间隔帧')
                 video = output / f'{branch_name}_{view_name}.mp4'
@@ -152,7 +170,7 @@ def export(run_dir=DEFAULT_RUN, output_dir=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--run-dir', type=Path, default=DEFAULT_RUN)
+    parser.add_argument('--run-dir', type=Path)
     parser.add_argument('--output-dir', type=Path)
     args = parser.parse_args()
     export(args.run_dir, args.output_dir)
