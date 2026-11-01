@@ -104,7 +104,7 @@ def additional_checks(folder):
                          **{k:(left['static_occluders'][k],right['static_occluders'][k]) for k in left['static_occluders']}}
             for identity,(a,b) in actor_pairs.items():
                 if identity=='ego':ca,cb=left['control'],right['control']
-                elif identity=='occluder':ca,cb=left['occluder_control'],right['occluder_control']
+                elif identity=='occluder':ca,cb=left['occluder_control'] or {},right['occluder_control'] or {}
                 elif identity in classes:
                     role=next(s['role'] for s in specs if s['track_id']==identity)
                     ca,cb=left['participant_controls'][role],right['participant_controls'][role]
