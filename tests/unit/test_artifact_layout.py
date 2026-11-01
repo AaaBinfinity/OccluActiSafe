@@ -101,7 +101,7 @@ class LayoutTests(unittest.TestCase):
             workspace = parent/'repo'; metadata = workspace/'docs/过程图'
             with patch.object(archive, 'PROJECT_ROOT', workspace):
                 self.assertEqual(archive.archive(root, metadata)['verified'], 1)
-                old = json.loads((metadata/'图片来源与哈希.json').read_text('utf-8'))['images'][0]
+                old = archive.load_catalog(root,metadata/'图片来源与哈希.json')['images'][0]
                 report = root/'公共管理/02_目录管理/机制核验.json'
                 updated = layout.apply_plan(layout.build_plan(root, catalog), catalog, report)
                 new = root/updated['entries'][0]['physical_artifact_path']
@@ -109,7 +109,7 @@ class LayoutTests(unittest.TestCase):
                 cache = root/'公共管理/03_工具缓存'; cache.mkdir(parents=True)
                 (cache/'不会登记.svg').write_text('<svg>cache</svg>', encoding='utf-8')
                 self.assertEqual(archive.archive(root, metadata), {'verified': 2, 'moved': 0})
-                images = json.loads((metadata/'图片来源与哈希.json').read_text('utf-8'))['images']
+                images = archive.load_catalog(root,metadata/'图片来源与哈希.json')['images']
                 self.assertIn(old, images)
                 self.assertEqual(len(list(archive.artifact_images(root))), 2)
             for p in (root/'n14_fixture', root/'last_n14_fixture', root/updated['entries'][0]['directory']): os.rmdir(p)

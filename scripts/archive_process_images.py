@@ -36,8 +36,12 @@ def read(path):
 
 def write(path, value):
     """先写同目录临时文件再原子替换，避免直接截断现有清单。"""
-    path.parent.mkdir(parents=True, exist_ok=True)
     raw = (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    write_raw(path,raw)
+
+
+def write_raw(path,raw):
+    path.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".图片清单-", suffix=".tmp", delete=False) as stream:
@@ -57,6 +61,42 @@ def contained(root, relative):
     target = (root / relative).resolve()
     if not target.is_relative_to(root.resolve()): raise ValueError("图片路径越界")
     return target
+
+
+def load_catalog(root,path):
+    """兼容旧完整清单与新摘要；外置完整清单须先校验哈希、大小及数量。"""
+    raw=read(path)
+    if raw.get('schema_version')!='process-images-3-summary':return raw
+    reference=raw['full_catalog'];relative=Path(reference['artifact_path'])
+    if relative.is_absolute() or '..' in relative.parts:raise ValueError('完整清单引用必须为硬盘内相对路径')
+    full=contained(root,relative)
+    if not full.is_file() or sha(full)!=reference['sha256'] or full.stat().st_size!=reference['bytes']:
+        raise ValueError('外置图片完整清单缺失或哈希/大小不符')
+    catalog=read(full)
+    if len(catalog['images'])!=raw['image_count']:raise ValueError('外置图片清单数量不符')
+    return catalog
+
+
+def store_full_catalog(root,raw):
+    """按内容哈希保存实际完整清单；旧摘要引用的文件永不覆盖。"""
+    digest=hashlib.sha256(raw).hexdigest()
+    relative=Path('公共管理/01_图片与迁移核验')/f'过程图片完整清单_{digest}.json'
+    target=contained(root,relative)
+    if target.exists():
+        if sha(target)!=digest:raise ValueError('完整清单同名内容冲突')
+    else:write_raw(target,raw)
+    if sha(target)!=digest:raise ValueError('完整清单落盘哈希不符')
+    return dict(artifact_path=relative.as_posix(),sha256=digest,bytes=len(raw))
+
+
+def publish_catalog(root,path,catalog,migrated=None):
+    raw=(json.dumps(catalog,ensure_ascii=False,indent=2)+'\n').encode('utf-8')
+    reference=store_full_catalog(root,raw)
+    summary=dict(schema_version='process-images-3-summary',storage='external_artifacts',
+        path_base='本机实际移动硬盘项目artifacts目录',image_count=len(catalog['images']),full_catalog=reference)
+    if migrated is not None:summary['migrated_repository_catalog']=migrated
+    # 必须先完整落盘，再原子替换Git摘要；摘要写失败时旧引用和原图均可继续复核。
+    write(path,summary)
 
 
 def verify(root, catalog):
@@ -91,7 +131,8 @@ def archive(artifacts_root=ARTIFACTS_ROOT, archive_root=ARCHIVE_ROOT, *, verify_
     if artifacts_root.is_relative_to(PROJECT_ROOT): raise ValueError("图片必须保存到仓库外的实际硬盘目录")
     catalog_path = archive_root / "图片来源与哈希.json"
     legacy = artifacts_root / "仓库归档时图片来源与哈希.json"
-    raw = read(catalog_path) if catalog_path.is_file() else (read(legacy) if legacy.is_file() else {"images": []})
+    pointer=read(catalog_path) if catalog_path.is_file() else {}
+    raw = load_catalog(artifacts_root,catalog_path) if catalog_path.is_file() else (read(legacy) if legacy.is_file() else {"images": []})
     indexed = {}
     for old in raw["images"]:
         relative = old.get("artifact_path", old.get("path"))
@@ -107,6 +148,9 @@ def archive(artifacts_root=ARTIFACTS_ROOT, archive_root=ARCHIVE_ROOT, *, verify_
     if verify_only:
         return {"verified": verify(artifacts_root, catalog), "moved": 0}
     archive_root.mkdir(parents=True, exist_ok=True)
+    migrated=pointer.get('migrated_repository_catalog')
+    if catalog_path.exists() and pointer.get('schema_version')!='process-images-3-summary':
+        migrated=store_full_catalog(artifacts_root,catalog_path.read_bytes())
     # 原始入库清单曾被不可变证据索引引用，整份移回硬盘留存，不改写它。
     if raw.get("schema_version") == "process-images-1" and catalog_path.exists():
         if legacy.exists():
@@ -129,7 +173,7 @@ def archive(artifacts_root=ARTIFACTS_ROOT, archive_root=ARCHIVE_ROOT, *, verify_
         if sha(target) != entry["sha256"]: raise ValueError(f"目标图片哈希不符：{target}")
         indexed[entry["original_artifact_path"]] = entry
         catalog["images"] = sorted(indexed.values(), key=lambda e: e["original_artifact_path"])
-        write(catalog_path, catalog)
+        publish_catalog(artifacts_root,catalog_path,catalog,migrated)
         if source != target: source.unlink(); moved += 1
 
     for entry in list(indexed.values()):
@@ -163,7 +207,7 @@ def archive(artifacts_root=ARTIFACTS_ROOT, archive_root=ARCHIVE_ROOT, *, verify_
             transfer(source, target, entry)
         elif sha(source) != entry["sha256"]: raise ValueError(f"图片内容已改变：{source}")
     catalog["images"] = sorted(indexed.values(), key=lambda e: e["original_artifact_path"])
-    write(catalog_path, catalog)
+    publish_catalog(artifacts_root,catalog_path,catalog,migrated)
     return {"verified": verify(artifacts_root, catalog), "moved": moved}
 
 
