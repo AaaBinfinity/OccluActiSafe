@@ -98149,6 +98149,222 @@
       "legacy_repository_path": "docs/过程图/n14_revision_20261031/关键时刻遮挡对照/大车遮挡静态对照.svg",
       "sha256": "b31c5d8f872e51b5d7bc572faaac4ec050029fdeedab209fc57a74f02ef117de",
       "bytes": 3889982
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/制动分段与停车.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/制动分段与停车.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/制动分段与停车.png",
+      "sha256": "2133bec2e3a8a5483307664abb2e81689e9ec1f5f0685772aba3b98d499141dc",
+      "bytes": 88574,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/制动分段与停车.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/制动分段与停车.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/制动分段与停车.svg",
+      "sha256": "1388e4466a944dc15192ad2a5c668d0dc89b43a4158870709d86b0e314c008cc",
+      "bytes": 103981,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/解析分支配对轨迹.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/解析分支配对轨迹.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/解析分支配对轨迹.png",
+      "sha256": "83323f43d0419ae5a62326a1da398fa80aee370fa7b65b5379c158f469131e0b",
+      "bytes": 187067,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/解析分支配对轨迹.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/解析分支配对轨迹.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/解析分支配对轨迹.svg",
+      "sha256": "508dfa6332a4756bb855259419d49d7a04d85d32654b9402c1f0d40c9961be74",
+      "bytes": 181598,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/风险与制动状态时序.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/风险与制动状态时序.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/风险与制动状态时序.png",
+      "sha256": "a1a77eaa6aa2da407d91e3320c966cb6e04f0785df6c3de94af69d63fb2231e4",
+      "bytes": 45460,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/风险与制动状态时序.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/风险与制动状态时序.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/风险与制动状态时序.svg",
+      "sha256": "a04a07fd251153d8ac17d54768a7d85e719dac85311f1d50aae7282b490adeb0",
+      "bytes": 57389,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-0/1602d04a766846e0b5925e194116dfba/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/制动分段与停车.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/制动分段与停车.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/制动分段与停车.png",
+      "sha256": "2133bec2e3a8a5483307664abb2e81689e9ec1f5f0685772aba3b98d499141dc",
+      "bytes": 88574,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/制动分段与停车.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/制动分段与停车.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/制动分段与停车.svg",
+      "sha256": "1388e4466a944dc15192ad2a5c668d0dc89b43a4158870709d86b0e314c008cc",
+      "bytes": 103981,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/解析分支配对轨迹.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/解析分支配对轨迹.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/解析分支配对轨迹.png",
+      "sha256": "83323f43d0419ae5a62326a1da398fa80aee370fa7b65b5379c158f469131e0b",
+      "bytes": 187067,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/解析分支配对轨迹.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/解析分支配对轨迹.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/解析分支配对轨迹.svg",
+      "sha256": "508dfa6332a4756bb855259419d49d7a04d85d32654b9402c1f0d40c9961be74",
+      "bytes": 181598,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/风险与制动状态时序.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/风险与制动状态时序.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/风险与制动状态时序.png",
+      "sha256": "a1a77eaa6aa2da407d91e3320c966cb6e04f0785df6c3de94af69d63fb2231e4",
+      "bytes": 45460,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/风险与制动状态时序.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/风险与制动状态时序.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/风险与制动状态时序.svg",
+      "sha256": "a04a07fd251153d8ac17d54768a7d85e719dac85311f1d50aae7282b490adeb0",
+      "bytes": 57389,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-1/f4119630e346403daddfe9a3f63c84c2/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/制动分段与停车.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/制动分段与停车.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/制动分段与停车.png",
+      "sha256": "2133bec2e3a8a5483307664abb2e81689e9ec1f5f0685772aba3b98d499141dc",
+      "bytes": 88574,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/制动分段与停车.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/制动分段与停车.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/制动分段与停车.svg",
+      "sha256": "1388e4466a944dc15192ad2a5c668d0dc89b43a4158870709d86b0e314c008cc",
+      "bytes": 103981,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/解析分支配对轨迹.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/解析分支配对轨迹.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/解析分支配对轨迹.png",
+      "sha256": "83323f43d0419ae5a62326a1da398fa80aee370fa7b65b5379c158f469131e0b",
+      "bytes": 187067,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/解析分支配对轨迹.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/解析分支配对轨迹.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/解析分支配对轨迹.svg",
+      "sha256": "508dfa6332a4756bb855259419d49d7a04d85d32654b9402c1f0d40c9961be74",
+      "bytes": 181598,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/风险与制动状态时序.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/风险与制动状态时序.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/风险与制动状态时序.png",
+      "sha256": "a1a77eaa6aa2da407d91e3320c966cb6e04f0785df6c3de94af69d63fb2231e4",
+      "bytes": 45460,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/风险与制动状态时序.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/风险与制动状态时序.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/风险与制动状态时序.svg",
+      "sha256": "a04a07fd251153d8ac17d54768a7d85e719dac85311f1d50aae7282b490adeb0",
+      "bytes": 57389,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/cwd-2/8ad1dabd6a2b4f62bf27e84699b4966f/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/制动分段与停车.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/制动分段与停车.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/制动分段与停车.png",
+      "sha256": "2133bec2e3a8a5483307664abb2e81689e9ec1f5f0685772aba3b98d499141dc",
+      "bytes": 88574,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/制动分段与停车.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/制动分段与停车.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/制动分段与停车.svg",
+      "sha256": "1388e4466a944dc15192ad2a5c668d0dc89b43a4158870709d86b0e314c008cc",
+      "bytes": 103981,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/解析分支配对轨迹.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/解析分支配对轨迹.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/解析分支配对轨迹.png",
+      "sha256": "83323f43d0419ae5a62326a1da398fa80aee370fa7b65b5379c158f469131e0b",
+      "bytes": 187067,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/解析分支配对轨迹.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/解析分支配对轨迹.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/解析分支配对轨迹.svg",
+      "sha256": "508dfa6332a4756bb855259419d49d7a04d85d32654b9402c1f0d40c9961be74",
+      "bytes": 181598,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/风险与制动状态时序.png",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/风险与制动状态时序.png",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/风险与制动状态时序.png",
+      "sha256": "a1a77eaa6aa2da407d91e3320c966cb6e04f0785df6c3de94af69d63fb2231e4",
+      "bytes": 45460,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
+    },
+    {
+      "original_artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/风险与制动状态时序.svg",
+      "artifact_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/风险与制动状态时序.svg",
+      "legacy_repository_path": "docs/过程图/节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/风险与制动状态时序.svg",
+      "sha256": "a04a07fd251153d8ac17d54768a7d85e719dac85311f1d50aae7282b490adeb0",
+      "bytes": 57389,
+      "plot_manifest_original_path": "节点资料/N11_解析闭环/04_开发与复核/n11_pipeline_checks/417aaf75531a406f99f3d3ce4a7d1dd6/plot_rebuild/plot_manifest.json",
+      "plot_manifest_sha256": "9e3e6d782e4dc814a0140d6f7810c71964e0914bb129bbde06c55ca8b4a42782"
     }
   ]
 }
