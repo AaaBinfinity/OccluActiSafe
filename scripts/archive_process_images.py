@@ -67,6 +67,23 @@ def verify(root, catalog):
     return len(catalog["images"])
 
 
+def artifact_images(root):
+    """只扫描真实节点目录；跳过last/旧路径联接及工具缓存，避免重复或循环。"""
+    starts = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()
+              and not getattr(p.lstat(), 'st_reparse_tag', 0)
+              and (re.fullmatch(r'n\d{2}(?:_.*)?', p.name) or p.name == '节点资料')]
+    for start in sorted(starts):
+        for current, directories, files in os.walk(start, followlinks=False):
+            parent = Path(current)
+            directories[:] = sorted(name for name in directories
+                                    if not getattr((parent/name).lstat(), 'st_reparse_tag', 0)
+                                    and not (parent/name).is_symlink())
+            for name in sorted(files):
+                path = parent/name
+                if path.suffix.lower() in EXTENSIONS and not path.is_symlink():
+                    yield path
+
+
 def archive(artifacts_root=ARTIFACTS_ROOT, archive_root=ARCHIVE_ROOT, *, verify_only=False):
     artifacts_root, archive_root = Path(artifacts_root).resolve(), Path(archive_root).resolve()
     if not archive_root.is_relative_to(PROJECT_ROOT): raise ValueError("元数据目录必须位于项目内")
@@ -122,31 +139,29 @@ def archive(artifacts_root=ARTIFACTS_ROOT, archive_root=ARCHIVE_ROOT, *, verify_
         if source.exists(): transfer(source, target, entry)
         elif not target.is_file() or sha(target) != entry["sha256"]:
             raise ValueError(f"硬盘图片缺失或哈希不符：{target}")
-    by_path = {e["artifact_path"]: e for e in indexed.values()}
-    for task in sorted(artifacts_root.iterdir()):
-        if not task.is_dir() or not re.fullmatch(r"n\d{2}(?:_.*)?", task.name): continue
-        for source in sorted(task.rglob("*")):
-            if not source.is_file() or source.suffix.lower() not in EXTENSIONS: continue
-            source = contained(artifacts_root, source.relative_to(artifacts_root))
-            relative = source.relative_to(artifacts_root)
-            stem = NAMES.get(source.stem)
-            if stem is None:
-                if any('\u4e00' <= c <= '\u9fff' for c in source.stem): stem = source.stem
-                else: raise ValueError(f"请先为新图类声明中文名称：{source.name}")
-            target = contained(artifacts_root, relative.parent / (stem + source.suffix.lower()))
-            canonical = target.relative_to(artifacts_root).as_posix()
-            entry = by_path.get(canonical)
-            if entry is None:
-                entry = {"original_artifact_path": relative.as_posix(), "artifact_path": canonical,
-                         "legacy_repository_path": "docs/过程图/" + canonical,
-                         "sha256": sha(source), "bytes": source.stat().st_size}
-                manifest = source.parent / "plot_manifest.json"
-                if manifest.is_file():
-                    entry.update(plot_manifest_original_path=manifest.relative_to(artifacts_root).as_posix(), plot_manifest_sha256=sha(manifest))
-                by_path[canonical] = entry
-            if source != target or entry["original_artifact_path"] not in indexed:
-                transfer(source, target, entry)
-            elif sha(source) != entry["sha256"]: raise ValueError(f"图片内容已改变：{source}")
+    # 旧逻辑地址可能通过兼容联接指向新物理目录；按解析后的地址匹配，不重复登记。
+    by_path = {contained(artifacts_root, e["artifact_path"]): e for e in indexed.values()}
+    for source in artifact_images(artifacts_root):
+        source = contained(artifacts_root, source.relative_to(artifacts_root))
+        relative = source.relative_to(artifacts_root)
+        stem = NAMES.get(source.stem)
+        if stem is None:
+            if any('\u4e00' <= c <= '\u9fff' for c in source.stem): stem = source.stem
+            else: raise ValueError(f"请先为新图类声明中文名称：{source.name}")
+        target = contained(artifacts_root, relative.parent / (stem + source.suffix.lower()))
+        canonical = target.relative_to(artifacts_root).as_posix()
+        entry = by_path.get(target)
+        if entry is None:
+            entry = {"original_artifact_path": relative.as_posix(), "artifact_path": canonical,
+                     "legacy_repository_path": "docs/过程图/" + canonical,
+                     "sha256": sha(source), "bytes": source.stat().st_size}
+            manifest = source.parent / "plot_manifest.json"
+            if manifest.is_file():
+                entry.update(plot_manifest_original_path=manifest.relative_to(artifacts_root).as_posix(), plot_manifest_sha256=sha(manifest))
+            by_path[target] = entry
+        if source != target or entry["original_artifact_path"] not in indexed:
+            transfer(source, target, entry)
+        elif sha(source) != entry["sha256"]: raise ValueError(f"图片内容已改变：{source}")
     catalog["images"] = sorted(indexed.values(), key=lambda e: e["original_artifact_path"])
     write(catalog_path, catalog)
     return {"verified": verify(artifacts_root, catalog), "moved": moved}
