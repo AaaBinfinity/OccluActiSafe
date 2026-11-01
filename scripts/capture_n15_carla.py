@@ -85,6 +85,8 @@ def calibrate_fixed_roadside_transform(world, ego, carla_module, xyz: list[float
         carla_module.Rotation(yaw=float(yaw_deg), pitch=float(pitch_deg)))
     probe = world.spawn_actor(blueprint, relative, attach_to=ego)
     try:
+        # CARLA在首次tick前返回附着传感器的相对Transform；tick后才有世界位姿。
+        world.tick()
         transform = probe.get_transform()
         return carla_module.Transform(transform.location, transform.rotation)
     finally:

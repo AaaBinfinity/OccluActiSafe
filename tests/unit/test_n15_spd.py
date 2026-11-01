@@ -144,6 +144,9 @@ class CarlaVisibleLabelTests(unittest.TestCase):
             def get_blueprint_library(self):
                 return BlueprintLibrary()
 
+            def tick(self):
+                self.ticked = True
+
             def spawn_actor(self, blueprint, transform, attach_to):
                 self.probe = Probe()
                 self.attach_to = attach_to
@@ -155,6 +158,7 @@ class CarlaVisibleLabelTests(unittest.TestCase):
         self.assertEqual((fixed.location.x, fixed.location.y, fixed.location.z), (101, 202, 303))
         self.assertEqual((fixed.rotation.yaw, fixed.rotation.pitch), (44, -10))
         self.assertIs(world.attach_to, ego)
+        self.assertTrue(world.ticked)
         self.assertTrue(world.probe.destroyed)
 
     def test_carla_layout_groups_are_split_before_frames(self):
