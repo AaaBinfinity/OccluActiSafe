@@ -36,6 +36,7 @@ def run(config_path=DEFAULT_CONFIG,*,output_root=None):
     if config.get('occluder_motion'):tracked.append(ROOT/'src/occluactisafe/simulation/occluder_driver.py')
     tracked.append(ROOT/'src/occluactisafe/simulation/scenario_rpc.py')
     tracked.append(ROOT/'src/occluactisafe/simulation/n14_participants.py')
+    tracked.append(ROOT/'src/occluactisafe/simulation/n14_images.py')
     if config.get('render_quality')=='Epic':tracked.append(ROOT/'src/occluactisafe/simulation/n14_suite.py')
     if config.get('suite_case'):tracked.append(ROOT/'scripts/run_n14_scenarios.py')
     if config.get('overview',{}).get('enabled'):tracked.append(ROOT/'src/occluactisafe/simulation/aeb_overview.py')

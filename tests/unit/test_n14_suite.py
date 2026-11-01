@@ -4,6 +4,8 @@ from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+import tempfile
+import hashlib
 from unittest.mock import patch
 
 import yaml
@@ -12,12 +14,24 @@ from occluactisafe.simulation.n14_participants import participant_specs,walker_a
 from occluactisafe.simulation.scenario_rpc import execute_batch
 from occluactisafe.simulation.trajectory_input import TrajectoryAEB
 from occluactisafe.simulation.aeb_overview import render_overview
+from occluactisafe.simulation.n14_images import save_rgb_frame
 from occluactisafe.common.schemas import SourceTrack,ObservationPacket
 
 ROOT=Path(__file__).resolve().parents[2]
 
 
 class SuiteTests(unittest.TestCase):
+    def test_native_bgra_png_preserves_channels_and_unicode_path(self):
+        from PIL import Image
+        native=SimpleNamespace(width=2,height=1,raw_data=bytes((0,0,255,255,0,255,0,255)))
+        with tempfile.TemporaryDirectory() as temp:
+            folder=Path(temp)/'中文相机目录';folder.mkdir();path=folder/'实际原始帧.png'
+            proof=save_rgb_frame(native,path)
+            with Image.open(path) as decoded:
+                self.assertEqual(list(decoded.getdata()),[(255,0,0),(0,255,0)])
+                self.assertEqual(hashlib.sha256(decoded.tobytes()).hexdigest(),proof['rgb_pixels_sha256'])
+            self.assertEqual(proof['native_size'],[2,1])
+
     def configs(self):
         directory=ROOT/'configs/scenarios'
         return yaml.safe_load((directory/'occluded_junction.yaml').read_text('utf-8')),yaml.safe_load((directory/'n14_suite.yaml').read_text('utf-8'))

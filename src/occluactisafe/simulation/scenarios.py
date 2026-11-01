@@ -122,6 +122,7 @@ def run_episode(client,output,config):
     from occluactisafe.control.actuator import CalibratedActuator
     from occluactisafe.simulation.occluder_driver import OccluderDriver
     from occluactisafe.simulation.n14_participants import participant_specs,walker_action,batch_control
+    from occluactisafe.simulation.n14_images import save_rgb_frame
     specs=participant_specs(config);spec_by_role={s['role']:s for s in specs};extra_actions={}
     rgb_width,rgb_height=config.get('rgb_size',(1280,720))
     mask_width,mask_height=config.get('visibility_size',(1280,720))
@@ -296,9 +297,8 @@ def run_episode(client,output,config):
                 for name,buffer in frames.items():
                     frame=buffer.get(runner.frame,3.)
                     if not frame['valid']:raise RuntimeError('碰撞关键帧缺失')
-                    temporary=output/f'collision_{0 if name=="车端" else 1}.png';frame['value'].save_to_disk(str(temporary))
-                    path=output/f'{name}碰撞画面_帧{index:04d}.png';temporary.replace(path)
-                    images.append({'image':path.name,'source':name,'frame':runner.frame,'time_s':index*.05,'index':index,'event':'collision_sensor'})
+                    path=output/f'{name}碰撞画面_帧{index:04d}.png';proof=save_rgb_frame(frame['value'],path)
+                    images.append({'image':path.name,'source':name,'frame':runner.frame,'time_s':index*.05,'index':index,'event':'collision_sensor',**proof})
                 break
             now=index*.05;es=current(ego);ts=current(target)
             import numpy as np
@@ -370,9 +370,8 @@ def run_episode(client,output,config):
                 for name,buffer in frames.items():
                     frame=buffer.get(runner.frame,2.)
                     if not frame['valid']:raise RuntimeError('实际相机帧缺失')
-                    temporary=output/f'frame_{index}_{0 if name=="车端" else 1}.png';frame['value'].save_to_disk(str(temporary))
-                    image=output/f'{name}画面_帧{index:04d}.png';temporary.replace(image)
-                    images.append({'image':image.name,'source':name,'frame':runner.frame,'time_s':now,'index':index})
+                    image=output/f'{name}画面_帧{index:04d}.png';proof=save_rgb_frame(frame['value'],image)
+                    images.append({'image':image.name,'source':name,'frame':runner.frame,'time_s':now,'index':index,**proof})
             advance(action,target_action,truck_action)
         time.sleep(.2)
         (output/'碰撞传感器.json').write_text(json.dumps(collisions,ensure_ascii=False,indent=2),encoding='utf-8')
