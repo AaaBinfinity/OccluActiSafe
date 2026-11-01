@@ -211,10 +211,14 @@ def analyze_suite(folder=None):
                 base=read(run/'配对验收报告.json')
                 result.update(base_checks=base['passed'],base_failed=base['failed'])
                 for row in base['metrics']:all_metrics.append(dict(case_id=case['id'],case_name=case['name'],**row))
+                result['comparison_decode']=comparison_decode(run)
+                result['independent_videos']=str(export(run,diagnostic=True))
                 raise
             result.update(run_dir=str(run),base_checks=base['passed'],additional_checks=extra['passed'],additional_failed=extra['failed'])
             for row in base['metrics']:all_metrics.append(dict(case_id=case['id'],case_name=case['name'],**row))
-            if extra['failed']:raise RuntimeError('多目标/原生画质追加断言失败')
+            if extra['failed']:
+                result['independent_videos']=str(export(run,diagnostic=True))
+                raise RuntimeError('多目标/原生画质追加断言失败')
             result['comparison_decode']=comparison_decode(run)
             result['independent_videos']=str(export(run));result['status']='passed'
         except Exception as error:result['error']=repr(error)

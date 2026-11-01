@@ -50,23 +50,34 @@ def decode_check(path, expected_frames, fps, size=SIZE):
             'encoded_duration_s': metadata['duration']}
 
 
-def export(run_dir=None, output_dir=None):
+def export(run_dir=None, output_dir=None,*,diagnostic=False):
     if run_dir is None:
-        candidates=[p for p in ARTIFACTS.glob('n14_*') if (p/'配对验收报告.json').is_file()
+        node=ARTIFACTS/'节点资料/N14_盲区路口/02_运行产物'
+        locations=[*ARTIFACTS.glob('n14_*'),*node.glob('n14_*'),*node.glob('n14_suite_*/S*/n14_*')]
+        candidates=[p for p in {p.resolve() for p in locations} if (p/'配对验收报告.json').is_file()
                     and all((p/b/'公共前缀.json').is_file() for b in ('reference',*BRANCHES))]
         if not candidates:raise FileNotFoundError('没有已分析的完整N14三分支运行')
         run_dir=max(candidates,key=lambda p:(p/'源码版本.json').stat().st_mtime)
     run_dir = Path(run_dir).resolve()
-    if read(run_dir/'配对验收报告.json')['failed']:raise ValueError('最近运行验收失败，拒绝回退旧结果冒充本轮成功')
+    acceptance=read(run_dir/'配对验收报告.json')
+    additional=read(run_dir/'多参与者追加验收.json') if (run_dir/'多参与者追加验收.json').is_file() else None
+    source_failed=bool(acceptance['failed'] or (additional and additional['failed']))
+    if source_failed and not diagnostic:raise ValueError('最近运行验收失败，拒绝回退旧结果冒充本轮成功')
+    for branch in ('reference',*BRANCHES):
+        if not (run_dir/branch/'公共前缀.json').is_file() or read(run_dir/branch/'清理报告.json')['status']!='completed':
+            raise ValueError('物理三分支不完整或清理失败，不能导出完整诊断视频')
     original_index = run_dir / '证据索引.json'
     frozen = read(original_index)['files']
     identifier = datetime.now().astimezone().strftime('%Y%m%d_%H%M%S') + '_' + uuid.uuid4().hex[:8]
-    output = Path(output_dir).resolve() if output_dir else run_dir / '独立视角视频' / identifier
+    output = Path(output_dir).resolve() if output_dir else run_dir / ('失败诊断独立视角视频' if diagnostic else '独立视角视频') / identifier
     if output.is_relative_to(ROOT) or not output.is_relative_to(run_dir):
         raise ValueError('视频输出必须在仓库外的原运行目录内')
     output.mkdir(parents=True, exist_ok=False)
     report = {'export_id': identifier, 'source_run': str(run_dir),
               'started_at': datetime.now().astimezone().isoformat(), 'status': 'running',
+              'purpose':'失败诊断' if diagnostic else '正式导出',
+              'source_acceptance':{'passed':acceptance['passed'],'failed':acceptance['failed'],
+                  'additional_failed':additional['failed'] if additional else None,'source_failed':source_failed},
               'export_code_commit': subprocess.check_output(
                   ['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip(),
               'export_source_sha256': sha(Path(__file__)),
@@ -173,5 +184,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path)
     parser.add_argument('--output-dir', type=Path)
+    parser.add_argument('--diagnostic',action='store_true',help='完整物理分支的失败源仅导出为明确标记的诊断，不能算节点通过')
     args = parser.parse_args()
-    export(args.run_dir, args.output_dir)
+    export(args.run_dir, args.output_dir,diagnostic=args.diagnostic)

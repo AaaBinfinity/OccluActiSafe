@@ -23,6 +23,15 @@ ROOT=Path(__file__).resolve().parents[2]
 
 
 class SuiteTests(unittest.TestCase):
+    def test_failed_source_requires_diagnostic_and_incomplete_physics_is_rejected(self):
+        sys.path.insert(0,str(ROOT/'scripts'))
+        from export_n14_camera_videos import export
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp);(path/'配对验收报告.json').write_text(json.dumps(dict(passed=1,failed=1)),encoding='utf-8')
+            with self.assertRaisesRegex(ValueError,'验收失败'):export(path)
+            with self.assertRaisesRegex(ValueError,'物理三分支不完整'):export(path,diagnostic=True)
+            self.assertFalse((path/'独立视角视频').exists());self.assertFalse((path/'失败诊断独立视角视频').exists())
+
     def test_reuse_hash_verifier_rejects_changed_content_and_path_escape(self):
         sys.path.insert(0,str(ROOT/'scripts'))
         from run_n14_scenarios import verify_file_hashes
