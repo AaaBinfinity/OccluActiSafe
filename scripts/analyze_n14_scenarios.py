@@ -173,7 +173,7 @@ def plot_summary(folder,metrics):
     (folder/'图表来源与哈希.json').write_text(json.dumps(dict(raw_csv='多场景原始指标.csv',raw_sha256=hashlib.sha256((folder/'多场景原始指标.csv').read_bytes()).hexdigest(),case_metric_sha256=sources),ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 
 
-def analyze_suite(folder=None):
+def analyze_suite(folder=None,*,reuse_comparisons=False):
     if folder is None:
         candidates=list(PARENT.glob('n14_suite_*'))
         if not candidates:raise FileNotFoundError('没有本机高画质多场景运行')
@@ -206,7 +206,13 @@ def analyze_suite(folder=None):
                 continue
             extra=additional_checks(run)
             result.update(additional_checks=extra['passed'],additional_failed=extra['failed'])
-            try:base=analyze(run)
+            if reuse_comparisons:
+                from run_n14_scenarios import verify_file_hashes
+                previous=read(run/'对照视频完整解码.json')
+                if previous['failed'] or len(previous['videos'])!=4:raise ValueError('原4个对照视频未完整解码通过')
+                verify_file_hashes(run,{v['video']:v['sha256'] for v in previous['videos']})
+                result['comparison_encoding_reused']=True
+            try:base=analyze(run,encode=not reuse_comparisons)
             except RuntimeError:
                 base=read(run/'配对验收报告.json')
                 result.update(base_checks=base['passed'],base_failed=base['failed'])
@@ -241,4 +247,5 @@ def analyze_suite(folder=None):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--suite-dir',type=Path)
-    analyze_suite(parser.parse_args().suite_dir)
+    parser.add_argument('--reuse-comparisons',action='store_true',help='仅重评估同一冻结原始数据；核对既有对照视频哈希并重新解码，避免重编码')
+    args=parser.parse_args();analyze_suite(args.suite_dir,reuse_comparisons=args.reuse_comparisons)

@@ -23,6 +23,17 @@ ROOT=Path(__file__).resolve().parents[2]
 
 
 class SuiteTests(unittest.TestCase):
+    def test_collision_contract_keeps_real_events_and_does_not_force_pedestrian_local_failure(self):
+        sys.path.insert(0,str(ROOT/'scripts'))
+        from analyze_occluded_junction import collision_requirement
+        vehicle={'require_local_collision':True};pedestrian=dict(vehicle,target_category='pedestrian')
+        self.assertTrue(collision_requirement(pedestrian,'reference',[{'frame':1}],[]))
+        self.assertFalse(collision_requirement(pedestrian,'reference',[],[.05]))
+        self.assertIsNone(collision_requirement(pedestrian,'local_aeb',[],[]))
+        self.assertFalse(collision_requirement(vehicle,'reference',[{'frame':1}],[]))
+        self.assertFalse(collision_requirement(vehicle,'local_aeb',[],[]))
+        self.assertTrue(collision_requirement(vehicle,'local_aeb',[{'frame':1}],[.05]))
+
     def test_failed_source_requires_diagnostic_and_incomplete_physics_is_rejected(self):
         sys.path.insert(0,str(ROOT/'scripts'))
         from export_n14_camera_videos import export

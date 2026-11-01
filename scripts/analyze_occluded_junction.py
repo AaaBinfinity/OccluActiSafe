@@ -18,6 +18,15 @@ def rows(path):return [json.loads(s) for s in path.read_text(encoding='utf-8').s
 def speed(s):return math.hypot(s['vx'],s['vy'])
 
 
+def collision_requirement(config,strategy,collisions,overlaps):
+    """落实原C07/F01：真实基线事件与几何代理分列，旧车辆演示筛选不扩展到行人。"""
+    pedestrian=config.get('target_category')=='pedestrian'
+    if strategy=='reference':return bool(collisions) and (pedestrian or bool(overlaps))
+    if strategy=='local_aeb' and config.get('require_local_collision') and not pedestrian:
+        return bool(collisions) and bool(overlaps)
+    return None
+
+
 def verify_budget_overview(folder,name,config,truth,audit,observations,check):
     from occluactisafe.common.schemas import ObservationPacket,ReceivedMessage
     b=config['braking'];cache={};causal=True;rule=True;latched=False
@@ -258,8 +267,8 @@ def analyze(folder,encode=True):
                               emergency_stopping_budget_m=first_decision['stopping_budget_m'])
             verify_budget_overview(folder,name,config,truth,audit,observations,check)
         metrics.append(result)
-        if config.get('require_local_collision') and name=='local_aeb':check('仅车端实际碰撞案例',bool(collisions) and bool(geo),result)
-        if name=='reference':check('参考实际危险事件',bool(collisions) and bool(geo),result)
+        required=collision_requirement(config,name,collisions,geo)
+        if required is not None:check('参考实际危险事件' if name=='reference' else '仅车端实际碰撞案例',required,result)
         if name=='cooperative_aeb':
             check('协同停车避撞及道路边界',not collisions and not geo and speed(truth[-1]['ego'])<.1 and max_lateral<=lane_half and -projection(truth[-1]['ego'])>3.,result)
             check('实测标定停车空间',first_brake is not None and result['available_distance_m']>result['stopping_budget_with_margin_m'],result)
@@ -296,6 +305,7 @@ def analyze(folder,encode=True):
     with (folder/'公共前缀逐帧差异.csv').open('w',encoding='utf-8-sig',newline='') as f:
         w=csv.DictWriter(f,fieldnames=list(differences[0]));w.writeheader();w.writerows(differences)
     report={'passed':sum(c['passed'] for c in checks),'failed':sum(not c['passed'] for c in checks),'checks':checks,'metrics':metrics,
+            'validation_contract':'原C07/F01要求参考分支真实发生声明冲突；原生碰撞事件与截至末次决策帧的OBB代理分列。车辆演示保留两者同时出现及仅车端碰撞附加检查；该演示筛选不扩展到新增行人，不预设车端必然失败。协同仍须传感器/几何均零、停车及边界安全，因果与配对要求不变。',
             'input_mode':'trajectory_input','scope':'一个开发场景，实际碰撞传感器与几何事件分列；非图像检测/完整视频控制闭环'}
     (folder/'配对验收报告.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     with (folder/'配对事件指标.csv').open('w',encoding='utf-8-sig',newline='') as f:
