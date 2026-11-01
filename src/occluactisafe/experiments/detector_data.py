@@ -154,6 +154,24 @@ def prepare_dataset(cfg):
 
 
 def load_index(cfg):
+    snapshot = cfg.get('dataset_snapshot')
+    if snapshot is not None:
+        root = Path(snapshot['root'])
+        if not root.is_absolute():
+            raise ValueError('运行数据快照必须使用绝对路径')
+        audit = read_json(root/'数据清单.json')
+        if (sha256(root/'数据清单.json') != snapshot['manifest_sha256']
+                or audit.get('schema_version') != 'n17-relocated-data-1'
+                or audit.get('status') != 'completed'
+                or audit['source_index_sha256'] != snapshot['source_index_sha256']
+                or audit['classes'] != cfg['classes']
+                or sha256(root/'逐帧数据索引.jsonl') != snapshot['index_sha256']
+                or audit['index_sha256'] != snapshot['index_sha256']):
+            raise ValueError('服务器数据快照SHA/类别/来源不一致')
+        rows = [json.loads(line) for line in (root/'逐帧数据索引.jsonl').read_text(encoding='utf-8').splitlines()]
+        if any(r['role'] not in ('train','model_val') for r in rows):
+            raise ValueError('服务器数据快照含禁止的测试角色')
+        return rows, audit
     root = Path(cfg['output_root'])/'02_运行产物'/'冻结数据'
     audit = read_json(root/'数据清单.json')
     if audit['config_sha256'] != cfg['_config_sha256'] or sha256(root/'逐帧数据索引.jsonl') != audit['index_sha256']:
