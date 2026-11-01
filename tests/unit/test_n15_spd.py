@@ -8,6 +8,7 @@ from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
                                              resolve_missing_vehicle_locations)
 from occluactisafe.data.adapters.carla import extract_visible_instances
 from scripts.audit_spd import review_font_identity
+from scripts.capture_n15_carla import validate_scene_groups
 
 
 class SpdPathTests(unittest.TestCase):
@@ -106,6 +107,17 @@ class SpdSplitTests(unittest.TestCase):
 
 
 class CarlaVisibleLabelTests(unittest.TestCase):
+    def test_carla_layout_groups_are_split_before_frames(self):
+        config = {"maps": [{"map": "Town03_Opt", "project_role": "train"},
+                           {"map": "Town05_Opt", "project_role": "model_val"},
+                           {"map": "Town10HD_Opt", "project_role": "test"}],
+                  "scenes": ["vehicle", "cyclist", "pedestrian", "negative"],
+                  "frames_per_scene": 30}
+        validate_scene_groups(config)
+        config["maps"].append({"map": "Town03_Opt", "project_role": "test"})
+        with self.assertRaisesRegex(ValueError, "地图重复"):
+            validate_scene_groups(config)
+
     def test_visible_boxes_come_from_instance_pixels_and_hidden_target_has_no_box(self):
         import numpy as np
         image = np.zeros((5, 7, 3), dtype=np.uint8)

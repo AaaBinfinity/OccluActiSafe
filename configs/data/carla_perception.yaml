@@ -1,0 +1,25 @@
+# N15真实CARLA离线标注集；地图级隔离，RGB与实例掩码严格按CARLA frame配对。
+host: 127.0.0.1
+port: 2000
+client_timeout_s: 10.0
+image_size: [1920, 1080]
+horizontal_fov_deg: 90.0
+fixed_delta_s: 0.05
+frames_per_scene: 30
+seed: 20261101
+output_root: H:/OccluActiSafeDataset/artifacts/节点资料/N15_CARLA双视角标注与SPD审计
+maps:
+  - map: Town03_Opt
+    project_role: train
+    weather: ClearNoon
+  - map: Town05_Opt
+    project_role: model_val
+    weather: CloudyNoon
+  - map: Town10HD_Opt
+    project_role: test
+    weather: WetCloudyNoon
+scenes:
+  - vehicle
+  - cyclist
+  - pedestrian
+  - negative
