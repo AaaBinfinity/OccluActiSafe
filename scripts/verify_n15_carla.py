@@ -51,15 +51,15 @@ def _fonts():
     from PIL import ImageFont
     from scripts.audit_spd import review_font_identity
     identity = review_font_identity()
-    return (ImageFont.truetype(identity["path"], 24),
-            ImageFont.truetype(identity["path"], 18), identity)
+    return (ImageFont.truetype(identity["path"], 40),
+            ImageFont.truetype(identity["path"], 28), identity)
 
 
 def _draw_review(run_dir: Path, group: dict, scene: dict, frame: dict,
                  output: Path, fonts, width: int, height: int) -> dict:
     from PIL import Image, ImageDraw
     title_font, body_font, font_identity = fonts
-    panel_width, panel_height = width // 2, height // 2
+    panel_width, panel_height = width, height
     canvas = Image.new("RGB", (panel_width * 2, panel_height + 74), (24, 29, 37))
     draw = ImageDraw.Draw(canvas)
     draw.text((20, 14), f"{ROLE_NAMES[group['project_role']]} · {group['map']} · "
@@ -85,9 +85,8 @@ def _draw_review(run_dir: Path, group: dict, scene: dict, frame: dict,
             detail = f"{item['category']} id={item['actor_id']} {item['visible_pixel_count']}px"
             if distance is not None:
                 detail += f" {distance:.1f}m"
-            draw_panel.text((x1, max(0, y1 - 26)), detail, font=body_font, fill=color,
-                            stroke_width=2, stroke_fill=(15, 18, 22))
-        image.thumbnail((panel_width, panel_height), Image.Resampling.LANCZOS)
+            draw_panel.text((x1, max(0, y1 - 38)), detail, font=body_font, fill=color,
+                            stroke_width=3, stroke_fill=(15, 18, 22))
         x_offset = index * panel_width
         canvas.paste(image, (x_offset, 74))
         hidden = labels["hidden_actor_review"]
@@ -168,11 +167,30 @@ def audit_run(run_dir: Path, *, create_visuals: bool = True) -> dict:
                         raise ValueError(f"RGB/实例掩码分辨率不是1920×1080：{rgb_path}")
                     if rgb.format != "PNG" or mask.format != "PNG":
                         raise ValueError(f"RGB/实例掩码不是PNG：{rgb_path}")
+                    import numpy as np
+                    pixels = np.asarray(mask.convert("RGB"), dtype=np.uint8)
+                    instance_ids = pixels[:, :, 1].astype(np.uint32) + (pixels[:, :, 2].astype(np.uint32) << 8)
+                catalog_by_id = {int(actor["actor_id"]): actor for actor in scene["actor_catalog"]}
+                visible_ids = set()
                 for item in label["labels"]:
                     validate_box(item, 1920, 1080)
+                    actor_id = int(item["actor_id"])
+                    if actor_id not in catalog_by_id or actor_id in visible_ids:
+                        raise ValueError(f"可见目标身份不在场景目录或重复：{label_path}")
+                    visible_ids.add(actor_id)
+                    ys, xs = np.nonzero(instance_ids == actor_id)
+                    if (xs.size != int(item["visible_pixel_count"])
+                            or [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
+                            != item["bbox_xyxy_visible_pixels"]):
+                        raise ValueError(f"可见框/像素数与CARLA实例掩码不符：{label_path}")
                     counters[f"visible_{item['category']}"] += 1
                     counters["visible_labels"] += 1
-                counters["hidden_actor_review_records"] += len(label["hidden_actor_review"])
+                    counters[f"occlusion_degree_unknown_{item['category']}"] += 1
+                hidden_ids = {int(item["actor_id"]) for item in label["hidden_actor_review"]}
+                if (visible_ids & hidden_ids or visible_ids | hidden_ids != set(catalog_by_id)
+                        or any(np.any(instance_ids == actor_id) for actor_id in hidden_ids)):
+                    raise ValueError(f"可见/隐藏身份不能与实例掩码一一对应：{label_path}")
+                counters["hidden_actor_review_records"] += len(hidden_ids)
                 if label["negative_frame"]:
                     counters["negative_view_frames"] += 1
                 if not label["labels"] and not label["negative_frame"]:
