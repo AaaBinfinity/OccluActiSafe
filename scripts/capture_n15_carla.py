@@ -46,6 +46,17 @@ def _write_json(path: Path, value) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
 
 
+def summarize_scene_labels(scene: dict) -> dict:
+    labels = [item for view in scene["labels"] for item in view["labels"]]
+    return {
+        "labels_by_category": {category: sum(item["category"] == category for item in labels)
+                               for category in sorted({item["category"] for item in labels})},
+        "negative_view_frames": sum(view["negative_frame"] for frame in scene["frames"]
+                                     for view in frame["views"].values()),
+        "hidden_actor_review_records": sum(len(view["hidden_actor_review"]) for view in scene["labels"]),
+    }
+
+
 def run(config: dict | None = None) -> dict:
     import carla
     import numpy as np
@@ -220,6 +231,8 @@ def run(config: dict | None = None) -> dict:
                                 frame_id=frame_id, episode_id=episode_id, source_time_s=float(rgb_image.timestamp),
                                 rgb_path=rgb_path.name, instance_path=mask_path.name)
                             label["view"] = view_name
+                            label["rgb_sha256"] = rgb_proof["sha256"]
+                            label["instance_sha256"] = mask_proof["sha256"]
                             label_path = scene_dir / f"{stem}_可见标注.json"
                             _write_json(label_path, label)
                             frame_record["views"][view_name] = {
@@ -249,16 +262,13 @@ def run(config: dict | None = None) -> dict:
                         buffer.close()
                 scene_path = scene_dir / "场景采集清单.json"
                 _write_json(scene_path, scene)
+                scene_summary = summarize_scene_labels(scene)
                 report["groups"].append({"episode_id": episode_id, "group_id": group_id,
                     "map": map_spec["map"], "project_role": map_spec["project_role"],
                     "scene_kind": scene_kind, "status": scene["status"],
                     "frames": len(scene["frames"]), "manifest": str(scene_path),
                     "annotated_view_frames": sum(len(frame["views"]) for frame in scene["frames"]),
-                    "labels_by_category": {category: sum(label["category"] == category for label in scene["labels"])
-                                           for category in sorted({label["category"] for label in scene["labels"]})},
-                    "negative_view_frames": sum(view["negative_frame"] for frame in scene["frames"]
-                                                for view in frame["views"].values()),
-                    "hidden_actor_review_records": sum(len(label["hidden_actor_review"]) for label in scene["labels"]),
+                    **scene_summary,
                     "manifest_sha256": sha256(scene_path)})
                 _write_json(manifest_path, report)
     except Exception as error:
@@ -270,7 +280,7 @@ def run(config: dict | None = None) -> dict:
             current.apply_settings(original_settings)
             current.set_weather(original_weather)
             if current.get_map().name != original_map:
-                restored = client.load_world(original_map)
+                restored = client.load_world(original_map.rsplit("/", 1)[-1])
                 restored.apply_settings(original_settings)
                 restored.set_weather(original_weather)
             report["world_restored"] = True

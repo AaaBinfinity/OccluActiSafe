@@ -8,7 +8,7 @@ from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
                                              resolve_missing_vehicle_locations)
 from occluactisafe.data.adapters.carla import extract_visible_instances
 from scripts.audit_spd import review_font_identity
-from scripts.capture_n15_carla import validate_scene_groups
+from scripts.capture_n15_carla import summarize_scene_labels, validate_scene_groups
 
 
 class SpdPathTests(unittest.TestCase):
@@ -117,6 +117,17 @@ class CarlaVisibleLabelTests(unittest.TestCase):
         config["maps"].append({"map": "Town03_Opt", "project_role": "test"})
         with self.assertRaisesRegex(ValueError, "地图重复"):
             validate_scene_groups(config)
+
+    def test_carla_scene_summary_counts_nested_view_labels(self):
+        scene = {"frames": [{"views": {"车端": {"negative_frame": False},
+                                       "路侧": {"negative_frame": True}}}],
+                 "labels": [{"labels": [{"category": "vehicle"}], "hidden_actor_review": [{"actor_id": 8}]},
+                            {"labels": [{"category": "vehicle"}, {"category": "pedestrian"}],
+                             "hidden_actor_review": []}]}
+        self.assertEqual(summarize_scene_labels(scene), {
+            "labels_by_category": {"pedestrian": 1, "vehicle": 2},
+            "negative_view_frames": 1,
+            "hidden_actor_review_records": 1})
 
     def test_visible_boxes_come_from_instance_pixels_and_hidden_target_has_no_box(self):
         import numpy as np
