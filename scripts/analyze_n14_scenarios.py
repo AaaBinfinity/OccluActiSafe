@@ -1,6 +1,7 @@
 """N14高画质开发场景复核：逐对象因果、全参与者配对、原生像素及独立视频。"""
 import argparse
 import csv
+from datetime import datetime
 import hashlib
 import json
 import math
@@ -170,15 +171,20 @@ def analyze_suite(folder=None):
         if not candidates:raise FileNotFoundError('没有本机高画质多场景运行')
         folder=max(candidates,key=lambda p:(p/'多场景运行清单.json').stat().st_mtime)
     folder=Path(folder).resolve();manifest=read(folder/'多场景运行清单.json')
-    if manifest['probe_only'] or manifest['selected_case'] is not None or len(manifest['cases'])!=4:
+    if manifest['probe_only'] or manifest['selected_case'] is not None or {c['id'] for c in manifest['cases']}!={'S01','S02','S03','S04'} or len(manifest['cases'])!=4:
         raise ValueError('静态/单场景探针不能提交为完整多场景验收')
-    report={'analysis_commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),'cases':[],'scope':'四个开发场景/一个种子，受限轨迹输入；非N27完整专项或统计收益'}
+    report={'analysis_commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),
+            'analysis_source_sha256':{name:hashlib.sha256((ROOT/'scripts'/name).read_bytes()).hexdigest() for name in ('analyze_n14_scenarios.py','analyze_occluded_junction.py','export_n14_camera_videos.py')},
+            'started_at':datetime.now().astimezone().isoformat(),'cases':[],'scope':'四个开发场景/一个种子，受限轨迹输入；非N27完整专项或统计收益'}
     all_metrics=[]
     for case in manifest['cases']:
         result=dict(id=case['id'],name=case['name'],status='failed')
         try:
             if case['status']!='completed':raise RuntimeError('物理分支未完成：'+str(case))
+            if hashlib.sha256(Path(case['config']).read_bytes()).hexdigest()!=case['config_sha256']:
+                raise ValueError('采集前冻结的场景YAML被修改')
             run=Path(case['run_dir']);result['run_dir']=str(run)
+            result['producer_version']=read(run/'源码版本.json')
             extra=additional_checks(run)
             result.update(additional_checks=extra['passed'],additional_failed=extra['failed'])
             try:base=analyze(run)
@@ -195,12 +201,16 @@ def analyze_suite(folder=None):
         except Exception as error:result['error']=repr(error)
         report['cases'].append(result)
         (folder/'多场景验收报告.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-    report.update(passed_cases=sum(x['status']=='passed' for x in report['cases']),failed_cases=sum(x['status']!='passed' for x in report['cases']))
+    report.update(passed_cases=sum(x['status']=='passed' for x in report['cases']),failed_cases=sum(x['status']!='passed' for x in report['cases']),finished_at=datetime.now().astimezone().isoformat())
     (folder/'多场景验收报告.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     if all_metrics:
         with (folder/'多场景原始指标.csv').open('w',encoding='utf-8-sig',newline='') as handle:
             fields=list(dict.fromkeys(k for row in all_metrics for k in row));writer=csv.DictWriter(handle,fieldnames=fields);writer.writeheader();writer.writerows(all_metrics)
         plot_summary(folder,all_metrics)
+    index={p.relative_to(folder).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+           for p in sorted(folder.rglob('*')) if p.is_file() and p.name!='高画质多场景证据索引.json'}
+    (folder/'高画质多场景证据索引.json').write_text(json.dumps(dict(files=index,source_run_id=manifest['run_id'],
+        scope=report['scope'],passed_cases=report['passed_cases'],failed_cases=report['failed_cases']),ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     if report['failed_cases']:raise RuntimeError('多场景验收存在失败，证据保留：'+str(folder))
     return report
 
