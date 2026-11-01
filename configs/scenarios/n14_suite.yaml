@@ -17,7 +17,7 @@ cases:
     kind: pedestrian
     pedestrian_speed_mps: 1.5
     pedestrian_start_s: 0.0
-    ego_speed_mps: 11.0
+    ego_speed_mps: 10.5
     pedestrian_distance_m: 6.9
     occluder_offset_xy: [3.7, 4.2]
   - id: S04
@@ -25,6 +25,6 @@ cases:
     kind: pedestrian
     pedestrian_speed_mps: 2.0
     pedestrian_start_s: 1.15
-    ego_speed_mps: 11.0
+    ego_speed_mps: 10.5
     pedestrian_distance_m: 6.9
     occluder_offset_xy: [3.7, 4.2]
