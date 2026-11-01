@@ -161,7 +161,7 @@ def plot_summary(folder,metrics):
     fig.suptitle('N14高画质开发案例原值：每类1案例×1种子；非统计收益，未发生事件不绘点')
     for extension in ('png','svg'):fig.savefig(folder/f'四场景碰撞与信息时序原值.{extension}',dpi=180)
     plt.close(fig)
-    sources={r['case_id']:hashlib.sha256((Path(r['run_dir'])/'配对事件指标.csv').read_bytes()).hexdigest() for r in read(folder/'多场景验收报告.json')['cases'] if r.get('run_dir') and (Path(r['run_dir'])/'配对事件指标.csv').is_file()}
+    sources={r['id']:hashlib.sha256((Path(r['run_dir'])/'配对事件指标.csv').read_bytes()).hexdigest() for r in read(folder/'多场景验收报告.json')['cases'] if r.get('run_dir') and (Path(r['run_dir'])/'配对事件指标.csv').is_file()}
     (folder/'图表来源与哈希.json').write_text(json.dumps(dict(raw_csv='多场景原始指标.csv',raw_sha256=hashlib.sha256((folder/'多场景原始指标.csv').read_bytes()).hexdigest(),case_metric_sha256=sources),ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 
 
@@ -185,6 +185,17 @@ def analyze_suite(folder=None):
                 raise ValueError('采集前冻结的场景YAML被修改')
             run=Path(case['run_dir']);result['run_dir']=str(run)
             result['producer_version']=read(run/'源码版本.json')
+            if case.get('reuse_verification'):
+                from run_n14_scenarios import verify_file_hashes
+                proof_path=Path(case['reuse_verification'])
+                if hashlib.sha256(proof_path.read_bytes()).hexdigest()!=case['reuse_sha256']:raise ValueError('复用核验清单被修改')
+                proof=read(proof_path);verify_file_hashes(run,proof['source_files'])
+                old=proof['result'];result.update({k:v for k,v in old.items() if k not in ('id','name','status')})
+                result.update(status='passed',reused=True,reuse_verification=str(proof_path),source_analysis_commit=proof['source_analysis_commit'])
+                for row in read(run/'配对验收报告.json')['metrics']:all_metrics.append(dict(case_id=case['id'],case_name=case['name'],**row))
+                report['cases'].append(result)
+                (folder/'多场景验收报告.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+                continue
             extra=additional_checks(run)
             result.update(additional_checks=extra['passed'],additional_failed=extra['failed'])
             try:base=analyze(run)
@@ -210,6 +221,7 @@ def analyze_suite(folder=None):
     index={p.relative_to(folder).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
            for p in sorted(folder.rglob('*')) if p.is_file() and p.name!='高画质多场景证据索引.json'}
     (folder/'高画质多场景证据索引.json').write_text(json.dumps(dict(files=index,source_run_id=manifest['run_id'],
+        external_cases=[dict(id=c['id'],source_run=c['run_dir'],verification=c['reuse_verification'],sha256=c['reuse_sha256']) for c in manifest['cases'] if c.get('reuse_verification')],
         scope=report['scope'],passed_cases=report['passed_cases'],failed_cases=report['failed_cases']),ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     if report['failed_cases']:raise RuntimeError('多场景验收存在失败，证据保留：'+str(folder))
     return report

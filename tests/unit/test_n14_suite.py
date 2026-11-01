@@ -6,6 +6,8 @@ from types import SimpleNamespace
 import unittest
 import tempfile
 import hashlib
+import json
+import sys
 from unittest.mock import patch
 
 import yaml
@@ -21,6 +23,26 @@ ROOT=Path(__file__).resolve().parents[2]
 
 
 class SuiteTests(unittest.TestCase):
+    def test_reuse_hash_verifier_rejects_changed_content_and_path_escape(self):
+        sys.path.insert(0,str(ROOT/'scripts'))
+        from run_n14_scenarios import verify_file_hashes
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp)/'证据.json';path.write_bytes(b'original')
+            expected={'证据.json':hashlib.sha256(b'original').hexdigest()}
+            verify_file_hashes(temp,expected)
+            path.write_bytes(b'changed')
+            with self.assertRaises(ValueError):verify_file_hashes(temp,expected)
+            with self.assertRaises(ValueError):verify_file_hashes(temp,{'../逃逸.json':'0'*64})
+            self.assertEqual(path.read_bytes(),b'changed')
+
+    def test_changed_case_configuration_cannot_reuse_previous_result(self):
+        sys.path.insert(0,str(ROOT/'scripts'))
+        import run_n14_scenarios as entry
+        with tempfile.TemporaryDirectory() as temp:
+            directory=Path(temp);(directory/'多场景运行清单.json').write_text(json.dumps({'cases':[dict(id='S03',config_sha256='old',status='completed')]}),encoding='utf-8')
+            with patch.object(entry,'ARTIFACTS',directory):
+                self.assertIsNone(entry.reusable_case(directory,dict(id='S03',config_sha256='new'),directory))
+
     def test_native_bgra_png_preserves_channels_and_unicode_path(self):
         from PIL import Image
         native=SimpleNamespace(width=2,height=1,raw_data=bytes((0,0,255,255,0,255,0,255)))
