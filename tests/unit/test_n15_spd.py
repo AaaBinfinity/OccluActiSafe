@@ -10,6 +10,7 @@ from occluactisafe.data.adapters.carla import extract_visible_instances
 from scripts.audit_spd import review_font_identity
 from scripts.capture_n15_carla import (calibrate_fixed_roadside_transform, summarize_scene_labels,
                                        validate_scene_groups)
+from scripts.verify_n15_carla import synchronized_frame, validate_box
 
 
 class SpdPathTests(unittest.TestCase):
@@ -108,6 +109,22 @@ class SpdSplitTests(unittest.TestCase):
 
 
 class CarlaVisibleLabelTests(unittest.TestCase):
+    def test_n15_pair_integrity_requires_identical_carla_frame(self):
+        frame = {"carla_frame_id": 12, "source_time_s": 0.6,
+                 "views": {"车端": {"frame_id": 12}, "路侧": {"frame_id": 12}}}
+        self.assertEqual(synchronized_frame(frame), (12, 0.6))
+        frame["views"]["路侧"]["frame_id"] = 13
+        with self.assertRaisesRegex(ValueError, "frame不一致"):
+            synchronized_frame(frame)
+
+    def test_n15_visible_box_bounds_are_not_relaxed(self):
+        label = {"track_id": "e:a", "bbox_xyxy_visible_pixels": [0, 5, 1920, 1080],
+                 "visible_pixel_count": 1}
+        validate_box(label, 1920, 1080)
+        label["bbox_xyxy_visible_pixels"] = [0, 5, 1921, 1080]
+        with self.assertRaisesRegex(ValueError, "越界"):
+            validate_box(label, 1920, 1080)
+
     def test_fixed_roadside_pose_uses_carla_resolved_world_transform(self):
         class Location:
             def __init__(self, x=0, y=0, z=0):
