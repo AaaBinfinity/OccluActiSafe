@@ -9,7 +9,7 @@ from occluactisafe.data.adapters.spd import (audit_spd_split, build_spd_split,
 from occluactisafe.data.adapters.carla import extract_visible_instances
 from scripts.audit_spd import review_font_identity
 from scripts.capture_n15_carla import (local_camera_location_to_world, summarize_scene_labels,
-                                       validate_scene_groups)
+                                       roadside_camera_yaw, validate_scene_groups)
 
 
 class SpdPathTests(unittest.TestCase):
@@ -125,6 +125,10 @@ class CarlaVisibleLabelTests(unittest.TestCase):
 
         world = local_camera_location_to_world(Transform(), Carla, [1, 2, 3])
         self.assertEqual((world.x, world.y, world.z), (11, 22, 33))
+
+    def test_roadside_camera_yaw_offset_is_normalized(self):
+        self.assertEqual(roadside_camera_yaw(5.0, 180.0), 185.0)
+        self.assertEqual(roadside_camera_yaw(270.0, 180.0), 90.0)
 
     def test_carla_layout_groups_are_split_before_frames(self):
         config = {"maps": [{"map": "Town03_Opt", "project_role": "train"},

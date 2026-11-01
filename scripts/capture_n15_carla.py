@@ -83,6 +83,10 @@ def local_camera_location_to_world(transform, carla_module, xyz: list[float]):
     return location
 
 
+def roadside_camera_yaw(ego_yaw_deg: float, offset_deg: float) -> float:
+    return (float(ego_yaw_deg) + float(offset_deg)) % 360.0
+
+
 def run(config: dict | None = None) -> dict:
     import carla
     import numpy as np
@@ -212,7 +216,8 @@ def run(config: dict | None = None) -> dict:
                     roadside_xyz = config["roadside_camera_local_xyz"]
                     roadside_location = local_camera_location_to_world(ego_transform, carla, roadside_xyz)
                     roadside_transform = carla.Transform(roadside_location,
-                        carla.Rotation(yaw=ego_transform.rotation.yaw,
+                        carla.Rotation(yaw=roadside_camera_yaw(ego_transform.rotation.yaw,
+                                                               config["roadside_camera_yaw_offset_deg"]),
                                        pitch=float(config["roadside_camera_pitch_deg"])))
                     views = (("车端", carla.Transform(carla.Location(x=1.5, z=1.6), carla.Rotation()), ego),
                              ("路侧", roadside_transform, None))
