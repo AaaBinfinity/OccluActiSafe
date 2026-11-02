@@ -148,7 +148,7 @@ def export_input(source_root=None, destination_parent=None, include_code=True):
         raise
 
 
-def verify_input(root, hash_files=True):
+def verify_input(root, hash_files=True, progress=False):
     root = Path(root).resolve()
     package = read_json(root/'输入清单.json')
     if package.get('schema_version') != 'n17-portable-input-1' or package.get('status') != 'completed':
@@ -175,7 +175,7 @@ def verify_input(root, hash_files=True):
         expected.update({image: row['image_sha256'], label: row['label_sha256']})
     expected.update({'weights/'+name: digest for name, digest in WEIGHTS.items()})
     actual, seen_paths = {}, set()
-    for item in package['assets']:
+    for i,item in enumerate(package['assets'],1):
         key = item['path']
         path = bounded(root, key)
         if key.casefold() in seen_paths:
@@ -186,6 +186,8 @@ def verify_input(root, hash_files=True):
             raise ValueError(f'输入文件缺失/大小改变：{key}')
         if hash_files and sha256(path) != item['sha256']:
             raise ValueError(f'输入文件SHA改变：{key}')
+        if progress and i % 4000 == 0:
+            print(f'输入SHA复核 {i}/{len(package["assets"])}',flush=True)
     if actual != expected:
         raise ValueError('输入清单漏文件、多文件或SHA与原索引不一致')
     for directory in ('data', 'weights'):

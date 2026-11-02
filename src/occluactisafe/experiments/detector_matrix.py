@@ -11,6 +11,7 @@ import yaml
 from occluactisafe.common.config import PROJECT_ROOT
 from .detector_data import load_index
 from .run_store import now, sha256, read_json, write_json
+from .source_version import source_info
 
 
 def validate_matrix(cfg):
@@ -29,7 +30,17 @@ def train_one(cfg, family, seed, directory):
     import torch
     if not torch.cuda.is_available():
         raise RuntimeError('N17必需本机CUDA，不回退CPU')
-    os.environ['YOLO_CONFIG_DIR'] = str(Path(cfg['output_root'])/'04_开发与复核'/'Ultralytics设置')
+    device = int(cfg.get('device', 0))
+    torch.cuda.set_device(device)
+    settings = Path(cfg['output_root'])/'04_开发与复核'/'Ultralytics设置'
+    settings.mkdir(parents=True, exist_ok=True)
+    os.environ['YOLO_CONFIG_DIR'] = str(settings)
+    os.environ['YOLO_OFFLINE'] = 'true'
+    os.environ['YOLO_AUTOINSTALL'] = 'false'
+    from .visual_fonts import prepare_font_cache
+    prepare_font_cache(settings,cfg.get('font_path'))
+    if cfg.get('font_path'):
+        os.environ['OAS_CJK_FONT'] = cfg['font_path']
     from ultralytics import YOLO, __version__
     from ultralytics.utils.torch_utils import get_flops
     from .detector_training import trainer_class, training_plots
@@ -37,22 +48,30 @@ def train_one(cfg, family, seed, directory):
     directory.mkdir(parents=True, exist_ok=False)
     _, data = load_index(cfg)
     model_cfg = next(m for m in cfg['models'] if m['family'] == family)
-    weight = Path(cfg['output_root'])/'02_运行产物'/'官方预训练权重'/model_cfg['weights']
+    weight = Path(cfg.get('weights_root', Path(cfg['output_root'])/'02_运行产物'/'官方预训练权重'))/model_cfg['weights']
     if not weight.exists():
         raise FileNotFoundError('先运行prepare_detector.py显式准备权重')
     state = dict(family=family, seed=seed, started_at=now(), status='running',
                  config_sha256=cfg['_config_sha256'], data_index_sha256=data['index_sha256'],
                  initial_weight_sha256=sha256(weight), python=sys.version, platform=platform.platform(),
                  ultralytics=__version__, torch=torch.__version__, cuda=torch.version.cuda,
-                 source_commit=subprocess.check_output(['git', '-C', str(PROJECT_ROOT), 'rev-parse', 'HEAD'], text=True).strip())
+                 **source_info(), device=device, gpu_name=torch.cuda.get_device_name(device),
+                 gpu_uuid=str(getattr(torch.cuda.get_device_properties(device),'uuid','unknown')))
+    state.pop('protected_files')
     write_json(directory/'训练状态.json', state)
     try:
         model = YOLO(str(weight))
+        from .detector_transfer import apply_class_aliases, verify_person_transfer
+        transfer = apply_class_aliases(model, cfg.get('class_name_aliases'))
+        state['class_name_aliases'] = transfer['aliases']
+        state['class_transfer'] = transfer
+        if transfer['aliases']:
+            state['class_transfer_check'] = verify_person_transfer(model, cfg['classes'])
         state['pretrained_parameter_count'] = sum(p.numel() for p in model.model.parameters())
         state['pretrained_gflops_960'] = float(get_flops(model.model, imgsz=cfg['training']['imgsz']))
         write_json(directory/'训练状态.json', state)
         model.train(trainer=trainer_class(cfg['training']['batch']), data=str(Path(data['root'])/'dataset.yaml'),
-                    device=0, seed=seed, project=str(directory), name='训练', exist_ok=False,
+                    device=device, seed=seed, project=str(directory), name='训练', exist_ok=False,
                     plots=False, save=True, save_period=1, val=True, pretrained=True,
                     **cfg['training'])
         checkpoint = directory/'训练'/'weights'/'last.pt'

@@ -11,6 +11,7 @@ from occluactisafe.common.config import PROJECT_ROOT
 from .detector_data import load_index
 from .detector_matrix import validate_matrix
 from .run_store import read_json, sha256
+from .source_version import historical_source
 
 
 def audit_training_matrix(cfg, matrix_path):
@@ -24,6 +25,7 @@ def audit_training_matrix(cfg, matrix_path):
     initial_weights = {}
     algorithm_hashes = {}
     common_algorithm = None
+    source_fingerprints = set()
     checks = []
     for run in matrix['runs']:
         identity = run['family'], run['seed']
@@ -36,6 +38,12 @@ def audit_training_matrix(cfg, matrix_path):
             continue
         if run['config_sha256'] != cfg['_config_sha256'] or run['data_index_sha256'] != data['index_sha256']:
             raise ValueError('训练候选数据/配置哈希不公平')
+        if run.get('class_name_aliases', {}) != cfg.get('class_name_aliases', {}):
+            raise ValueError('训练分类行迁移配方与冻结配置不同')
+        if run.get('source_fingerprint_sha256'):
+            source_fingerprints.add(run['source_fingerprint_sha256'])
+            if len(source_fingerprints) > 1:
+                raise ValueError('训练矩阵的受保护源码内容不同')
         previous=initial_weights.setdefault(run['family'],run['initial_weight_sha256'])
         if previous!=run['initial_weight_sha256']:
             raise ValueError('同一模型族的训练种子使用不同初始权重')
@@ -64,7 +72,7 @@ def audit_training_matrix(cfg, matrix_path):
         if commit not in algorithm_hashes:
             parts=[]
             for filename,function in (('detector_training.py','trainer_class'),('detector_matrix.py','train_one')):
-                source=subprocess.check_output(['git','-C',str(PROJECT_ROOT),'show',commit+':src/occluactisafe/experiments/'+filename],encoding='utf-8')
+                source=historical_source(commit,'src/occluactisafe/experiments/'+filename)
                 node=next(n for n in ast.parse(source).body if isinstance(n,ast.FunctionDef) and n.name==function)
                 parts.append(ast.dump(node,include_attributes=False))
             algorithm_hashes[commit]=hashlib.sha256('\n'.join(parts).encode()).hexdigest()

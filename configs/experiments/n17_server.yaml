@@ -1,0 +1,17 @@
+# Windows服务器：先填写input_root（便携输入包目录），再运行check。
+# 相对路径均相对仓库根，不依赖终端当前目录；GPU编号相对CUDA_VISIBLE_DEVICES。
+action: check
+input_root: ../OccluActiSafe_N17_Input
+output_root: ''  # 空值：输入包同级的OccluActiSafe_N17_Results，禁止放Git仓库内
+device: 0
+font_path: ''  # 默认找Windows中文字体；找不到时填写.ttf/.ttc绝对路径
+batch: 8
+workers: 0
+pilot_epochs: 3
+formal_epochs: 30
+formal_policy: person_alias  # 阅读pilot结果后决定；可选baseline/person_alias，不代表已证明优胜
+minimum_free_gpu_mib: 6144
+minimum_available_ram_mib: 4096
+# pilot：三族×baseline/person_alias两配方×seed17，各3轮，属于开发诊断
+# formal：所选统一配方，三族×seeds17/29/43，各30轮；完成后自动统一评测12份权重
+# check只做环境、SHA和CPU分类行迁移检查，不训练；没有CPU训练回退/自动下载/自动缩batch

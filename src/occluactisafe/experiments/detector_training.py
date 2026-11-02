@@ -11,8 +11,8 @@ def training_plots(directory):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
-    plt.rcParams['axes.unicode_minus'] = False
+    from .visual_fonts import configure_plot_fonts
+    configure_plot_fonts()
     directory = Path(directory)
     step_path = directory/'逐步优化指标.csv'
     if not step_path.exists():

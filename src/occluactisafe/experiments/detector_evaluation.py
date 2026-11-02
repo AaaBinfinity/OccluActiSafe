@@ -20,6 +20,7 @@ from occluactisafe.perception.adapters.ultralytics import UltralyticsDetector
 from .detector_data import load_index
 from .run_store import sha256, read_json, write_json, append_json, now, manifest
 from .selection import select_detector, family_candidates
+from .source_version import source_info
 
 
 def gt_from_row(row):
@@ -99,7 +100,8 @@ def overlay(rgb, row, detections, directory, index):
     from PIL import Image, ImageDraw, ImageFont
     image = Image.fromarray(rgb)
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype('C:/Windows/Fonts/msyh.ttc', 22)
+    from .visual_fonts import chinese_font
+    font = ImageFont.truetype(str(chinese_font()), 22)
     for gt in row['gt']:
         draw.rectangle(gt['xyxy'], outline=(255,90,90), width=2)
     for pred in detections:
@@ -115,7 +117,17 @@ def evaluate_one(cfg, model_cfg, weights, stage, seed, root):
     import torch
     if not torch.cuda.is_available():
         raise RuntimeError('N17验证必须使用本机CUDA')
-    os.environ['YOLO_CONFIG_DIR'] = str(Path(cfg['output_root'])/'04_开发与复核'/'Ultralytics设置')
+    device = int(cfg.get('device', 0))
+    torch.cuda.set_device(device)
+    settings = Path(cfg['output_root'])/'04_开发与复核'/'Ultralytics设置'
+    settings.mkdir(parents=True, exist_ok=True)
+    os.environ['YOLO_CONFIG_DIR'] = str(settings)
+    os.environ['YOLO_OFFLINE'] = 'true'
+    os.environ['YOLO_AUTOINSTALL'] = 'false'
+    from .visual_fonts import prepare_font_cache
+    prepare_font_cache(settings,cfg.get('font_path'))
+    if cfg.get('font_path'):
+        os.environ['OAS_CJK_FONT'] = cfg['font_path']
     from ultralytics import YOLO, __version__
     from ultralytics.utils.torch_utils import get_flops
     rows, data = load_index(cfg)
@@ -127,7 +139,9 @@ def evaluate_one(cfg, model_cfg, weights, stage, seed, root):
                   split='model_val', status='running', started_at=now(), config_sha256=cfg['_config_sha256'],
                   data_index_sha256=data['index_sha256'], weight_sha256=sha256(weights),
                   weights=str(weights), ultralytics=__version__, expected_frames=len(rows),
-                  source_commit=subprocess.check_output(['git','-C',str(PROJECT_ROOT),'rev-parse','HEAD'], text=True).strip())
+                  **source_info(), device=device, gpu_name=torch.cuda.get_device_name(device),
+                  gpu_uuid=str(getattr(torch.cuda.get_device_properties(device),'uuid','unknown')))
+    result.pop('protected_files')
     write_json(root/'评测状态.json', result)
     try:
         model = YOLO(str(weights))
@@ -136,7 +150,7 @@ def evaluate_one(cfg, model_cfg, weights, stage, seed, root):
         e = cfg['evaluation']
         class_map = ({0:'pedestrian', 1:'cyclist', 2:'vehicle', 3:'cyclist', 5:'vehicle', 7:'vehicle'}
                      if stage == 'pretrained' else dict(enumerate(cfg['classes'])))
-        detector = UltralyticsDetector(model=model, class_map=class_map, device='0', confidence=e['confidence_keep'],
+        detector = UltralyticsDetector(model=model, class_map=class_map, device=str(device), confidence=e['confidence_keep'],
                                        imgsz=e['imgsz'], predict_kwargs={'classes': list(class_map), 'quantize': 16 if e['half'] else 32,
                                        'iou': e['iou_nms'], 'max_det': e['max_det'], 'nms': not model_cfg['end2end']})
         result['postprocessing'] = 'end2end_nms_false' if model_cfg['end2end'] else 'standard_nms'
@@ -220,7 +234,7 @@ def run_evaluation_matrix(cfg, training_matrix=None):
     root.mkdir(parents=True)
     candidates = []
     for m in cfg['models']:
-        weights = Path(cfg['output_root'])/'02_运行产物'/'官方预训练权重'/m['weights']
+        weights = Path(cfg.get('weights_root', Path(cfg['output_root'])/'02_运行产物'/'官方预训练权重'))/m['weights']
         candidates.append((m, weights, 'pretrained', None))
     if training_matrix is not None:
         from .detector_audit import audit_training_matrix
@@ -237,7 +251,7 @@ def run_evaluation_matrix(cfg, training_matrix=None):
         directory = root/(m['family']+'_'+stage+'_'+str(seed))
         try:
             outputs.append(evaluate_one(cfg, m, weight, stage, seed, directory))
-        except BaseException as exc:
+        except Exception as exc:
             outputs.append({'candidate_id':directory.name, 'split':'model_val', 'status':'failed',
                             'family':m['family'], 'stage':stage, 'seed':seed, 'error':repr(exc)})
         write_json(root/'比较矩阵.json', {'run_id':root.name, 'runs':outputs})
@@ -257,8 +271,8 @@ def comparison_plots(root, runs):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei','DejaVu Sans']
-    plt.rcParams['axes.unicode_minus'] = False
+    from .visual_fonts import configure_plot_fonts
+    configure_plot_fonts()
     rows = []
     for run in runs:
         for domain, m in run.get('domains',{}).items():
