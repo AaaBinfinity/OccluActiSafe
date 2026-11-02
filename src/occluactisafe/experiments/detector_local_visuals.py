@@ -121,9 +121,11 @@ def capture_validation(validator, directory, epoch, phase):
                    'reason':'原生未返回该类曲线；GT按真实计数另列，不把无曲线冒称零GT'}
         table.append(item)
     cm=getattr(validator,'confusion_matrix',None)
+    import inspect
     result={'epoch':epoch,'phase':phase,'names':names,'class_ids_with_gt':ids,'classes':table,'curves':curves,
             'confusion_matrix':np.asarray(cm.matrix).tolist() if cm is not None and validator.args.plots else None,
-            'native_confusion_confidence':getattr(cm,'conf',None),'native_confusion_iou':getattr(cm,'iou_thres',None),
+            'native_confusion_confidence':float(validator.args.conf),
+            'native_confusion_iou':float(inspect.signature(cm.process_batch).parameters['iou_thres'].default) if cm is not None else None,
             'category_id_map':list(validator.class_map),'native_metrics':metrics.results_dict,
             'note':'原生验证定义；不是N16固定0.25操作点评分，不是逐步验证'}
     target=directory/'逐轮验证原值'/('最佳权重验证.json' if phase=='best_checkpoint' else f'第{epoch:04d}轮.json')
@@ -156,7 +158,8 @@ def validation_figures(directory, raw, figures):
             ax.tick_params(axis='x',rotation=35)
             for i in range(len(cm)):
                 for j in range(len(cm)):ax.text(j,i,f'{display[i,j]:.2f}' if normalize else str(int(cm[i,j])),ha='center',va='center',fontsize=8)
-            ax.set_title('原生验证混淆矩阵'+('（按真实类别归一化）' if normalize else '（计数）'))
+            ax.set_title('原生验证混淆矩阵'+('（按真实类别归一化）' if normalize else '（计数）')+
+                         f"\nconf>{raw['native_confusion_confidence']}, 匹配IoU>{raw['native_confusion_iou']}")
             save_figure(fig,directory/('混淆矩阵_归一化' if normalize else '混淆矩阵_计数'),figures);plt.close(fig)
 
 

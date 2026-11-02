@@ -109,7 +109,9 @@ def build_local_config(opts,environment,snapshot,job,development=False):
 def prepare_resume(opts,cfg):
     source=Path(opts['RESUME_RUN']).resolve()
     if not source.is_relative_to(opts['OUTPUT_ROOT']):raise ValueError('恢复来源须在本节点实际输出目录内')
-    task=read_json(source/'本机训练任务.json');oldcfg=load_config(task['frozen_config']);local=cfg['local_profile']
+    task=read_json(source/'本机训练任务.json')
+    if not task.get('frozen_config'):raise ValueError('原任务尚未准备完成，不能从不存在的检查点恢复')
+    oldcfg=load_config(task['frozen_config']);local=cfg['local_profile']
     if task['status']=='completed':raise ValueError('任务已完成，不重复续训；新配方请新建任务')
     old=oldcfg['local_profile']
     if any(local[k]!=old[k] for k in ('model_id','seed','recipe_sha256','source_fingerprint_sha256')):raise ValueError('恢复模型/seed/配方/源码不同，拒绝混入旧任务')

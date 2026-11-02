@@ -53,6 +53,8 @@ def detection_gallery(cfg,directory,maximum=12):
     result={'scope':'仅固定0.25/IoU0.5离线诊断，非完整选型/跟踪或闭环收益','validation_frames':len(rows),
             'gt':sum(r['gt'] for r in scores),'tp':sum(r['tp'] for r in scores),'fp':sum(r['fp'] for r in scores),'fn':sum(r['fn'] for r in scores),
             'source_predictions_sha256':sha256(prediction),'best_validation_sha256':sha256(raw),
+            'best_checkpoint_sha256':sha256(directory/'weights/best.pt'),
+            'configuration_sha256':cfg['_config_sha256'],'source_fingerprint_sha256':cfg['local_profile']['source_fingerprint_sha256'],
             'score_threshold':.25,'iou_threshold':.5,'images':images}
     write_json(output/'诊断图来源与指标.json',result)
     return result
