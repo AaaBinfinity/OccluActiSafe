@@ -443,6 +443,17 @@
       "legacy_directory": "last_n17_evidence_20261102",
       "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_20261102",
       "status": "current"
+    },
+    {
+      "node": "N17",
+      "purpose": "Windows服务器脚本与冻结输入/源码包交付及本机验证（服务器训练未执行）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_server_20261102",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_server_20261102",
+      "evidence_file": "N17服务器交付索引.json",
+      "evidence_sha256": "e45ca352d5ad71b13f2ed6c6967fd4dca430a3a66804980d6cb01b8e708afe2d",
+      "status": "current",
+      "legacy_directory": "last_n17_server_20261102",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_server_20261102"
     }
   ]
 }
