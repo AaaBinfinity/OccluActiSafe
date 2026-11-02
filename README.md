@@ -22,6 +22,8 @@ N17首次环境使用`uv sync --locked --group training --group perception --gro
 
 N17补强可使用[Windows服务器运行说明](docs/N17服务器运行说明.md)：`scripts/package_n17_server.py`准备冻结输入与代码包，`scripts/run_n17_server.ps1`提供环境预检、单seed迁移对照、三seed正式训练/统一评测及结果回传。默认只检查，服务器GPU和目录由用户填写；本机仅完成机制与真实预检，没有启动服务器训练或改变原门槛。
 
+用户追加A100全尺寸要求后，使用[全尺寸训练说明](docs/N17A100全尺寸训练说明.md)与`configs/experiments/n17_server_a100.yaml`；IDE入口`scripts/run_n17_a100.py`默认仍只检查。15模型×3seed、统一最多300轮/至少50轮/patience30、AMP/batch16，自动按pilot实测外推耗时；新增12份大模型权重已按官方SHA准备，A100训练尚未执行。
+
 1. [项目节点实施与验收计划](docs/项目节点实施与验收计划.md)：33个核心节点、2个条件扩展；逐项范围、测试、标准、证据和结果回填。
 2. [工程架构与文件结构设计](docs/工程架构与文件结构设计.md)：代码框架、技术栈与接口。
 3. [文档导航](docs/README.md)：阅读顺序与各资料用途。
