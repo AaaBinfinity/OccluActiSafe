@@ -1,0 +1,23 @@
+{
+  "schema_version": "image-retention-removal-summary-1",
+  "storage": "external_artifacts",
+  "path_base": "本机实际移动硬盘项目artifacts目录",
+  "removed_image_count": 29476,
+  "removed_catalog_entries": {
+    "artifact_path": "公共管理/01_图片与迁移核验/已清理图片映射_8cbd052d30c52416f07a0d810ac617ee5a24ab3d3259fc0446a983afa3a4c2eb.json",
+    "sha256": "8cbd052d30c52416f07a0d810ac617ee5a24ab3d3259fc0446a983afa3a4c2eb",
+    "bytes": 4033080
+  },
+  "source_catalog": {
+    "artifact_path": "公共管理/01_图片与迁移核验/过程图片完整清单_08b835ce5387657e0245fb1f857db985124db7662e8376be81fa13af48a49b40.json",
+    "sha256": "08b835ce5387657e0245fb1f857db985124db7662e8376be81fa13af48a49b40",
+    "bytes": 29073078
+  },
+  "authorization": "用户2026-11-02明确确认，只删除无当前最终产物依赖的旧实验/过程图/失败记录；开发时仍完整记录，不自动清理后续任务",
+  "payload_backup_created": false,
+  "cleanup_evidence_index": {
+    "artifact_path": "公共管理/02_目录管理/last_空间清理_20261102_115818_b784aa92/清理结果与保留依赖索引.json",
+    "sha256": "df22465e605726368cf5300a5f5dca859460ecdb15410e6ef26ad462df61e6a2",
+    "bytes": 6165
+  }
+}

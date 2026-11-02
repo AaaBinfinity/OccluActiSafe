@@ -2,7 +2,7 @@
   "schema_version": "final-output-directory-1",
   "path_base": "本机实际移动硬盘项目artifacts根目录",
   "prefix": "last_",
-  "selection_basis": "按节点计划显式选择当前最终交付；status=current或省略为当前，historical_reference为保留旧入口；last不表示用户验收",
+  "selection_basis": "entries仅列当前最终交付；retired_entries为用户授权清理后的旧入口登记，不保证旧实体仍存在；last不表示用户验收",
   "storage": "按节点和用途归类的真实目录；last联接集中在各节点01_最终结果，根目录旧路径为隐藏兼容链接",
   "entries": [
     {
@@ -287,54 +287,6 @@
     },
     {
       "node": "N14",
-      "purpose": "旧版720p：三分支及12份独立视频",
-      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_711b3da7319d4725a564403bc1cf5ff3",
-      "original_artifact_path": "n14_711b3da7319d4725a564403bc1cf5ff3",
-      "evidence_file": "证据索引.json",
-      "evidence_sha256": "2f55e3fb5e1782d64db4abd8610158ef4f19c8e6ca63b34ff427098c448cb175",
-      "legacy_directory": "last_n14_711b3da7319d4725a564403bc1cf5ff3",
-      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_711b3da7319d4725a564403bc1cf5ff3",
-      "status": "historical_reference",
-      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531"
-    },
-    {
-      "node": "N14",
-      "purpose": "旧版720p：分级制动交付证据",
-      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_budget_20261101",
-      "original_artifact_path": "n14_budget_20261101",
-      "evidence_file": "交付证据索引.json",
-      "evidence_sha256": "8c7497b919d1259efcbe4a2e67310f68eca8299424c91bd9b24b5d4717f58e34",
-      "legacy_directory": "last_n14_budget_20261101",
-      "physical_artifact_path": "节点资料/N14_盲区路口/03_验收证据/n14_budget_20261101",
-      "status": "historical_reference",
-      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531"
-    },
-    {
-      "node": "N14",
-      "purpose": "旧版720p：静态遮挡保留对照",
-      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_e2d0d4f09e3f48cdb277872f45ed22c0",
-      "original_artifact_path": "n14_e2d0d4f09e3f48cdb277872f45ed22c0",
-      "evidence_file": "源码版本.json",
-      "evidence_sha256": "d2e2a2797ede617c308d62f51adb664104a7a38158b5ac962395f0c13335379b",
-      "legacy_directory": "last_n14_e2d0d4f09e3f48cdb277872f45ed22c0",
-      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_e2d0d4f09e3f48cdb277872f45ed22c0",
-      "status": "historical_reference",
-      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531"
-    },
-    {
-      "node": "N14",
-      "purpose": "旧版720p：静态遮挡移开对照",
-      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
-      "original_artifact_path": "n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
-      "evidence_file": "源码版本.json",
-      "evidence_sha256": "d2e2a2797ede617c308d62f51adb664104a7a38158b5ac962395f0c13335379b",
-      "legacy_directory": "last_n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
-      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
-      "status": "historical_reference",
-      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531"
-    },
-    {
-      "node": "N14",
       "purpose": "四场景1080p/Epic及48份独立视频",
       "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
       "original_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
@@ -376,18 +328,6 @@
       "legacy_directory": "last_n15_evidence_20261101",
       "status": "current",
       "physical_artifact_path": "节点资料/N15_CARLA双视角标注与SPD审计/03_验收证据/n15_20261101"
-    },
-    {
-      "node": "N16",
-      "purpose": "SPD model_val统一感知数据适配与中文GT叠加",
-      "directory": "节点资料/N16检测器与ByteTrack统一适配/01_最终结果/last_n16_spd_56effca0a7f44acc918e70871d1e3fe0",
-      "original_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_56effca0a7f44acc918e70871d1e3fe0",
-      "evidence_file": "model_val适配审计.json",
-      "evidence_sha256": "bc59092ae59d532ad645938d982989c7b50f2fe67021817cd7a9952945767b5b",
-      "legacy_directory": "last_n16_spd_56effca0a7f44acc918e70871d1e3fe0",
-      "physical_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_56effca0a7f44acc918e70871d1e3fe0",
-      "status": "historical_reference",
-      "superseded_by": "last_n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481"
     },
     {
       "node": "N16",
@@ -476,6 +416,78 @@
       "status": "current",
       "legacy_directory": "last_n17_local_delivery_20261102",
       "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_local_delivery_20261102"
+    }
+  ],
+  "retired_entries": [
+    {
+      "node": "N14",
+      "purpose": "旧版720p：三分支及12份独立视频",
+      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_711b3da7319d4725a564403bc1cf5ff3",
+      "original_artifact_path": "n14_711b3da7319d4725a564403bc1cf5ff3",
+      "evidence_file": "证据索引.json",
+      "evidence_sha256": "2f55e3fb5e1782d64db4abd8610158ef4f19c8e6ca63b34ff427098c448cb175",
+      "legacy_directory": "last_n14_711b3da7319d4725a564403bc1cf5ff3",
+      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_711b3da7319d4725a564403bc1cf5ff3",
+      "status": "retired_after_authorized_cleanup",
+      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
+      "retention": "仅保留登记；实体只保留当前最终产物实际引用的必要部分",
+      "cleanup_run_id": "空间清理_20261102_115818_b784aa92"
+    },
+    {
+      "node": "N14",
+      "purpose": "旧版720p：分级制动交付证据",
+      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_budget_20261101",
+      "original_artifact_path": "n14_budget_20261101",
+      "evidence_file": "交付证据索引.json",
+      "evidence_sha256": "8c7497b919d1259efcbe4a2e67310f68eca8299424c91bd9b24b5d4717f58e34",
+      "legacy_directory": "last_n14_budget_20261101",
+      "physical_artifact_path": "节点资料/N14_盲区路口/03_验收证据/n14_budget_20261101",
+      "status": "retired_after_authorized_cleanup",
+      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
+      "retention": "仅保留登记；实体只保留当前最终产物实际引用的必要部分",
+      "cleanup_run_id": "空间清理_20261102_115818_b784aa92"
+    },
+    {
+      "node": "N14",
+      "purpose": "旧版720p：静态遮挡保留对照",
+      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_e2d0d4f09e3f48cdb277872f45ed22c0",
+      "original_artifact_path": "n14_e2d0d4f09e3f48cdb277872f45ed22c0",
+      "evidence_file": "源码版本.json",
+      "evidence_sha256": "d2e2a2797ede617c308d62f51adb664104a7a38158b5ac962395f0c13335379b",
+      "legacy_directory": "last_n14_e2d0d4f09e3f48cdb277872f45ed22c0",
+      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_e2d0d4f09e3f48cdb277872f45ed22c0",
+      "status": "retired_after_authorized_cleanup",
+      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
+      "retention": "仅保留登记；实体只保留当前最终产物实际引用的必要部分",
+      "cleanup_run_id": "空间清理_20261102_115818_b784aa92"
+    },
+    {
+      "node": "N14",
+      "purpose": "旧版720p：静态遮挡移开对照",
+      "directory": "节点资料/N14_盲区路口/01_最终结果/last_n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
+      "original_artifact_path": "n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
+      "evidence_file": "源码版本.json",
+      "evidence_sha256": "d2e2a2797ede617c308d62f51adb664104a7a38158b5ac962395f0c13335379b",
+      "legacy_directory": "last_n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
+      "physical_artifact_path": "节点资料/N14_盲区路口/02_运行产物/n14_a7c943f6a08047c3b8e7f9dcfd5c14f1",
+      "status": "retired_after_authorized_cleanup",
+      "superseded_by": "last_n14_suite_9c3b71f92d9f482e923f4c517dfb1531",
+      "retention": "仅保留登记；实体只保留当前最终产物实际引用的必要部分",
+      "cleanup_run_id": "空间清理_20261102_115818_b784aa92"
+    },
+    {
+      "node": "N16",
+      "purpose": "SPD model_val统一感知数据适配与中文GT叠加",
+      "directory": "节点资料/N16检测器与ByteTrack统一适配/01_最终结果/last_n16_spd_56effca0a7f44acc918e70871d1e3fe0",
+      "original_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_56effca0a7f44acc918e70871d1e3fe0",
+      "evidence_file": "model_val适配审计.json",
+      "evidence_sha256": "bc59092ae59d532ad645938d982989c7b50f2fe67021817cd7a9952945767b5b",
+      "legacy_directory": "last_n16_spd_56effca0a7f44acc918e70871d1e3fe0",
+      "physical_artifact_path": "节点资料/N16检测器与ByteTrack统一适配/02_运行产物/n16_spd_56effca0a7f44acc918e70871d1e3fe0",
+      "status": "retired_after_authorized_cleanup",
+      "superseded_by": "last_n16_spd_d8e26cd2ff324fa0a96b1f2a760dd481",
+      "retention": "仅保留登记；实体只保留当前最终产物实际引用的必要部分",
+      "cleanup_run_id": "空间清理_20261102_115818_b784aa92"
     }
   ]
 }
