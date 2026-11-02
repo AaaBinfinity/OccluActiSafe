@@ -5,6 +5,7 @@ import math
 import ast
 import hashlib
 import subprocess
+from collections import Counter
 from pathlib import Path
 
 from occluactisafe.common.config import PROJECT_ROOT
@@ -50,17 +51,44 @@ def audit_training_matrix(cfg, matrix_path):
         if sha256(run['checkpoint']) != run['checkpoint_sha256']:
             raise ValueError('完成权重哈希改变')
         path=Path(run['directory'])/'训练'/'逐步优化指标.csv'
+        actual_epochs = cfg['training']['epochs']
+        termination = None
+        if cfg.get('budget_policy'):
+            from .detector_stopping import replay_stopping
+            trace = [json.loads(line) for line in (path.parent/'早停判定.jsonl').read_text(encoding='utf-8').splitlines()]
+            termination = replay_stopping(trace, cfg['budget_policy'], cfg['training']['epochs'])
+            if run.get('termination') != termination or run.get('checkpoint_rule') != 'native_model_val_best_fitness':
+                raise ValueError('训练停止记录或best检查点策略不同')
+            if Path(run['checkpoint']).name != 'best.pt' or sha256(run['last_checkpoint']) != run['last_checkpoint_sha256']:
+                raise ValueError('早停检查点选择或last权重SHA改变')
+            epochs = [json.loads(line) for line in (path.parent/'逐轮验证指标.jsonl').read_text(encoding='utf-8').splitlines()]
+            if (len(epochs) != len(trace) or any(e['epoch'] != t['epoch'] or e['native_fitness'] != t['fitness'] for e,t in zip(epochs,trace))):
+                raise ValueError('早停fitness与逐轮真实验证记录不同')
+            if run.get('amp_requested') != cfg['training']['amp'] or run.get('amp_actual') != cfg['training']['amp']:
+                raise ValueError('实际精度与冻结AMP配置不同')
+            actual_epochs = termination['actual_epochs']
+        run_steps = math.ceil(train_frames/cfg['training']['batch'])*actual_epochs
+        run_images = train_frames*actual_epochs
         with path.open(encoding='utf-8',newline='') as f:
             steps=list(csv.DictReader(f))
-        if [int(r['step']) for r in steps] != list(range(1,expected_steps+1)):
+        if [int(r['step']) for r in steps] != list(range(1,run_steps+1)):
             raise ValueError('实际优化步号/步数不符合完整冻结预算')
         exposures=sum(int(r['image_count']) for r in steps)
-        if exposures != expected_images:
+        if exposures != run_images:
             raise ValueError('实际样本曝光不等于完整训练预算')
+        if termination:
+            counts,images=Counter(),Counter()
+            for row in steps:
+                epoch=int(row['epoch']);counts[epoch]+=1;images[epoch]+=int(row['image_count'])
+            if (dict(counts)!={e:math.ceil(train_frames/cfg['training']['batch']) for e in range(1,actual_epochs+1)}
+                    or dict(images)!={e:train_frames for e in range(1,actual_epochs+1)}):
+                raise ValueError('早停前某轮训练被截短或混入其他epoch')
         graph_path=path.parent/'训练图表来源_完整分项.json'
         graph=read_json(graph_path)
-        if graph['points']!=expected_steps or graph['validation_epochs']!=cfg['training']['epochs'] or graph['step_csv_sha256']!=sha256(path):
+        if graph['points']!=run_steps or graph['validation_epochs']!=actual_epochs or graph['step_csv_sha256']!=sha256(path):
             raise ValueError('训练图表与原始逐步/逐轮记录不一致')
+        if termination and graph.get('epoch_jsonl_sha256') != sha256(path.parent/'逐轮验证指标.jsonl'):
+            raise ValueError('早停图表来源与逐轮验证SHA不同')
         for item in graph['figures']:
             if sha256(path.parent/item['file'])!=item['sha256']:
                 raise ValueError('已保存训练图表的SHA不符')
@@ -81,6 +109,7 @@ def audit_training_matrix(cfg, matrix_path):
             raise ValueError('各训练run的optimizer/模型训练函数实现不同，拒绝混比')
         checks.append({'family':run['family'],'seed':run['seed'],'status':'passed',
                        'optimizer_steps':len(steps),'image_exposures':exposures,
+                       'actual_epochs':actual_epochs, 'termination':termination,
                        'initial_weight_sha256':run['initial_weight_sha256'],
                        'source_commit':commit,'training_function_ast_sha256':algorithm_hashes[commit],
                        'figure_count':len(graph['figures']),'figure_source_sha256':sha256(graph_path),

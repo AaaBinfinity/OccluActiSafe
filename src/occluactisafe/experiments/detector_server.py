@@ -39,28 +39,47 @@ def server_settings(path=DEFAULT_SERVER_CONFIG):
     path = (path if path.is_absolute() else PROJECT_ROOT/path).resolve()
     cfg = yaml.safe_load(path.read_text(encoding='utf-8-sig'))
     allowed={'action','input_root','output_root','device','font_path','batch','workers','pilot_epochs',
-             'formal_epochs','formal_policy','minimum_free_gpu_mib','minimum_available_ram_mib','minimum_free_disk_gib'}
+             'formal_epochs','formal_policy','minimum_free_gpu_mib','minimum_available_ram_mib','minimum_free_disk_gib',
+             'model_sizes','weights_root','amp','minimum_epochs','early_stopping_patience','checkpoint_period','expected_gpu_name'}
     if not isinstance(cfg,dict) or set(cfg)-allowed:raise ValueError('服务器配置含未知字段')
     cfg.setdefault('minimum_free_disk_gib',20)
-    if cfg.get('action') not in ('check','pilot','formal','collect'):raise ValueError('服务器action非法')
+    if cfg.get('action') not in ('check','pilot','formal','collect','prepare-weights','estimate'):raise ValueError('服务器action非法')
     def resolve(value):
         p = Path(value).expanduser()
         return (p if p.is_absolute() else PROJECT_ROOT/p).resolve()
     cfg['input_root'] = resolve(cfg['input_root'])
     cfg['output_root'] = resolve(cfg['output_root']) if cfg['output_root'] else cfg['input_root'].parent/'OccluActiSafe_N17_Results'
+    cfg['weights_root'] = resolve(cfg['weights_root']) if cfg.get('weights_root') else cfg['input_root']/('扩展权重' if cfg.get('model_sizes') else 'weights')
+    if cfg['weights_root'].is_relative_to(PROJECT_ROOT) or cfg['weights_root'].is_relative_to(cfg['output_root']):
+        raise ValueError('权重目录须在仓库及结果目录外')
+    cfg.setdefault('amp',False);cfg.setdefault('minimum_epochs',1)
+    cfg.setdefault('early_stopping_patience',0);cfg.setdefault('checkpoint_period',1);cfg.setdefault('expected_gpu_name','')
+    if type(cfg['amp']) is not bool or not isinstance(cfg['expected_gpu_name'],str):raise ValueError('amp或expected_gpu_name非法')
+    if 'model_sizes' in cfg:
+        from .detector_models import expanded_models
+        expanded_models(cfg['model_sizes'])
     if cfg['output_root'].is_relative_to(PROJECT_ROOT) or cfg['input_root'].is_relative_to(PROJECT_ROOT):
         raise ValueError('输入/结果目录必须在Git仓库外')
     if cfg['input_root'].is_relative_to(cfg['output_root']) or cfg['output_root'].is_relative_to(cfg['input_root']):
         raise ValueError('输入和结果目录不能嵌套，避免把原图混入结果回传')
-    for field in ('device','batch','workers','pilot_epochs','formal_epochs','minimum_free_gpu_mib','minimum_available_ram_mib','minimum_free_disk_gib'):
-        if type(cfg[field]) is not int or cfg[field] < (0 if field in ('device','workers') else 1):
+    for field in ('device','batch','workers','pilot_epochs','formal_epochs','minimum_free_gpu_mib','minimum_available_ram_mib','minimum_free_disk_gib','minimum_epochs','early_stopping_patience','checkpoint_period'):
+        if type(cfg[field]) is not int or cfg[field] < (0 if field in ('device','workers','early_stopping_patience') else 1):
             raise ValueError(f'服务器参数非法：{field}')
     if cfg['formal_epochs'] < 3 or cfg['pilot_epochs'] > cfg['formal_epochs'] or cfg['formal_policy'] not in POLICIES:
         raise ValueError('正式训练至少3轮，pilot不能超过formal，配方须明确')
+    if cfg['minimum_epochs'] > cfg['formal_epochs']:raise ValueError('最少轮数不能超过最大预算')
     if cfg.get('font_path'):
         cfg['font_path'] = str(resolve(cfg['font_path']))
     cfg['_path'],cfg['_sha256'] = str(path),sha256(path)
     return cfg
+
+
+def server_base(settings):
+    base=load_config()
+    if settings.get('model_sizes'):
+        from .detector_models import expanded_models
+        base['model_sizes']=settings['model_sizes'];base['models']=expanded_models(settings['model_sizes'])
+    return base
 
 
 @contextmanager
@@ -107,6 +126,10 @@ def preflight(settings):
         if sys.version_info[:2] != (3,11):raise RuntimeError('必须使用Python3.11')
         import torch,torchvision,ultralytics,psutil
         from ultralytics.utils import USER_CONFIG_DIR
+        # IDE/kernel或续跑中框架可能已导入，实际缓存路径由首次导入固定。
+        # 同时准备框架实际目录并留证，不能只改环境变量后假设缓存已切换。
+        prepare_font_cache(Path(USER_CONFIG_DIR).parent,settings.get('font_path'))
+        report['actual_ultralytics_cache']=str(USER_CONFIG_DIR)
         if not all((USER_CONFIG_DIR/name).is_file() for name in ('Arial.ttf','Arial.Unicode.ttf')):
             raise RuntimeError('框架实际字体缓存未就绪，拒绝运行中自动下载')
         from .visual_fonts import chinese_font
@@ -120,6 +143,8 @@ def preflight(settings):
         if free/2**20 < settings['minimum_free_gpu_mib']:raise RuntimeError('GPU空闲显存低于配置门槛，不自动改batch')
         if psutil.virtual_memory().available/2**20 < settings['minimum_available_ram_mib']:raise RuntimeError('可用系统内存不足')
         props=torch.cuda.get_device_properties(device)
+        if settings.get('expected_gpu_name') and settings['expected_gpu_name'].lower() not in props.name.lower():
+            raise RuntimeError('GPU型号不含配置expected_gpu_name，不用本机设备冒充服务器')
         report.update(torch=torch.__version__,torchvision=torchvision.__version__,ultralytics=ultralytics.__version__,
                       cuda=torch.version.cuda,gpu={'device':device,'name':props.name,'uuid':str(getattr(props,'uuid','unknown')),
                       'capability':list(torch.cuda.get_device_capability(device)),'total_mib':total/2**20,'free_mib':free/2**20},
@@ -144,6 +169,11 @@ def preflight(settings):
             conv=torch.nn.Conv2d(3,4,3).to(gpu_device)
             if not torch.isfinite(conv(torch.ones(1,3,16,16,device=gpu_device))).all():raise RuntimeError('GPU卷积非有限')
         torch.cuda.synchronize()
+        if settings.get('amp'):
+            with torch.inference_mode(),torch.autocast('cuda',dtype=torch.float16):
+                mixed=conv(torch.ones(1,3,16,16,device=gpu_device))
+                if mixed.dtype!=torch.float16 or not torch.isfinite(mixed).all():raise RuntimeError('CUDA AMP卷积检查失败')
+            torch.cuda.synchronize();report['gpu_amp_convolution']='passed'
         font=chinese_font(settings.get('font_path'))
         from fontTools.ttLib import TTFont
         with TTFont(str(font),fontNumber=0,lazy=True) as ft:
@@ -154,9 +184,12 @@ def preflight(settings):
         report['input_verification']=data
         from ultralytics import YOLO
         from .detector_transfer import apply_class_aliases,verify_person_transfer
-        base=load_config();transfer=[]
+        base=server_base(settings);transfer=[]
+        if settings.get('model_sizes'):
+            from .detector_models import verify_weights
+            report['expanded_weights']=verify_weights(settings['weights_root'],base['models'])
         for m in base['models']:
-            model=YOLO(str(settings['input_root']/'weights'/m['weights']))
+            model=YOLO(str(settings['weights_root']/m['weights']))
             apply_class_aliases(model,POLICIES['person_alias'])
             transfer.append({'family':m['family'],**verify_person_transfer(model,base['classes'])})
         report['class_transfer_checks']=transfer
@@ -202,7 +235,7 @@ def worker(task_path):
                 root=output/'开发评测';root.mkdir()
                 trained=read_json(task['training_matrix'])
                 audit=audit_training_matrix(cfg,task['training_matrix'])
-                if len(audit['runs'])!=3 or any(r['status']!='passed' for r in audit['runs']):raise ValueError('开发训练预算复核失败')
+                if len(audit['runs'])!=len(cfg['models']) or any(r['status']!='passed' for r in audit['runs']):raise ValueError('开发训练预算复核失败')
                 write_json(root/'开发预算复核.json',{'status':'passed','formal_matrix_complete':False,'runs':audit['runs']})
                 results=[]
                 for r in trained['runs']:
@@ -213,7 +246,7 @@ def worker(task_path):
                         results.append({'candidate_id':r['family']+'_finetuned_'+str(r['seed']),'family':r['family'],
                                         'stage':'finetuned','seed':r['seed'],'status':'failed','error':repr(exc)})
                     write_json(root/'比较矩阵.json',{'run_id':root.name,'development_only':True,'runs':results})
-                write_json(root/'矩阵公平性复核.json',audit_evaluation_matrix(cfg,results,root,3))
+                write_json(root/'矩阵公平性复核.json',audit_evaluation_matrix(cfg,results,root,len(cfg['models'])))
                 comparison_plots(root,results)
             fairness=read_json(root/'矩阵公平性复核.json')
             if fairness['status']!='passed':raise ValueError('评测不完整，不能标成功')
@@ -270,7 +303,7 @@ def execute_worker(task_file,log):
 def training_matrix(job,state,policy):
     runs=[read_json(Path(t['attempts'][-1]['directory'])/'worker_result.json') for t in state['tasks']
           if t['policy']==policy and t['kind']=='train' and t['status']=='completed']
-    expected=3 if state['mode']=='pilot' else 9
+    expected=len(load_config(state['configs'][policy])['models'])*(1 if state['mode']=='pilot' else 3)
     if len(runs)!=expected:raise ValueError('训练任务不完整，不能开始评测')
     p=job/'配方'/policy/'训练矩阵.json'
     write_json(p,{'run_id':job.name+'_'+policy,'status':'completed','development_only':state['mode']=='pilot',
@@ -303,7 +336,7 @@ def finish_job(job,state,settings):
     if state['mode']=='pilot':
         values={p:read_json(Path(r['directory'])/'比较矩阵.json')['runs'] for p,r in results.items()}
         paired=[]
-        for family in ('YOLO26','YOLOv8','YOLO11'):
+        for family in (r['family'] for r in values['baseline']):
             before=next(r for r in values['baseline'] if r['family']==family)
             after=next(r for r in values['person_alias'] if r['family']==family)
             paired.append({'family':family,'baseline_pedestrian_recall':before['spd_recall']['pedestrian'],
@@ -319,7 +352,7 @@ def finish_job(job,state,settings):
     else:
         evaluation=Path(next(iter(results.values()))['directory']);selection=read_json(evaluation/'离线预选.json')
         lines=['# N17服务器完整比较\n',f"离线预选：{selection['status']}；选中：{selection['selected_candidate']}。",
-               '完整三族三seed与12份权重统一验证，数据/配置/权重/源码/设备均独立留证。',
+               '完整声明尺寸矩阵、三seed与预训练/微调权重统一验证，数据/配置/权重/源码/设备均独立留证。',
                '这不是本机旧5060Ti结果，也不表示用户验收、定位或闭环已通过。',f'评测目录：`{evaluation}`']
     lines += ['', '所有原始CSV/JSON、逐步/逐轮指标、中文PNG/SVG、失败和权重都保留。',
               'N15遮挡代理/人工抽查/同源限制、两个零GT类、有限预算及负帧分母限制继续适用；N18未执行。']
@@ -329,6 +362,9 @@ def finish_job(job,state,settings):
     alias=final_alias(settings['output_root'],job)
     write_json(job/'最终入口.json',{'physical':str(job),'last':str(alias),'summary_sha256':sha256(job/'结果导航.md'),
                'development_only':state['mode']=='pilot','user_acceptance':'pending'})
+    if state['mode']=='pilot' and settings.get('model_sizes'):
+        from .detector_timing import timing_budget
+        timing_budget(settings,job,job/'正式训练耗时外推')
 
 
 def run_job(settings,mode,resume=None,dry_run=False):
@@ -346,7 +382,7 @@ def run_job(settings,mode,resume=None,dry_run=False):
                     or state['gpu_uuid']!=environment['gpu']['uuid']):
                 raise ValueError('配置/源码/输入/GPU身份改变，不能混入旧任务；请新建run')
             policies=list(POLICIES) if mode=='pilot' else [settings['formal_policy']]
-            base=load_config();expected=plan_tasks(mode,policies,base['models'],base['seeds'])
+            base=server_base(settings);expected=plan_tasks(mode,policies,base['models'],base['seeds'])
             fields=('id','kind','policy','family','seed')
             if [{k:t.get(k) for k in fields} for t in state['tasks']] != [{k:t.get(k) for k in fields} for t in expected]:
                 raise ValueError('旧任务清单被删改')
@@ -363,14 +399,20 @@ def run_job(settings,mode,resume=None,dry_run=False):
             snapshot=stage_snapshot(settings['input_root'],rows,job/'冻结数据元信息')
             policies=list(POLICIES) if mode=='pilot' else [settings['formal_policy']]
             configs={}
-            base=load_config()
+            base=server_base(settings)
             for policy in policies:
                 cfg={k:v for k,v in copy.deepcopy(base).items() if not k.startswith('_')}
-                cfg.update(output_root=str(job/'配方'/policy),weights_root=str(settings['input_root']/'weights'),
+                cfg.update(output_root=str(job/'配方'/policy),weights_root=str(settings['weights_root']),
                            dataset_snapshot=snapshot,device=0,font_path=settings['font_path'],
                            class_name_aliases=POLICIES[policy])
                 cfg['training'].update(epochs=settings['pilot_epochs'] if mode=='pilot' else settings['formal_epochs'],
-                                       batch=settings['batch'],nbs=settings['batch'],workers=settings['workers'],cls_remap=True)
+                                       batch=settings['batch'],nbs=settings['batch'],workers=settings['workers'],cls_remap=True,
+                                       amp=settings['amp'])
+                cfg['checkpoint_period']=settings['checkpoint_period'];cfg['record_epoch_timing']=bool(settings.get('model_sizes'))
+                if mode=='formal' and settings['early_stopping_patience']:
+                    cfg['budget_policy']={'criterion':'native_fitness','minimum_epochs':settings['minimum_epochs'],
+                                          'patience':settings['early_stopping_patience']}
+                    cfg['training']['patience']=settings['early_stopping_patience']
                 p=job/'配置'/(policy+'.yaml');p.parent.mkdir(exist_ok=True)
                 p.write_text(yaml.safe_dump(cfg,allow_unicode=True,sort_keys=False),encoding='utf-8');configs[policy]=str(p)
             state={'schema_version':'n17-server-job-1','mode':mode,'run_id':job.name,'status':'running','started_at':now(),

@@ -17,7 +17,11 @@ from .source_version import source_info
 def validate_matrix(cfg):
     if len(set(cfg['seeds'])) < 3:
         raise ValueError('N17至少三个不同训练种子')
-    if {m['family'] for m in cfg['models']} != {'YOLO26', 'YOLOv8', 'YOLO11'}:
+    if cfg.get('model_sizes'):
+        from .detector_models import expanded_models
+        if cfg['models'] != expanded_models(cfg['model_sizes']):
+            raise ValueError('三族全部指定尺寸必须完整保留，禁止身份混用或漏尺寸')
+    elif {m['family'] for m in cfg['models']} != {'YOLO26', 'YOLOv8', 'YOLO11'}:
         raise ValueError('三族候选必须完整保留')
     if cfg['gates']['selection_split'] != 'model_val':
         raise ValueError('禁止用测试集选型')
@@ -70,13 +74,27 @@ def train_one(cfg, family, seed, directory):
         state['pretrained_parameter_count'] = sum(p.numel() for p in model.model.parameters())
         state['pretrained_gflops_960'] = float(get_flops(model.model, imgsz=cfg['training']['imgsz']))
         write_json(directory/'训练状态.json', state)
-        model.train(trainer=trainer_class(cfg['training']['batch']), data=str(Path(data['root'])/'dataset.yaml'),
+        policy = cfg.get('budget_policy')
+        model.train(trainer=trainer_class(cfg['training']['batch'], policy, cfg.get('record_epoch_timing', False)), data=str(Path(data['root'])/'dataset.yaml'),
                     device=device, seed=seed, project=str(directory), name='训练', exist_ok=False,
-                    plots=False, save=True, save_period=1, val=True, pretrained=True,
+                    plots=False, save=True, save_period=cfg.get('checkpoint_period', 1), val=True, pretrained=True,
                     **cfg['training'])
-        checkpoint = directory/'训练'/'weights'/'last.pt'
+        selected = 'best.pt' if policy else 'last.pt'
+        checkpoint = directory/'训练'/'weights'/selected
         if not checkpoint.is_file():
-            raise FileNotFoundError('训练未产生last.pt')
+            raise FileNotFoundError('训练未产生'+selected)
+        if policy:
+            import json
+            from .detector_stopping import replay_stopping
+            trace = [json.loads(line) for line in (directory/'训练/早停判定.jsonl').read_text(encoding='utf-8').splitlines()]
+            state['termination'] = replay_stopping(trace, policy, cfg['training']['epochs'])
+            state['checkpoint_rule'] = 'native_model_val_best_fitness'
+            state['last_checkpoint'] = str(directory/'训练/weights/last.pt')
+            state['last_checkpoint_sha256'] = sha256(state['last_checkpoint'])
+        state['amp_requested'] = cfg['training']['amp']
+        state['amp_actual'] = bool(model.trainer.amp)
+        if state['amp_actual'] != state['amp_requested']:
+            raise RuntimeError('实际AMP与冻结配方不同，拒绝混比')
         state['parameter_count'] = sum(p.numel() for p in model.trainer.model.parameters())
         state['gflops_960'] = float(get_flops(model.trainer.model, imgsz=cfg['training']['imgsz']))
         state.update(status='completed', finished_at=now(), checkpoint=str(checkpoint),

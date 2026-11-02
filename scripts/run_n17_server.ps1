@@ -1,6 +1,6 @@
 # Windows PowerShell 5.1 / PowerShell 7. ASCII wrapper for encoding portability.
 param(
-    [ValidateSet('check','pilot','formal','collect')][string]$Action = 'check',
+    [ValidateSet('check','pilot','formal','collect','prepare-weights','estimate')][string]$Action = 'check',
     [string]$Config = '',
     [string]$Run = '',
     [switch]$DryRun,

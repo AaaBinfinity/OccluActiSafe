@@ -67,12 +67,34 @@ def training_plots(directory):
     write_json(directory/'训练图表来源_完整分项.json',source)
 
 
-def trainer_class(expected_batch):
+def trainer_class(expected_batch, budget_policy=None, record_timing=False):
     import torch
     import psutil
     from ultralytics.models.yolo.detect import DetectionTrainer
 
     class LoggedDetectionTrainer(DetectionTrainer):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            if budget_policy or record_timing:
+                self.add_callback('on_fit_epoch_end', lambda trainer: append_json(
+                    trainer.save_dir/'逐轮耗时.jsonl', {'epoch': trainer.epoch+1,
+                    'seconds_including_validation_and_save': float(trainer.epoch_time),
+                    'source': 'native_epoch_wall_clock_including_validation_and_checkpoints'}))
+
+        def _setup_train(self, *args, **kwargs):
+            result = super()._setup_train(*args, **kwargs)
+            if bool(self.amp) != bool(self.args.amp):
+                raise RuntimeError('原生AMP检查未采用请求精度；拒绝自动回退后混比')
+            if budget_policy:
+                if (budget_policy.get('criterion') != 'native_fitness'
+                        or self.args.patience != budget_policy['patience']
+                        or not 1 <= budget_policy['minimum_epochs'] <= self.args.epochs):
+                    raise ValueError('平台期早停规则与冻结训练配置不一致')
+                from .detector_stopping import PlateauStopper
+                self.stopper = PlateauStopper(budget_policy['minimum_epochs'], budget_policy['patience'],
+                                              self.save_dir/'早停判定.jsonl')
+            return result
+
         def _build_train_pipeline(self):
             if int(self.args.batch) != expected_batch:
                 raise RuntimeError('固定公平batch发生改变（含框架OOM自动缩批），拒绝继续')
@@ -127,8 +149,9 @@ def trainer_class(expected_batch):
 
         def save_metrics(self, metrics):
             super().save_metrics(metrics)
-            append_json(self.save_dir/'逐轮验证指标.jsonl',
-                        {'epoch': self.epoch+1, 'metrics': {k: float(v) for k, v in metrics.items()},
-                         'source': 'native_epoch_validation_and_train_objective'})
+            record = {'epoch': self.epoch+1, 'metrics': {k: float(v) for k, v in metrics.items()},
+                      'source': 'native_epoch_validation_and_train_objective'}
+            if budget_policy: record['native_fitness'] = float(self.fitness)
+            append_json(self.save_dir/'逐轮验证指标.jsonl', record)
 
     return LoggedDetectionTrainer
