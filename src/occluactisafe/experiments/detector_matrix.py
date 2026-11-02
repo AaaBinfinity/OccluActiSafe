@@ -64,21 +64,43 @@ def train_one(cfg, family, seed, directory):
     state.pop('protected_files')
     write_json(directory/'训练状态.json', state)
     try:
-        model = YOLO(str(weight))
+        local=cfg.get('local_profile')
+        if local:
+            from ultralytics import settings as native_settings
+            native_settings.update({k:False for k in ('sync','wandb','mlflow','clearml','comet','neptune','hub','dvclive','tensorboard') if k in native_settings})
+        resume=local.get('resume_checkpoint') if local else None
+        model = YOLO(str(resume or weight))
         from .detector_transfer import apply_class_aliases, verify_person_transfer
-        transfer = apply_class_aliases(model, cfg.get('class_name_aliases'))
+        transfer = apply_class_aliases(model, cfg.get('class_name_aliases')) if not resume else local['original_class_transfer']
         state['class_name_aliases'] = transfer['aliases']
         state['class_transfer'] = transfer
-        if transfer['aliases']:
+        if transfer['aliases'] and not resume:
             state['class_transfer_check'] = verify_person_transfer(model, cfg['classes'])
         state['pretrained_parameter_count'] = sum(p.numel() for p in model.model.parameters())
         state['pretrained_gflops_960'] = float(get_flops(model.model, imgsz=cfg['training']['imgsz']))
         write_json(directory/'训练状态.json', state)
         policy = cfg.get('budget_policy')
-        model.train(trainer=trainer_class(cfg['training']['batch'], policy, cfg.get('record_epoch_timing', False)), data=str(Path(data['root'])/'dataset.yaml'),
-                    device=device, seed=seed, project=str(directory), name='训练', exist_ok=False,
-                    plots=False, save=True, save_period=cfg.get('checkpoint_period', 1), val=True, pretrained=True,
-                    **cfg['training'])
+        factory=trainer_class(cfg['training']['batch'],policy,cfg.get('record_epoch_timing',False))
+        extra={}
+        if local:
+            from .detector_local_training import rich_trainer_class
+            from .detector_local_checkpoints import carry_committed_logs
+            local={**local,'save_dir':str(directory/'训练')}
+            if resume:
+                destination=directory/'训练';destination.mkdir(parents=True)
+                carry_committed_logs(local['resume_training_directory'],destination,local['resume_epoch'],
+                                     {'逐批次优化尝试.csv':local['resume_batch_attempts'],
+                                      '逐步优化指标.csv':local['resume_applied_updates'],'results.csv':local['resume_epoch']})
+                import shutil
+                (destination/'weights').mkdir()
+                for name,path in [('last.pt',resume),('best.pt',local['resume_best_checkpoint'])]:
+                    shutil.copy2(path,destination/'weights'/name)
+                extra['resume']=str(resume)
+            factory=rich_trainer_class(cfg['training']['batch'],policy,local)
+        model.train(trainer=factory,data=str(Path(data['root'])/'dataset.yaml'),
+                    device=device,seed=seed,project=str(directory),name='训练',exist_ok=bool(local),
+                    plots=bool(local),save=True,save_period=-1 if local else cfg.get('checkpoint_period',1),val=True,pretrained=True,
+                    **cfg['training'],**extra)
         selected = 'best.pt' if policy else 'last.pt'
         checkpoint = directory/'训练'/'weights'/selected
         if not checkpoint.is_file():
@@ -100,12 +122,20 @@ def train_one(cfg, family, seed, directory):
         state.update(status='completed', finished_at=now(), checkpoint=str(checkpoint),
                      checkpoint_sha256=sha256(checkpoint),
                      peak_gpu_allocated_mib=torch.cuda.max_memory_allocated()/2**20)
+        if local:
+            from .detector_local_gallery import detection_gallery
+            state['fixed_operating_point_diagnostics']=detection_gallery(cfg,directory/'训练')
     except BaseException as exc:
         state.update(status='failed', finished_at=now(), error=repr(exc))
         raise
     finally:
         write_json(directory/'训练状态.json', state)
-        training_plots(directory/'训练')
+        if cfg.get('local_profile'):
+            from .detector_local_visuals import comprehensive_plots,normalize_native_images
+            training_directory=directory/'训练';training_directory.mkdir(parents=True,exist_ok=True)
+            comprehensive_plots(training_directory,cfg['local_profile']['plot_points_per_page'])
+            normalize_native_images(training_directory)
+        else:training_plots(directory/'训练')
     return state
 
 

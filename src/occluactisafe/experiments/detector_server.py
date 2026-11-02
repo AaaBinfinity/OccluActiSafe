@@ -110,7 +110,7 @@ def execution_lock(path):
         f.close()
 
 
-def preflight(settings):
+def preflight(settings,models=None):
     if not settings['input_root'].is_dir():
         raise FileNotFoundError('先复制便携输入包，并填写configs/experiments/n17_server.yaml的input_root')
     directory = settings['output_root']/'03_验收证据'/('n17_server_check_'+uuid.uuid4().hex)
@@ -185,6 +185,7 @@ def preflight(settings):
         from ultralytics import YOLO
         from .detector_transfer import apply_class_aliases,verify_person_transfer
         base=server_base(settings);transfer=[]
+        if models is not None:base['models']=models
         if settings.get('model_sizes'):
             from .detector_models import verify_weights
             report['expanded_weights']=verify_weights(settings['weights_root'],base['models'])

@@ -21,6 +21,15 @@ def pyplot():
 
 def save_figure(fig, path, figures):
     path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
+    context='机制/开发样例：未绑定真实训练任务'
+    for parent in list(path.parents)[:6]:
+        task=parent/'本机训练任务.json'
+        if task.is_file():
+            record=read_json_local(task);context=f"{record['model']} | seed={record['seed']} | {record['run_id']}"
+            if record.get('development_only'):context+=' | 短程联调，非正式效果'
+            break
+    previous=fig._suptitle.get_text()+'\n' if fig._suptitle else ''
+    fig.suptitle(previous+context,fontsize=8)
     fig.tight_layout()
     for ext in ('png', 'svg'):
         target = path.with_suffix('.'+ext); fig.savefig(target, dpi=180)
@@ -107,7 +116,9 @@ def capture_validation(validator, directory, epoch, phase):
             item={'class_id':index,'name':name,'gt':int(counts[index]) if index<len(counts) else None,
                   'precision':float(box.p[j]),'recall':float(box.r[j]),'f1':float(box.f1[j]),
                   'ap50':float(box.ap50[j]),'ap50_95':float(box.ap[j]),'valid':True}
-        else:item={'class_id':index,'name':name,'gt':0,'precision':None,'recall':None,'f1':None,'ap50':None,'ap50_95':None,'valid':False,'reason':'此验证集无可计算GT类别'}
+        else:item={'class_id':index,'name':name,'gt':int(counts[index]) if index<len(counts) else None,
+                   'precision':None,'recall':None,'f1':None,'ap50':None,'ap50_95':None,'valid':False,
+                   'reason':'原生未返回该类曲线；GT按真实计数另列，不把无曲线冒称零GT'}
         table.append(item)
     cm=getattr(validator,'confusion_matrix',None)
     result={'epoch':epoch,'phase':phase,'names':names,'class_ids_with_gt':ids,'classes':table,'curves':curves,
@@ -184,6 +195,38 @@ def comprehensive_plots(directory, points_per_page=20000):
             for key in keys:ax.plot([e['epoch'] for e in epochs],[e['metrics'].get(key,math.nan) for e in epochs],label=key)
             ax.set(xlabel='已完成epoch',ylabel='原生指标原值',title=title);ax.legend(fontsize=8);ax.grid(alpha=.2)
             save_figure(fig,directory/title,figures);plt.close(fig)
+    classification=directory/'逐轮分类验证指标.jsonl'
+    if classification.exists():
+        rows=[json.loads(s) for s in classification.read_text(encoding='utf-8').splitlines()]
+        if rows:
+            fig,axes=plt.subplots(4,1,figsize=(11,12))
+            for ax,key in zip(axes,('precision','recall','ap50','ap50_95')):
+                for cls in rows[0]['classes']:
+                    values=[next(c for c in r['classes'] if c['class_id']==cls['class_id'])[key] for r in rows]
+                    if any(v is not None for v in values):ax.plot([r['epoch'] for r in rows],[v if v is not None else math.nan for v in values],label=cls['name'])
+                ax.set(xlabel='epoch',ylabel=key,ylim=(0,1));ax.legend();ax.grid(alpha=.2)
+            save_figure(fig,directory/'逐轮分类精确率召回率与AP',figures);plt.close(fig)
+    for filename,title,keys in [('逐轮优化与资源.jsonl','逐轮更新分母与AMP跳步',['applied_updates','amp_skips','image_exposures','host_rss_mib']),
+                                ('逐轮耗时.jsonl','逐轮实际耗时',['seconds_including_validation_and_save'])]:
+        source_rows=directory/filename
+        if not source_rows.exists():continue
+        rows=[json.loads(s) for s in source_rows.read_text(encoding='utf-8').splitlines()]
+        if not rows:continue
+        fig,axes=plt.subplots(len(keys),1,figsize=(11,3*len(keys)),squeeze=False)
+        for ax,key in zip(axes[:,0],keys):
+            ax.plot([r['epoch'] for r in rows],[r[key] for r in rows]);ax.set(xlabel='epoch',ylabel=key);ax.grid(alpha=.2)
+        save_figure(fig,directory/title,figures);plt.close(fig)
+    telemetry=directory/'逐轮显卡监测.jsonl'
+    if telemetry.exists():
+        rows=[json.loads(s) for s in telemetry.read_text(encoding='utf-8').splitlines()]
+        fig,axes=plt.subplots(4,1,figsize=(11,10));units=['温度/摄氏度','GPU利用率/%','板卡功耗/W','全卡已用显存/MiB']
+        for i,ax in enumerate(axes):
+            values=[]
+            for row in rows:
+                try:values.append(float(row['raw'].split(',')[i]))
+                except (KeyError,ValueError,IndexError):values.append(math.nan)
+            ax.plot([r['epoch'] for r in rows],values);ax.set(xlabel='epoch',ylabel=units[i]);ax.grid(alpha=.2)
+        save_figure(fig,directory/'逐轮显卡温度功耗与利用率',figures);plt.close(fig)
     trace=directory/'早停判定.jsonl'
     if trace.exists():
         rows=[json.loads(s) for s in trace.read_text(encoding='utf-8').splitlines()]

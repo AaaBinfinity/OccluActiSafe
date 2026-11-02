@@ -79,7 +79,13 @@ def trainer_class(expected_batch, budget_policy=None, record_timing=False):
                 self.add_callback('on_fit_epoch_end', lambda trainer: append_json(
                     trainer.save_dir/'逐轮耗时.jsonl', {'epoch': trainer.epoch+1,
                     'seconds_including_validation_and_save': float(trainer.epoch_time),
-                    'source': 'native_epoch_wall_clock_including_validation_and_checkpoints'}))
+                    'source': 'native_epoch_wall_clock_including_validation_and_checkpoints'})
+                    if not getattr(trainer,'_n17_final_eval',False) else None)
+
+        def final_eval(self):
+            self._n17_final_eval=True
+            try:return super().final_eval()
+            finally:self._n17_final_eval=False
 
         def _setup_train(self, *args, **kwargs):
             result = super()._setup_train(*args, **kwargs)
