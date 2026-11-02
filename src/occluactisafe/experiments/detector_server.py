@@ -225,8 +225,10 @@ def worker(task_path):
             raise RuntimeError('worker实际GPU与父进程预检UUID不同，拒绝误用GPU0')
         if task['kind']=='train':
             from .detector_matrix import train_one
-            result=train_one(cfg,task['family'],task['seed'],output/'运行')
-            result.update(directory=str(output/'运行'),returncode=0)
+            training_directory=Path(task.get('training_directory',output/'运行')).resolve()
+            if not training_directory.is_relative_to(output.resolve()) or training_directory==output.resolve():raise ValueError('训练目录须在本次任务内')
+            result=train_one(cfg,task['family'],task['seed'],training_directory)
+            result.update(directory=str(training_directory),returncode=0)
         else:
             from .detector_evaluation import run_evaluation_matrix,evaluate_one,comparison_plots
             from .detector_audit import audit_evaluation_matrix,audit_training_matrix

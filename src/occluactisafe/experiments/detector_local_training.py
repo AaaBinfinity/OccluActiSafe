@@ -102,6 +102,12 @@ def rich_trainer_class(expected_batch,policy,options):
         def get_validator(self):
             validator=super().get_validator()
             class RecordedValidator(type(validator)):
+                def eval_json(self,stats):
+                    if not getattr(self,'is_coco',False) and not getattr(self,'is_lvis',False):
+                        # save_json用于保留SPD/CARLA预测；不触发COCO扩展依赖或保留未实测的占位零。
+                        unavailable={f'metrics/mAP_{size}(B)' for size in ('small','medium','large')}
+                        return {k:v for k,v in stats.items() if k not in unavailable}
+                    return super().eval_json(stats)
                 def plot_val_samples(self,batch,ni):
                     append_json(self.save_dir/'验证批次图片来源.jsonl',{'native_file':f'val_batch{ni}_labels.jpg',
                         'phase':getattr(self,'_n17_phase','epoch'),'epoch':getattr(self,'_n17_epoch',None),
@@ -137,10 +143,15 @@ def rich_trainer_class(expected_batch,policy,options):
             norm=torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=10.,error_if_nonfinite=False)
             loss=float(self.loss.detach());components={k:float(v.detach()) for k,v in self.loss_items.items()}
             if not math.isfinite(loss) or not all(math.isfinite(v) for v in components.values()):
-                append_json(self.save_dir/'非有限损失失败.jsonl',{'epoch':self.epoch+1,'loss':str(loss),'components':{k:str(v) for k,v in components.items()}})
+                append_json(self.save_dir/'非有限损失失败.jsonl',{'epoch':self.epoch+1,'attempt':self._local_attempt+1,
+                    'input_files':self._n17_files,'image_count':self._n17_images,'target_count':self._n17_targets,
+                    'loss':str(loss),'components':{k:str(v) for k,v in components.items()}})
                 raise FloatingPointError('损失非有限，保留失败而不把它记成早停')
             before=float(self.scaler.get_scale());lr=[float(g['lr']) for g in self.optimizer.param_groups]
-            if not bool(self.amp) and not torch.isfinite(norm):raise FloatingPointError('FP32梯度非有限')
+            if not bool(self.amp) and not torch.isfinite(norm):
+                append_json(self.save_dir/'非有限梯度失败.jsonl',{'epoch':self.epoch+1,'attempt':self._local_attempt+1,
+                            'input_files':self._n17_files,'gradient_norm':str(float(norm))})
+                raise FloatingPointError('FP32梯度非有限')
             self.scaler.step(self.optimizer);self.scaler.update();after=float(self.scaler.get_scale())
             applied=not bool(self.amp) or after>=before
             self.optimizer.zero_grad()

@@ -73,7 +73,15 @@ def development_rows(rows):
         for domain in ('SPD','CARLA'):
             part=[r for r in rows if r['role']==role and r['domain']==domain]
             if len(part)<n:raise ValueError('缺少真实开发联调输入，不构造图片代替')
-            selected.extend(part[:n])
+            chosen={}
+            # 预声明按GT类别覆盖抽样，不看任何模型输出，避免开发联调恰好没有行人。
+            for cls in ('vehicle','pedestrian','cyclist'):
+                matches=[r for r in part if any(g['class_id']==cls for g in r['gt'])]
+                for row in matches[:max(1,n//4)]:chosen[row['key']]=row
+            for row in part:
+                if len(chosen)>=n:break
+                chosen.setdefault(row['key'],row)
+            selected.extend(list(chosen.values())[:n])
     return selected
 
 
@@ -106,12 +114,12 @@ def prepare_resume(opts,cfg):
     old=oldcfg['local_profile']
     if any(local[k]!=old[k] for k in ('model_id','seed','recipe_sha256','source_fingerprint_sha256')):raise ValueError('恢复模型/seed/配方/源码不同，拒绝混入旧任务')
     if task['gpu_uuid']!=cfg['_local_gpu_uuid']:raise ValueError('恢复GPU UUID不同')
-    train=source/'运行/训练';checkpoint=verify_checkpoint(train)
+    train=Path(task.get('training_directory',source/'运行/训练'));checkpoint=verify_checkpoint(train)
     if checkpoint['epoch']>=cfg['training']['epochs']:raise ValueError('检查点已到预算上限，无需增加训练')
     trace=[json.loads(line) for line in (train/'早停判定.jsonl').read_text(encoding='utf-8').splitlines()]
     committed=[r for r in trace if r['epoch']<=checkpoint['epoch']]
     if committed and committed[-1]['stop']:raise ValueError('检查点已触发早停，不应继续训练')
-    state=read_json(source/'运行/训练状态.json')
+    state=read_json(train.parent/'训练状态.json')
     local.update(resume_checkpoint=str(train/'weights/last.pt'),resume_checkpoint_sha256=checkpoint['last_sha256'],
                  resume_best_checkpoint=str(train/'weights'/checkpoint['best_source_file']),resume_training_directory=str(train),
                  resume_epoch=checkpoint['epoch'],resume_batch_attempts=checkpoint['batch_attempts'],
@@ -200,31 +208,41 @@ def run_local(opts):
         job=opts['OUTPUT_ROOT']/folder/('n17_local_'+opts['MODEL'].lower()+'_seed'+str(opts['SEED'])+'_'+uuid.uuid4().hex);job.mkdir(parents=True)
         snapshot=stage_snapshot(opts['INPUT_ROOT'],rows,job/'冻结数据元信息')
         cfg=build_local_config(opts,environment,snapshot,job,development);cfg['_local_gpu_uuid']=environment['gpu']['uuid']
-        resume=prepare_resume(opts,cfg) if opts['ACTION']=='resume' else None
+        try:resume=prepare_resume(opts,cfg) if opts['ACTION']=='resume' else None
+        except BaseException as exc:
+            write_json(job/'本机训练任务.json',{'run_id':job.name,'status':'failed','phase':'prepare_resume',
+                       'model':opts['MODEL'],'seed':opts['SEED'],'development_only':development,'error':repr(exc),
+                       'source_run':str(opts['RESUME_RUN']),'training_started':False})
+            raise
         frozen=job/'本次训练配置.yaml';frozen.write_text(yaml.safe_dump(cfg,allow_unicode=True,sort_keys=False),encoding='utf-8')
         shutil.copy2(opts['options_file'],job/'本次代码选项.py')
+        training_parent=job/opts['MODEL']/('seed_'+str(opts['SEED']))
         task={'run_id':job.name,'status':'planned' if opts['ACTION']=='plan' else 'running','started_at':now(),
               'model':opts['MODEL'],'seed':opts['SEED'],'development_only':development,'full_comparison_complete':False,
               'source_commit':environment['source']['source_commit'],'source_fingerprint_sha256':environment['source']['source_fingerprint_sha256'],
-              'gpu_uuid':environment['gpu']['uuid'],'frozen_config':str(frozen),'frozen_config_sha256':sha256(frozen),
+              'gpu_uuid':environment['gpu']['uuid'],'training_directory':str(training_parent/'训练'),
+              'effective_options':{k:str(v) if isinstance(v,Path) else v for k,v in opts.items()},
+              'seed_in_frozen_comparison':opts['SEED'] in (17,29,43),'frozen_config':str(frozen),'frozen_config_sha256':sha256(frozen),
               'environment_report':str(checkdir/'服务器预检.json'),'input':environment['input_verification'],'resume':resume}
         write_json(job/'本机训练任务.json',task)
         if opts['ACTION']=='plan':
             from ultralytics.cfg import get_cfg
             get_cfg(overrides=cfg['training']);print('仅计划，未训练：'+str(job),flush=True);return job
         params={'kind':'train','family':opts['MODEL'],'seed':opts['SEED'],'config':str(frozen),'attempt':str(job),
+                'training_directory':str(training_parent),
                 'expected_gpu_uuid':environment['gpu']['uuid'],'worker_cuda_visible_devices':environment['worker_cuda_visible_devices']}
         write_json(job/'任务参数.json',params)
         print(f'本次只训练 {opts["MODEL"]}，seed={opts["SEED"]}，上限{cfg["training"]["epochs"]}轮；产物：{job}',flush=True)
         try:
             code=execute_worker(job/'任务参数.json',job/'控制台.txt');task['worker_returncode']=code
             if code!=0:raise RuntimeError('训练中断/失败，原记录和已提交last/best保留，可选resume新目录续训')
-            audit=audit_local_training(load_config(frozen),job/'运行/训练');write_json(job/'本次训练核验.json',audit)
+            audit=audit_local_training(load_config(frozen),training_parent/'训练');write_json(job/'本次训练核验.json',audit)
             task.update(status='completed',finished_at=now(),audit=audit)
             write_json(job/'本机训练任务.json',task)
             if not development:final_alias(opts['OUTPUT_ROOT'],job)
-            (job/'结果导航.md').write_text(f'# 本次本机单模型训练\n\n模型：{opts["MODEL"]}；seed：{opts["SEED"]}；开发联调：{development}。\n\n权重：[last.pt](运行/训练/weights/last.pt)、[best.pt](运行/训练/weights/best.pt)。\n\n完整图表与原始记录在[训练目录](运行/训练/)。实际完成{audit["actual_epochs"]}轮、{audit["applied_updates"]}次更新、{audit["amp_skips"]}次原生AMP跳步；单次任务不代表正式三seed/全模型选型。\n',encoding='utf-8')
-            print('本次单模型任务完成：'+str(job/'运行/训练/weights'),flush=True)
+            relative=(training_parent/'训练').relative_to(job).as_posix()
+            (job/'结果导航.md').write_text(f'# 本次本机单模型训练\n\n模型：{opts["MODEL"]}；seed：{opts["SEED"]}；开发联调：{development}。\n\n权重：[last.pt]({relative}/weights/last.pt)、[best.pt]({relative}/weights/best.pt)。\n\n完整图表与原始记录在[训练目录]({relative}/)。实际完成{audit["actual_epochs"]}轮、{audit["applied_updates"]}次更新、{audit["amp_skips"]}次原生AMP跳步；单次任务不代表正式三seed/全模型选型。\n',encoding='utf-8')
+            print('本次单模型任务完成：'+str(training_parent/'训练/weights'),flush=True)
             return job
         except BaseException as exc:
             task.update(status='interrupted' if isinstance(exc,KeyboardInterrupt) else 'failed',error=repr(exc),finished_at=now())

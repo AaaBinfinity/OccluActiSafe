@@ -22,7 +22,7 @@ def pyplot():
 def save_figure(fig, path, figures):
     path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
     context='机制/开发样例：未绑定真实训练任务'
-    for parent in list(path.parents)[:6]:
+    for parent in list(path.parents)[:10]:
         task=parent/'本机训练任务.json'
         if task.is_file():
             record=read_json_local(task);context=f"{record['model']} | seed={record['seed']} | {record['run_id']}"
