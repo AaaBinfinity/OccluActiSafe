@@ -7,8 +7,6 @@ import hashlib
 import json
 import math
 from pathlib import Path
-import runpy
-import shutil
 import uuid
 
 import yaml
@@ -32,7 +30,10 @@ def digest(value):
 
 def local_options(path=DEFAULT_OPTIONS,overrides=None):
     path=Path(path);path=(path if path.is_absolute() else PROJECT_ROOT/path).resolve()
-    raw=runpy.run_path(str(path),run_name='n17_local_options')
+    # 同一字节快照用于执行、哈希和归档；预检期间编辑下一次任务不会串改本次记录。
+    options_bytes=path.read_bytes()
+    raw={'__name__':'n17_local_options','__file__':str(path)}
+    exec(compile(options_bytes,str(path),'exec'),raw)
     keys=('ACTION','MODEL','SEED','INPUT_ROOT','OUTPUT_ROOT','DEVICE','BATCH','WORKERS','AMP',
           'MAX_EPOCHS','MIN_EPOCHS','PATIENCE','RESUME_RUN','PAUSE_AFTER_EPOCH','PLOT_POINTS_PER_PAGE')
     opts={k:raw[k] for k in keys};opts.update(overrides or {})
@@ -54,7 +55,8 @@ def local_options(path=DEFAULT_OPTIONS,overrides=None):
             or opts['INPUT_ROOT'].is_relative_to(opts['OUTPUT_ROOT']) or opts['OUTPUT_ROOT'].is_relative_to(opts['INPUT_ROOT'])):
         raise ValueError('输入/输出须在仓库外且互不嵌套')
     if opts['RESUME_RUN']:opts['RESUME_RUN']=resolve(opts['RESUME_RUN'])
-    opts['options_file']=str(path);opts['options_sha256']=sha256(path)
+    opts['options_file']=str(path);opts['options_sha256']=hashlib.sha256(options_bytes).hexdigest()
+    opts['options_source_bytes']=options_bytes
     return opts
 
 
@@ -217,13 +219,13 @@ def run_local(opts):
                        'source_run':str(opts['RESUME_RUN']),'training_started':False})
             raise
         frozen=job/'本次训练配置.yaml';frozen.write_text(yaml.safe_dump(cfg,allow_unicode=True,sort_keys=False),encoding='utf-8')
-        shutil.copy2(opts['options_file'],job/'本次代码选项.py')
+        (job/'本次代码选项.py').write_bytes(opts['options_source_bytes'])
         training_parent=job/opts['MODEL']/('seed_'+str(opts['SEED']))
         task={'run_id':job.name,'status':'planned' if opts['ACTION']=='plan' else 'running','started_at':now(),
               'model':opts['MODEL'],'seed':opts['SEED'],'development_only':development,'full_comparison_complete':False,
               'source_commit':environment['source']['source_commit'],'source_fingerprint_sha256':environment['source']['source_fingerprint_sha256'],
               'gpu_uuid':environment['gpu']['uuid'],'training_directory':str(training_parent/'训练'),
-              'effective_options':{k:str(v) if isinstance(v,Path) else v for k,v in opts.items()},
+              'effective_options':{k:str(v) if isinstance(v,Path) else v for k,v in opts.items() if k!='options_source_bytes'},
               'seed_in_frozen_comparison':opts['SEED'] in (17,29,43),'frozen_config':str(frozen),'frozen_config_sha256':sha256(frozen),
               'environment_report':str(checkdir/'服务器预检.json'),'input':environment['input_verification'],'resume':resume}
         write_json(job/'本机训练任务.json',task)

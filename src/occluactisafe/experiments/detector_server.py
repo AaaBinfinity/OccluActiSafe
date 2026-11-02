@@ -218,6 +218,8 @@ def plan_tasks(mode,policies,models,seeds):
 def worker(task_path):
     task=read_json(task_path);cfg=load_config(task['config']);output=Path(task['attempt'])
     try:
+        if cfg.get('local_profile') and source_info()['source_fingerprint_sha256']!=cfg['local_profile']['source_fingerprint_sha256']:
+            raise ValueError('预检后本机训练源码改变，拒绝使用旧源码身份启动；请重新创建任务')
         import torch
         if not torch.cuda.is_available():raise RuntimeError('worker没有CUDA，不回退CPU')
         actual_uuid=str(getattr(torch.cuda.get_device_properties(0),'uuid','unknown'))

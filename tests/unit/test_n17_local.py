@@ -1,6 +1,7 @@
 from collections import Counter
 import copy
 import csv
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -14,6 +15,25 @@ from occluactisafe.experiments.source_version import protected_source
 
 
 class LocalTaskTests(unittest.TestCase):
+    def test_options_execute_hash_and_archive_the_same_captured_bytes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp)/'选项.py';original=DEFAULT_OPTIONS.read_bytes();path.write_bytes(original)
+            options=local_options(path)
+            path.write_bytes(original.replace(b'SEED = 17',b'SEED = 29'))
+            self.assertNotEqual(path.read_bytes(),original)
+            self.assertEqual(options['options_source_bytes'],original)
+            self.assertEqual(options['options_sha256'],hashlib.sha256(original).hexdigest())
+            self.assertEqual(options['SEED'],17)
+
+    def test_worker_rejects_source_change_before_loading_gpu_or_training(self):
+        from occluactisafe.experiments import detector_server as server
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);task=root/'任务.json'
+            write_json(task,{'config':'fixture','attempt':str(root)})
+            with patch.object(server,'load_config',return_value={'local_profile':{'source_fingerprint_sha256':'old'}}),patch.object(server,'source_info',return_value={'source_fingerprint_sha256':'new'}):
+                with self.assertRaisesRegex(ValueError,'源码改变'):server.worker(task)
+            self.assertEqual(read_json(root/'worker_failure.json')['status'],'failed')
+
     def test_model_seed_are_selectable_without_changing_protected_algorithm(self):
         options=local_options(overrides={'MODEL':'yolov8m.pt','SEED':29})
         self.assertEqual((options['MODEL'],options['SEED'],options['ACTION']),('YOLOv8m',29,'check'))
