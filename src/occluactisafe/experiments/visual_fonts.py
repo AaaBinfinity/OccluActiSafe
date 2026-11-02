@@ -30,7 +30,7 @@ def configure_plot_fonts():
 
 def prepare_font_cache(directory, explicit=None):
     """用已提供/系统字体填充框架本地缓存别名，不触发字体网络下载。"""
-    directory=Path(directory);directory.mkdir(parents=True,exist_ok=True)
+    directory=Path(directory)/'Ultralytics';directory.mkdir(parents=True,exist_ok=True)
     font=chinese_font(explicit)
     for name in ('Arial.ttf','Arial.Unicode.ttf'):
         target=directory/name

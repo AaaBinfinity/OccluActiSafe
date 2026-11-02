@@ -63,6 +63,15 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(transfer['source_names'],before)
         with self.assertRaises(ValueError):apply_class_aliases(model,{'car':'vehicle','truck':'vehicle'})
 
+    def test_offline_font_cache_uses_framework_subdirectory(self):
+        from occluactisafe.experiments.visual_fonts import prepare_font_cache
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);font=root/'local_fixture_font.ttc';font.write_bytes(b'font cache mechanism fixture')
+            prepare_font_cache(root/'settings',str(font))
+            for name in ('Arial.ttf','Arial.Unicode.ttf'):
+                self.assertEqual((root/'settings/Ultralytics'/name).read_bytes(),font.read_bytes())
+            self.assertFalse((root/'settings/Arial.ttf').exists())
+
     def test_lock_is_exclusive_and_released_after_failure(self):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp)/'.lock'

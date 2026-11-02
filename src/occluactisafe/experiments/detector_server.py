@@ -106,6 +106,9 @@ def preflight(settings):
         os.environ.update(YOLO_CONFIG_DIR=str(settings_dir),YOLO_OFFLINE='true',YOLO_AUTOINSTALL='false')
         if sys.version_info[:2] != (3,11):raise RuntimeError('必须使用Python3.11')
         import torch,torchvision,ultralytics,psutil
+        from ultralytics.utils import USER_CONFIG_DIR
+        if not all((USER_CONFIG_DIR/name).is_file() for name in ('Arial.ttf','Arial.Unicode.ttf')):
+            raise RuntimeError('框架实际字体缓存未就绪，拒绝运行中自动下载')
         from .visual_fonts import chinese_font
         if (torch.__version__.split('+')[0],torchvision.__version__.split('+')[0],ultralytics.__version__) != ('2.11.0','0.26.0','8.4.197'):
             raise RuntimeError('依赖版本不匹配；先按文档uv sync --locked，不能混用CPU torchvision')
