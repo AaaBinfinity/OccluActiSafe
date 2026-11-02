@@ -2,11 +2,11 @@
   "schema_version": "process-images-3-summary",
   "storage": "external_artifacts",
   "path_base": "本机实际移动硬盘项目artifacts目录",
-  "image_count": 42399,
+  "image_count": 42749,
   "full_catalog": {
-    "artifact_path": "公共管理/01_图片与迁移核验/过程图片完整清单_894f66638c5a4ebf4cc0dcad11b65759aa5bf523d98a37e22063e935be2346a0.json",
-    "sha256": "894f66638c5a4ebf4cc0dcad11b65759aa5bf523d98a37e22063e935be2346a0",
-    "bytes": 28807159
+    "artifact_path": "公共管理/01_图片与迁移核验/过程图片完整清单_08b835ce5387657e0245fb1f857db985124db7662e8376be81fa13af48a49b40.json",
+    "sha256": "08b835ce5387657e0245fb1f857db985124db7662e8376be81fa13af48a49b40",
+    "bytes": 29073078
   },
   "migrated_repository_catalog": {
     "artifact_path": "公共管理/01_图片与迁移核验/过程图片完整清单_aae363b308cb16668a604c0f4f67e01a61331b0ebd363719f52e96ecf11ca7e7.json",

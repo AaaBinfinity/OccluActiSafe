@@ -465,6 +465,17 @@
       "status": "current",
       "legacy_directory": "last_n17_a100_delivery_20261102",
       "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_a100_delivery_20261102"
+    },
+    {
+      "node": "N17",
+      "purpose": "本机单模型/seed训练、完整YOLO图集与双权重恢复脚本交付（正式长训未启动）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_local_delivery_20261102",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_local_delivery_20261102",
+      "evidence_file": "N17本机训练入口交付索引.json",
+      "evidence_sha256": "194ce354b13c138af0eac49f57c03a88c5b5f70571e09c0ebaa57cb7342ea8d9",
+      "status": "current",
+      "legacy_directory": "last_n17_local_delivery_20261102",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_local_delivery_20261102"
     }
   ]
 }
