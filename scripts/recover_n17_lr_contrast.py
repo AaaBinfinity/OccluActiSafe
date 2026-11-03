@@ -175,6 +175,11 @@ def main():
     else:
         from occluactisafe.experiments.run_store import read_json
         state = read_json(STUDY/'对照任务.json')
+        if state.get('console_free_recovery'):
+            print(json.dumps({'status':'passed','mode':'read_only_recovery_progress',
+                'study_status':state['status'],'recovery':state['console_free_recovery'],
+                'gpu_kernels_launched':False},ensure_ascii=False))
+            return
         if state.get('recovery'):
             print(json.dumps({'status': 'passed', 'mode': 'read_only_recovery_progress',
                 'study_status': state['status'], 'recovery': state['recovery'],
