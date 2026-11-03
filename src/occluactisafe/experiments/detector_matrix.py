@@ -97,6 +97,10 @@ def train_one(cfg, family, seed, directory):
                     shutil.copy2(path,destination/'weights'/name)
                 extra['resume']=str(resume)
             factory=rich_trainer_class(cfg['training']['batch'],policy,local)
+            if local.get('controlled_trial'):
+                from .detector_controlled_trial import validate_trial, controlled_trainer_class
+                validate_trial(cfg, family, seed)
+                factory=controlled_trainer_class(cfg['training']['batch'],policy,local)
         model.train(trainer=factory,data=str(Path(data['root'])/'dataset.yaml'),
                     device=device,seed=seed,project=str(directory),name='训练',exist_ok=bool(local),
                     plots=bool(local),save=True,save_period=-1 if local else cfg.get('checkpoint_period',1),val=True,pretrained=True,
@@ -109,7 +113,12 @@ def train_one(cfg, family, seed, directory):
             import json
             from .detector_stopping import replay_stopping
             trace = [json.loads(line) for line in (directory/'训练/早停判定.jsonl').read_text(encoding='utf-8').splitlines()]
-            state['termination'] = replay_stopping(trace, policy, cfg['training']['epochs'])
+            if local and local.get('controlled_trial'):
+                from .detector_controlled_trial import controlled_termination
+                state['termination'] = controlled_termination(trace, policy, cfg['training']['epochs'],
+                                                            local['controlled_trial']['stop_after_epoch'])
+            else:
+                state['termination'] = replay_stopping(trace, policy, cfg['training']['epochs'])
             state['checkpoint_rule'] = 'native_model_val_best_fitness'
             state['last_checkpoint'] = str(directory/'训练/weights/last.pt')
             state['last_checkpoint_sha256'] = sha256(state['last_checkpoint'])
@@ -119,7 +128,8 @@ def train_one(cfg, family, seed, directory):
             raise RuntimeError('实际AMP与冻结配方不同，拒绝混比')
         state['parameter_count'] = sum(p.numel() for p in model.trainer.model.parameters())
         state['gflops_960'] = float(get_flops(model.trainer.model, imgsz=cfg['training']['imgsz']))
-        state.update(status='completed', finished_at=now(), checkpoint=str(checkpoint),
+        state.update(status='paused_at_declared_epoch' if local and local.get('controlled_trial') else 'completed',
+                     finished_at=now(), checkpoint=str(checkpoint),
                      checkpoint_sha256=sha256(checkpoint),
                      peak_gpu_allocated_mib=torch.cuda.max_memory_allocated()/2**20)
         if local:

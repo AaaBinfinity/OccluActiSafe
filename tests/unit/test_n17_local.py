@@ -17,7 +17,9 @@ from occluactisafe.experiments.source_version import protected_source
 class LocalTaskTests(unittest.TestCase):
     def test_options_execute_hash_and_archive_the_same_captured_bytes(self):
         with tempfile.TemporaryDirectory() as temp:
-            path=Path(temp)/'选项.py';original=DEFAULT_OPTIONS.read_bytes();path.write_bytes(original)
+            path=Path(temp)/'选项.py'
+            original=DEFAULT_OPTIONS.read_bytes()+b"\nSEED = 17\nACTION = 'check'\n"
+            path.write_bytes(original)
             options=local_options(path)
             path.write_bytes(original.replace(b'SEED = 17',b'SEED = 29'))
             self.assertNotEqual(path.read_bytes(),original)
@@ -35,7 +37,7 @@ class LocalTaskTests(unittest.TestCase):
             self.assertEqual(read_json(root/'worker_failure.json')['status'],'failed')
 
     def test_model_seed_are_selectable_without_changing_protected_algorithm(self):
-        options=local_options(overrides={'MODEL':'yolov8m.pt','SEED':29})
+        options=local_options(overrides={'MODEL':'yolov8m.pt','SEED':29,'ACTION':'check'})
         self.assertEqual((options['MODEL'],options['SEED'],options['ACTION']),('YOLOv8m',29,'check'))
         self.assertFalse(protected_source('configs/experiments/n17_local.py'))
         self.assertTrue(protected_source('scripts/train_n17_local.py'))
