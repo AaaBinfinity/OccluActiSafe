@@ -416,6 +416,28 @@
       "status": "current",
       "legacy_directory": "last_n17_local_delivery_20261102",
       "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_local_delivery_20261102"
+    },
+    {
+      "node": "N17",
+      "purpose": "YOLO26n/seed17本机50轮训练（best第7轮；单seed诊断未达召回门槛）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_local_yolo26n_seed17_c28f744726af4ff7982fcbdd559a053a",
+      "original_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_local_yolo26n_seed17_c28f744726af4ff7982fcbdd559a053a",
+      "evidence_file": "本机训练任务.json",
+      "evidence_sha256": "0cb566946ef56c7909832ff96e5493a54a7589d741315b5c9d40d86fe5a0a4bc",
+      "status": "current",
+      "legacy_directory": "last_n17_local_yolo26n_seed17_c28f744726af4ff7982fcbdd559a053a",
+      "physical_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_local_yolo26n_seed17_c28f744726af4ff7982fcbdd559a053a"
+    },
+    {
+      "node": "N17",
+      "purpose": "YOLO26n/seed17训练完整性、既有预测复算与过拟合评估（未执行完整统一GPU评测）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_seed17_review_20261103_1c09d294",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_seed17_review_20261103_1c09d294",
+      "evidence_file": "seed17评估证据索引.json",
+      "evidence_sha256": "5cc506faf1e6ec216a6d259b14cc69a2fe28060613f1376873deda994f9446af",
+      "status": "current",
+      "legacy_directory": "last_n17_seed17_review_20261103_1c09d294",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_seed17_review_20261103_1c09d294"
     }
   ],
   "retired_entries": [
