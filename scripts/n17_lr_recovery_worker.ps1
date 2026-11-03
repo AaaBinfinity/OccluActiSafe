@@ -5,6 +5,10 @@ $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUNBUFFERED = '1'
 $evidence = 'H:\OccluActiSafeDataset\artifacts\节点资料\N17_检测器比较\03_验收证据\n17_lr_contrast_delivery_20261103\进程中断恢复_20261103'
 $repository = Split-Path -Parent $PSScriptRoot
+# 独占声明先于任何日志重定向；任务结束后误点重启也不会覆盖旧证据。
+$claim = Join-Path $evidence '独立恢复队列_启动声明.json'
+$claimValue = [ordered]@{time=(Get-Date).ToString('o'); process_id=$PID; automatic_retry=$false} | ConvertTo-Json
+New-Item -ItemType File -Path $claim -Value $claimValue -ErrorAction Stop | Out-Null
 $exitCode = 1
 $failure = $null
 try {
