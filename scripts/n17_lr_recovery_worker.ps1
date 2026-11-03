@@ -3,6 +3,8 @@ $ErrorActionPreference = 'Stop'
 $env:PYTHONUTF8 = '1'
 $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUNBUFFERED = '1'
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = $OutputEncoding
 $evidence = 'H:\OccluActiSafeDataset\artifacts\节点资料\N17_检测器比较\03_验收证据\n17_lr_contrast_delivery_20261103\进程中断恢复_20261103'
 $repository = Split-Path -Parent $PSScriptRoot
 # 独占声明先于任何日志重定向；任务结束后误点重启也不会覆盖旧证据。
