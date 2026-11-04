@@ -9,11 +9,11 @@ LR0 = 0.001  # 终端可输入0.0003等数值，实际写入训练配置
 MAX_EPOCHS = 300
 MIN_EPOCHS = 50
 PATIENCE = 30
-# 本机已测batch8单进程读图；大尺寸容量未实测。
-BATCH_BY_SCALE = {'n': 8, 's': 4, 'm': 2, 'l': 1, 'x': 1}
+# 2026-11-05：YOLO26n真实短测batch16/CPU4优于原8/14；其他族/尺寸先probe。
+BATCH_BY_SCALE = {'n': 16, 's': 4, 'm': 2, 'l': 1, 'x': 1}
 BATCH = BATCH_BY_SCALE[MODEL[-1].lower()]
 WORKERS = 0  # 多进程已触发本机RAM保护，保留失败原值
-CPU_THREADS = 14
+CPU_THREADS = 4
 VALIDATION_BATCH = 4  # 原生逐epoch/best验证上限；统一准入评测仍FP32/batch1
 AMP = True
 DEVICE = 0

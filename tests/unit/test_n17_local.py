@@ -73,7 +73,7 @@ class LocalTaskTests(unittest.TestCase):
 
     def test_fast_configuration_is_safe_and_independent_of_user_options(self):
         fast=local_options(DEFAULT_OPTIONS.with_name('n17_local_fast.py'))
-        self.assertEqual((fast['ACTION'],fast['CPU_THREADS']),('check',14))
+        self.assertEqual((fast['ACTION'],fast['CPU_THREADS']),('check',4))
         self.assertEqual((fast['MAX_EPOCHS'],fast['MIN_EPOCHS'],fast['PATIENCE']),(300,50,30))
         self.assertEqual(fast['PAUSE_AFTER_EPOCH'],None)
 
