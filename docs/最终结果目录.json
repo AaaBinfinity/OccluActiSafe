@@ -438,6 +438,39 @@
       "status": "current",
       "legacy_directory": "last_n17_seed17_review_20261103_1c09d294",
       "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_seed17_review_20261103_1c09d294"
+    },
+    {
+      "node": "N17",
+      "purpose": "六项单seed学习率对照：完整GPU训练评分与原始图集",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_lr_contrast_b158bcca95db42a88ecb60dc4f32f50b",
+      "original_artifact_path": "节点资料/N17_检测器比较/04_开发与复核/学习率对照/n17_lr_contrast_b158bcca95db42a88ecb60dc4f32f50b",
+      "physical_artifact_path": "节点资料/N17_检测器比较/04_开发与复核/学习率对照/n17_lr_contrast_b158bcca95db42a88ecb60dc4f32f50b",
+      "legacy_directory": "last_n17_lr_contrast_b158bcca95db42a88ecb60dc4f32f50b",
+      "evidence_file": "完成产物清单.json",
+      "evidence_sha256": "032e0eb788010c4f82a5023f392f86faa562448e3b824b84c8e80b2726407e2b",
+      "status": "current"
+    },
+    {
+      "node": "N17",
+      "purpose": "六项学习率对照：全量复算、报告、来源及负结果证据",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_lr_review_20261104",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_lr_review_20261104",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_lr_review_20261104",
+      "legacy_directory": "last_n17_lr_review_20261104",
+      "evidence_file": "六项对照最终证据索引.json",
+      "evidence_sha256": "c9c5bc161f35624fe2549df4bddb01afd8e7dcd41bc3118ae50a9f587081e3a5",
+      "status": "current"
+    },
+    {
+      "node": "N17",
+      "purpose": "YOLO26n/seed29原生50轮训练（未作本次统一评分）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_local_yolo26n_seed29_d7e758557291461a89e3f0a7b826cc17",
+      "original_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_local_yolo26n_seed29_d7e758557291461a89e3f0a7b826cc17",
+      "physical_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_local_yolo26n_seed29_d7e758557291461a89e3f0a7b826cc17",
+      "legacy_directory": "last_n17_local_yolo26n_seed29_d7e758557291461a89e3f0a7b826cc17",
+      "evidence_file": "本次训练核验.json",
+      "evidence_sha256": "7ec8339817ad2a609243d33e791ab6b37289d03ce1d1d159b7a637c9ffa4cd6b",
+      "status": "current"
     }
   ],
   "retired_entries": [
