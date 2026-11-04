@@ -3,10 +3,14 @@ import argparse
 from collections import Counter
 import copy
 import csv
+import gc
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
+import subprocess
+import sys
 import uuid
 
 import yaml
@@ -72,6 +76,54 @@ def check_settings(opts):
             'minimum_free_gpu_mib':4096,'minimum_available_ram_mib':2048,'minimum_free_disk_gib':30,
             'expected_gpu_name':'5060 Ti','model_sizes':[opts['model']['scale']],
             '_path':opts['options_file'],'_sha256':opts['options_sha256']}
+
+
+def preflight_worker(task_path):
+    """内部预检进程：完成后退出，释放torch/CUDA和权重，父进程只保留元数据。"""
+    task_path=Path(task_path).resolve();task=read_json(task_path)
+    from .source_version import source_info
+    if source_info()['source_fingerprint_sha256']!=task['source_fingerprint_sha256']:
+        raise ValueError('预检子进程源码身份不同')
+    settings=task['settings']
+    for key in ('input_root','output_root','weights_root'):settings[key]=Path(settings[key])
+    if not task_path.is_relative_to(settings['output_root'].resolve()):
+        raise ValueError('预检任务必须位于本节点输出目录')
+    rows,environment,directory=preflight(settings,models=task['models'])
+    index=task_path.parent/'预检原始索引.jsonl'
+    index.write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in rows),encoding='utf-8')
+    write_json(task_path.parent/'独立预检结果.json',{'environment':environment,'checkdir':str(directory),
+               'rows':len(rows),'index':str(index),'index_sha256':sha256(index),'worker_pid':os.getpid()})
+
+
+def isolated_preflight(settings,models):
+    from .source_version import source_info
+    directory=settings['output_root']/'03_验收证据'/('n17_local_preflight_'+uuid.uuid4().hex)
+    directory.mkdir(parents=True)
+    source=source_info()['source_fingerprint_sha256']
+    task=directory/'预检参数.json'
+    write_json(task,{'settings':{k:str(v) if isinstance(v,Path) else v for k,v in settings.items()},
+                    'models':models,'source_fingerprint_sha256':source})
+    print('独立进程完成输入/CUDA预检后释放资源；日志：'+str(directory),flush=True)
+    with (directory/'独立预检日志.txt').open('xb') as log:
+        process=subprocess.run([sys.executable,str(PROJECT_ROOT/'scripts/train_n17_local.py'),
+                                '--preflight-task',str(task)],stdout=log,stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,timeout=1800,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0,
+            env={**os.environ,'PYTHONUTF8':'1','PYTHONIOENCODING':'utf-8'})
+    if process.returncode:
+        raise RuntimeError('独立预检失败，原日志保留：'+str(directory))
+    result=read_json(directory/'独立预检结果.json');index=Path(result['index']).resolve()
+    if (not index.is_relative_to(directory.resolve()) or sha256(index)!=result['index_sha256']
+            or result['environment']['source']['source_fingerprint_sha256']!=source):
+        raise ValueError('独立预检输出路径/索引/源码SHA不同')
+    rows=[json.loads(line) for line in index.read_text(encoding='utf-8').splitlines()]
+    if len(rows)!=result['rows']:raise ValueError('独立预检返回行数不同')
+    write_json(directory/'父子进程资源边界.json',{'status':'passed','worker_returncode':process.returncode,
+               'parent_pid':os.getpid(),'finished_worker_pid':result['worker_pid'],
+               'parent_has_torch_after_preflight':'torch' in sys.modules,
+               'child_has_exited_before_training':True,'input_assets':result['environment']['input_verification']['assets'],
+               'rows':len(rows),'no_training_started_by_preflight':True})
+    return rows,result['environment'],Path(result['checkdir'])
 
 
 def development_rows(rows,batch=2):
@@ -217,7 +269,8 @@ def audit_local_training(cfg,training):
 def run_local(opts):
     settings=check_settings(opts)
     with execution_lock(opts['OUTPUT_ROOT']/f'.gpu_{opts["DEVICE"]}.lock'):
-        rows,environment,checkdir=preflight(settings,models=[opts['model']])
+        check=isolated_preflight if opts.get('CPU_THREADS',0) or opts.get('VALIDATION_BATCH',0) else preflight
+        rows,environment,checkdir=check(settings,models=[opts['model']])
         if opts['ACTION']=='check':return checkdir
         development=opts['ACTION'] in ('smoke','probe')
         if opts['ACTION']=='resume':development=bool(read_json(opts['RESUME_RUN']/'本机训练任务.json')['development_only'])
@@ -243,6 +296,13 @@ def run_local(opts):
               'seed_in_frozen_comparison':opts['SEED'] in (17,29,43),'frozen_config':str(frozen),'frozen_config_sha256':sha256(frozen),
               'environment_report':str(checkdir/'服务器预检.json'),'input':environment['input_verification'],'resume':resume}
         write_json(job/'本机训练任务.json',task)
+        # 配置与索引已经落盘；等待GPU worker时不再保留整份GT对象图。
+        del rows
+        gc.collect()
+        import psutil
+        write_json(job/'父进程训练前资源.json',{'raw_input_rows_released':True,
+                   'parent_has_torch':'torch' in sys.modules,'parent_rss_mib':psutil.Process().memory_info().rss/2**20,
+                   'system_available_mib':psutil.virtual_memory().available/2**20})
         if opts['ACTION']=='plan':
             from ultralytics.cfg import get_cfg
             get_cfg(overrides=cfg['training']);print('仅计划，未训练：'+str(job),flush=True);return job
@@ -269,10 +329,12 @@ def run_local(opts):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--preflight-task',type=Path,help=argparse.SUPPRESS)
     parser.add_argument('--config',type=Path,default=DEFAULT_OPTIONS)
     parser.add_argument('--action',choices=['check','plan','probe','smoke','train','resume'])
     parser.add_argument('--model');parser.add_argument('--seed',type=int);parser.add_argument('--run',type=Path)
     args=parser.parse_args();overrides={}
+    if args.preflight_task:return preflight_worker(args.preflight_task)
     for key,value in (('ACTION',args.action),('MODEL',args.model),('SEED',args.seed),('RESUME_RUN',args.run)):
         if value is not None:overrides[key]=value
     run_local(local_options(args.config,overrides))

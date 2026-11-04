@@ -110,6 +110,34 @@ class LocalTaskTests(unittest.TestCase):
             trainer.get_dataloader('fixture',batch_size=8,rank=-1,mode='train')
             self.assertEqual(native.call_args.kwargs['batch_size'],8)
 
+    def test_isolated_preflight_validates_returned_source_and_input_index(self):
+        from occluactisafe.experiments import detector_local as m
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp).resolve();settings={'input_root':root/'input','output_root':root,'weights_root':root/'weights'}
+            def child(command,**kwargs):
+                task=Path(command[-1]);index=task.parent/'预检原始索引.jsonl'
+                index.write_text(json.dumps({'key':'mechanism_only'})+'\n',encoding='utf-8')
+                write_json(task.parent/'独立预检结果.json',{
+                    'environment':{'source':{'source_fingerprint_sha256':'fixed'},'input_verification':{'assets':1}},
+                    'checkdir':str(task.parent),'rows':1,'index':str(index),'index_sha256':sha256(index),'worker_pid':12345})
+                return SimpleNamespace(returncode=0)
+            with patch('occluactisafe.experiments.source_version.source_info',return_value={'source_fingerprint_sha256':'fixed'}),patch.object(m.subprocess,'run',side_effect=child):
+                rows,env,directory=m.isolated_preflight(settings,[{'family':'mechanism'}])
+            self.assertEqual(rows,[{'key':'mechanism_only'}])
+            boundary=read_json(directory/'父子进程资源边界.json')
+            self.assertTrue(boundary['child_has_exited_before_training'])
+            self.assertTrue(boundary['no_training_started_by_preflight'])
+
+    def test_isolated_preflight_failure_never_returns_fake_success(self):
+        from occluactisafe.experiments import detector_local as m
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp).resolve()
+            with patch('occluactisafe.experiments.source_version.source_info',return_value={'source_fingerprint_sha256':'fixed'}),patch.object(m.subprocess,'run',return_value=SimpleNamespace(returncode=1)):
+                with self.assertRaisesRegex(RuntimeError,'预检失败'):
+                    m.isolated_preflight({'input_root':root/'input','output_root':root,'weights_root':root/'weights'},[])
+
     def test_only_two_weights_are_published_and_existing_unexpected_file_is_not_deleted(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);publish_weights(root,b'epoch1 mechanism fixture',True,{'epoch':1,'applied_updates':1,'batch_attempts':1})
