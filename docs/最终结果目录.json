@@ -471,6 +471,17 @@
       "evidence_file": "本次训练核验.json",
       "evidence_sha256": "7ec8339817ad2a609243d33e791ab6b37289d03ce1d1d159b7a637c9ffa4cd6b",
       "status": "current"
+    },
+    {
+      "node": "N17",
+      "purpose": "本机吞吐配置与有限真实性能交付（非正式长训或模型选型）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_performance_20261104",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_performance_20261104",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_performance_20261104",
+      "legacy_directory": "last_n17_performance_20261104",
+      "evidence_file": "性能优化最终索引.json",
+      "evidence_sha256": "da6eed85e7f48727319167753aed9fd3c162ddc84be45b8fbe80f8b76716e61b",
+      "status": "current"
     }
   ],
   "retired_entries": [
