@@ -492,6 +492,26 @@
       "evidence_sha256": "e1bee73e433776a468eeb73e58be0f84ddd382814f03a50115ccc5e19fc1a329",
       "legacy_directory": "last_n17_terminal_20261104",
       "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_terminal_20261104"
+    },
+    {
+      "node": "N17",
+      "purpose": "YOLO26n/seed43旧batch8配方50轮早停（未作统一准入评分）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_local_yolo26n_seed43_6edec714d2474220a439b371fed91015",
+      "original_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_local_yolo26n_seed43_6edec714d2474220a439b371fed91015",
+      "physical_artifact_path": "节点资料/N17_检测器比较/02_运行产物/n17_local_yolo26n_seed43_6edec714d2474220a439b371fed91015",
+      "legacy_directory": "last_n17_local_yolo26n_seed43_6edec714d2474220a439b371fed91015",
+      "evidence_file": "本次训练核验.json",
+      "evidence_sha256": "98b776b4019837777fbedf440e11b85a5ec59e7bf410bb3137fa18984bf71ecd"
+    },
+    {
+      "node": "N17",
+      "purpose": "默认batch16/CPU4资源配置及五工况软件交付（非正式长训）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_default_20261105",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_default_20261105",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_default_20261105",
+      "legacy_directory": "last_n17_default_20261105",
+      "evidence_file": "默认配置交付索引.json",
+      "evidence_sha256": "e13c70f5302b16a8bf5885fea248063b6fa53991580ade1a4af01dfd8717b471"
     }
   ],
   "retired_entries": [
