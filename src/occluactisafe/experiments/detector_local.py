@@ -25,6 +25,7 @@ from .detector_stopping import replay_stopping
 from .run_store import read_json,write_json,sha256,now
 
 DEFAULT_OPTIONS=PROJECT_ROOT/'configs/experiments/n17_local.py'
+FAST_OPTIONS=DEFAULT_OPTIONS.with_name('n17_local_fast.py')
 ALL_MODELS=expanded_models(['n','s','m','l','x'])
 
 
@@ -32,21 +33,28 @@ def digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
 
 
-def local_options(path=DEFAULT_OPTIONS,overrides=None):
+def local_options(path=DEFAULT_OPTIONS,overrides=None,*,source_bytes=None):
     path=Path(path);path=(path if path.is_absolute() else PROJECT_ROOT/path).resolve()
     # 同一字节快照用于执行、哈希和归档；预检期间编辑下一次任务不会串改本次记录。
-    options_bytes=path.read_bytes()
+    options_bytes=path.read_bytes() if source_bytes is None else source_bytes
     raw={'__name__':'n17_local_options','__file__':str(path)}
     exec(compile(options_bytes,str(path),'exec'),raw)
     keys=('ACTION','MODEL','SEED','INPUT_ROOT','OUTPUT_ROOT','DEVICE','BATCH','WORKERS','AMP',
-          'MAX_EPOCHS','MIN_EPOCHS','PATIENCE','RESUME_RUN','PAUSE_AFTER_EPOCH','PLOT_POINTS_PER_PAGE','CPU_THREADS','VALIDATION_BATCH')
-    opts={k:raw[k] for k in keys if k not in ('CPU_THREADS','VALIDATION_BATCH')}
-    opts.update({k:raw.get(k,0) for k in ('CPU_THREADS','VALIDATION_BATCH')});opts.update(overrides or {})
+          'MAX_EPOCHS','MIN_EPOCHS','PATIENCE','RESUME_RUN','PAUSE_AFTER_EPOCH','PLOT_POINTS_PER_PAGE','CPU_THREADS','VALIDATION_BATCH','LR0')
+    optional={'CPU_THREADS':0,'VALIDATION_BATCH':0,'LR0':0.001}
+    opts={k:raw[k] for k in keys if k not in optional}
+    opts.update({k:raw.get(k,v) for k,v in optional.items()});opts.update(overrides or {})
     if set(opts)!=set(keys):raise ValueError('本机选项包含未知参数')
     candidates={m['family'].lower():m for m in ALL_MODELS}
     name=str(opts['MODEL']).lower().removesuffix('.pt')
     if name not in candidates:raise ValueError('MODEL须为三族n/s/m/l/x之一')
     opts['model']=copy.deepcopy(candidates[name]);opts['MODEL']=opts['model']['family']
+    if 'BATCH_BY_SCALE' in raw and 'BATCH' not in (overrides or {}):
+        sizes=raw['BATCH_BY_SCALE']
+        if (not isinstance(sizes,dict) or set(sizes)!=set('nsmlx')
+                or any(type(v) is not int or v<1 for v in sizes.values())):
+            raise ValueError('BATCH_BY_SCALE须完整指定五种尺寸的正整数batch')
+        opts['BATCH']=sizes[opts['model']['scale']]
     for key in ('SEED','DEVICE','BATCH','WORKERS','MAX_EPOCHS','MIN_EPOCHS','PATIENCE','PLOT_POINTS_PER_PAGE'):
         if type(opts[key]) is not int or opts[key]<(0 if key in ('SEED','DEVICE','WORKERS') else 1):raise ValueError('本机整数选项非法：'+key)
     if opts['SEED']>=2**32 or not 1<=opts['MIN_EPOCHS']<=opts['MAX_EPOCHS']<=300:raise ValueError('seed范围或300轮上限/最少轮数不合法')
@@ -54,6 +62,9 @@ def local_options(path=DEFAULT_OPTIONS,overrides=None):
         raise ValueError('CPU_THREADS须为0～128整数，0保留框架默认')
     if type(opts['VALIDATION_BATCH']) is not int or not 0<=opts['VALIDATION_BATCH']<=128:
         raise ValueError('VALIDATION_BATCH须为0～128整数，0保留框架默认')
+    if type(opts['LR0']) not in (int,float) or not math.isfinite(opts['LR0']) or not 0<opts['LR0']<=1:
+        raise ValueError('LR0须为大于0且不超过1的有限数值')
+    opts['LR0']=float(opts['LR0'])
     if type(opts['AMP']) is not bool or opts['ACTION'] not in ('check','plan','probe','smoke','train','resume'):raise ValueError('ACTION或AMP非法')
     if opts['PAUSE_AFTER_EPOCH'] is not None and (type(opts['PAUSE_AFTER_EPOCH']) is not int or not 1<=opts['PAUSE_AFTER_EPOCH']<=opts['MAX_EPOCHS']):raise ValueError('PAUSE_AFTER_EPOCH须为空或预算内正整数')
     if opts['ACTION']=='resume' and not opts['RESUME_RUN']:raise ValueError('resume须填写原中断任务根目录RESUME_RUN')
@@ -66,7 +77,14 @@ def local_options(path=DEFAULT_OPTIONS,overrides=None):
     if opts['RESUME_RUN']:opts['RESUME_RUN']=resolve(opts['RESUME_RUN'])
     opts['options_file']=str(path);opts['options_sha256']=hashlib.sha256(options_bytes).hexdigest()
     opts['options_source_bytes']=options_bytes
+    opts['option_overrides']={k:str(v) if isinstance(v,Path) else v for k,v in (overrides or {}).items()}
     return opts
+
+
+def selected_options(opts,overrides):
+    """始终使用同一份已捕获默认文件，交互期间用户改文件不串改当前任务。"""
+    return local_options(opts['options_file'],{**opts['option_overrides'],**overrides},
+                         source_bytes=opts['options_source_bytes'])
 
 
 def check_settings(opts):
@@ -154,6 +172,7 @@ def build_local_config(opts,environment,snapshot,job,development=False):
                class_name_aliases={'person':'pedestrian'},checkpoint_period=-1,record_epoch_timing=True)
     cfg['training'].update(epochs=maximum,batch=opts['BATCH'],nbs=opts['BATCH'],workers=opts['WORKERS'],amp=opts['AMP'],
                            patience=patience,cls_remap=True,save_json=True)
+    if opts.get('LR0') is not None:cfg['training']['lr0']=opts['LR0']
     cfg['budget_policy']={'criterion':'native_fitness','minimum_epochs':minimum,'patience':patience}
     recipe={'training':cfg['training'],'budget_policy':cfg['budget_policy'],'classes':cfg['classes'],
             'aliases':cfg['class_name_aliases'],'source_index_sha256':environment['input_verification']['source_index_sha256'],
@@ -330,11 +349,33 @@ def run_local(opts):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--preflight-task',type=Path,help=argparse.SUPPRESS)
-    parser.add_argument('--config',type=Path,default=DEFAULT_OPTIONS)
+    parser.add_argument('--config',type=Path)
     parser.add_argument('--action',choices=['check','plan','probe','smoke','train','resume'])
     parser.add_argument('--model');parser.add_argument('--seed',type=int);parser.add_argument('--run',type=Path)
+    parser.add_argument('--lr0',type=float,help='SGD初始学习率，例如0.0003')
+    parser.add_argument('--batch',type=int,help='显式覆盖当前型号的batch起点')
+    mode=parser.add_mutually_exclusive_group()
+    mode.add_argument('--interactive',action='store_true',help='显示终端选择菜单')
+    mode.add_argument('--no-interactive',action='store_true',help='使用配置/CLI，不显示菜单')
+    parser.add_argument('--dry-run',action='store_true',help='只显示最终选择，不预检或训练')
     args=parser.parse_args();overrides={}
     if args.preflight_task:return preflight_worker(args.preflight_task)
-    for key,value in (('ACTION',args.action),('MODEL',args.model),('SEED',args.seed),('RESUME_RUN',args.run)):
+    for key,value in (('ACTION',args.action),('MODEL',args.model),('SEED',args.seed),('RESUME_RUN',args.run),
+                      ('LR0',args.lr0),('BATCH',args.batch)):
         if value is not None:overrides[key]=value
-    run_local(local_options(args.config,overrides))
+    config=args.config
+    if config is None:
+        direct=Path(sys.argv[0]).resolve()
+        config=direct if direct in (DEFAULT_OPTIONS.resolve(),FAST_OPTIONS.resolve()) else FAST_OPTIONS
+    interactive=args.interactive or (not args.no_interactive and not overrides)
+    if interactive:overrides['ACTION']='check'
+    opts=local_options(config,overrides)
+    from .detector_terminal import choose_options,display_options,execute_options
+    if interactive:
+        opts=choose_options(opts,dry_run=args.dry_run)
+        if opts is None:return
+    else:display_options(opts,dry_run=args.dry_run)
+    if args.dry_run:
+        print('仅展示选择，未启动预检或训练。',flush=True)
+        return opts
+    return execute_options(opts,run_local,'interactive' if interactive else 'cli')

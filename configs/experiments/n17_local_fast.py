@@ -1,15 +1,17 @@
-"""N17本机吞吐配置：直接IDE运行；默认只检查，不启动长训。"""
+"""N17终端交互默认值：直接IDE或终端运行后选择任务，确认前不执行。"""
 
-# 与原n17_local.py独立；修改这三个选项选择下一次新任务。
+# 以下是菜单默认值，无须为每次训练修改文件；CLI也可覆盖。
 MODEL = 'YOLO26n'
 SEED = 17
-ACTION = 'check'  # check/plan/probe/train/resume；正式训练显式改train
+ACTION = 'check'  # 菜单默认检查；在终端选择train并确认后才开始
+LR0 = 0.001  # 终端可输入0.0003等数值，实际写入训练配置
 
 MAX_EPOCHS = 300
 MIN_EPOCHS = 50
 PATIENCE = 30
 # 本机已测batch8单进程读图；大尺寸容量未实测。
-BATCH = {'n': 8, 's': 4, 'm': 2, 'l': 1, 'x': 1}[MODEL[-1].lower()]
+BATCH_BY_SCALE = {'n': 8, 's': 4, 'm': 2, 'l': 1, 'x': 1}
+BATCH = BATCH_BY_SCALE[MODEL[-1].lower()]
 WORKERS = 0  # 多进程已触发本机RAM保护，保留失败原值
 CPU_THREADS = 14
 VALIDATION_BATCH = 4  # 原生逐epoch/best验证上限；统一准入评测仍FP32/batch1
