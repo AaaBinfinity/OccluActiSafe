@@ -56,6 +56,38 @@ class LocalTaskTests(unittest.TestCase):
         self.assertEqual(a['checkpoint_period'],-1)
         self.assertNotEqual(a['local_profile']['model_id'],b['local_profile']['model_id'])
 
+    def test_optional_cpu_threads_preserve_legacy_defaults_and_freeze_new_recipe(self):
+        options=local_options(overrides={'CPU_THREADS':0})
+        environment={'font_path':'fixture','source':{'source_fingerprint_sha256':'fixture'},
+                     'input_verification':{'source_index_sha256':'fixture'}}
+        snapshot={'index_sha256':'fixture'}
+        old=build_local_config(options,environment,snapshot,Path('unused'))
+        new=build_local_config({**options,'CPU_THREADS':4},environment,snapshot,Path('unused'))
+        self.assertNotIn('cpu_threads',old['local_profile'])
+        self.assertEqual(new['local_profile']['cpu_threads'],4)
+        self.assertNotEqual(old['local_profile']['recipe_sha256'],new['local_profile']['recipe_sha256'])
+        self.assertEqual(old['training'],new['training'])
+        self.assertEqual(old['gates'],new['gates'])
+        for invalid in (-1,129,True,1.5):
+            with self.assertRaises(ValueError):local_options(overrides={'CPU_THREADS':invalid})
+
+    def test_fast_configuration_is_safe_and_independent_of_user_options(self):
+        fast=local_options(DEFAULT_OPTIONS.with_name('n17_local_fast.py'))
+        self.assertEqual((fast['ACTION'],fast['CPU_THREADS']),('check',4))
+        self.assertEqual((fast['MAX_EPOCHS'],fast['MIN_EPOCHS'],fast['PATIENCE']),(300,50,30))
+        self.assertEqual(fast['PAUSE_AFTER_EPOCH'],None)
+
+    def test_larger_batch_probe_keeps_three_real_validation_batch_examples(self):
+        from occluactisafe.experiments.detector_local import development_rows
+        rows=[{'role':role,'domain':domain,'key':f'{role}_{domain}_{i}',
+               'gt':[{'class_id':'vehicle'}]} for role in ('train','model_val')
+              for domain in ('SPD','CARLA') for i in range(100)]
+        selected=development_rows(rows,16)
+        self.assertGreaterEqual(sum(r['role']=='model_val' for r in selected),3*2*16)
+        self.assertGreaterEqual(sum(r['role']=='train' for r in selected),3*16)
+        self.assertEqual(len({r['key'] for r in selected}),len(selected))
+        self.assertEqual(Counter(r['role'] for r in development_rows(rows)),{'train':32,'model_val':16})
+
     def test_only_two_weights_are_published_and_existing_unexpected_file_is_not_deleted(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);publish_weights(root,b'epoch1 mechanism fixture',True,{'epoch':1,'applied_updates':1,'batch_attempts':1})

@@ -43,6 +43,11 @@ def rich_trainer_class(expected_batch,policy,options):
 
     class LocalTrainer(base):
         def __init__(self,*args,**kwargs):
+            # 仅新配置显式设置时限制主进程线程；原配置保留框架默认。
+            threads=options.get('cpu_threads',0)
+            if type(threads) is not int or not 0<=threads<=128:
+                raise ValueError('cpu_threads须为0～128整数')
+            if threads:torch.set_num_threads(threads)
             self._local_options=options;self._local_epoch_stats={};self._local_restored=None
             super().__init__(*args,**kwargs)
             self.add_callback('on_fit_epoch_end',self._local_validation_finished)
@@ -97,6 +102,17 @@ def rich_trainer_class(expected_batch,policy,options):
             keys=('epochs','batch','nbs','imgsz','optimizer','lr0','lrf','momentum','weight_decay','warmup_epochs','patience',
                   'amp','deterministic','mosaic','mixup','copy_paste','hsv_h','hsv_s','hsv_v','degrees','translate','scale','shear','perspective','flipud','fliplr','save_period')
             (self.save_dir/'超参数.yaml').write_text(yaml.safe_dump({k:getattr(self.args,k) for k in keys},allow_unicode=True,sort_keys=False),encoding='utf-8')
+            requested=options.get('cpu_threads',0)
+            if requested and torch.get_num_threads()!=requested:
+                raise RuntimeError('实际CPU线程数与冻结配置不同')
+            def loader_info(loader):
+                return {'batch_size':loader.batch_size,'workers':loader.num_workers,
+                        'prefetch_factor':loader.prefetch_factor,'pin_memory':loader.pin_memory}
+            write_json(self.save_dir/'训练资源配置.json',{
+                'cpu_threads_requested':requested,'cpu_threads_actual':torch.get_num_threads(),
+                'train_loader':loader_info(self.train_loader),'validation_loader':loader_info(self.test_loader),
+                'cache':self.args.cache,'amp':bool(self.amp),'all_optimizer_updates_logged':True,
+                'host_available_mib_at_setup':psutil.virtual_memory().available/2**20})
             return result
 
         def get_validator(self):

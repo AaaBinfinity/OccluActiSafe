@@ -35,8 +35,9 @@ def local_options(path=DEFAULT_OPTIONS,overrides=None):
     raw={'__name__':'n17_local_options','__file__':str(path)}
     exec(compile(options_bytes,str(path),'exec'),raw)
     keys=('ACTION','MODEL','SEED','INPUT_ROOT','OUTPUT_ROOT','DEVICE','BATCH','WORKERS','AMP',
-          'MAX_EPOCHS','MIN_EPOCHS','PATIENCE','RESUME_RUN','PAUSE_AFTER_EPOCH','PLOT_POINTS_PER_PAGE')
-    opts={k:raw[k] for k in keys};opts.update(overrides or {})
+          'MAX_EPOCHS','MIN_EPOCHS','PATIENCE','RESUME_RUN','PAUSE_AFTER_EPOCH','PLOT_POINTS_PER_PAGE','CPU_THREADS')
+    opts={k:raw[k] for k in keys if k!='CPU_THREADS'}
+    opts['CPU_THREADS']=raw.get('CPU_THREADS',0);opts.update(overrides or {})
     if set(opts)!=set(keys):raise ValueError('本机选项包含未知参数')
     candidates={m['family'].lower():m for m in ALL_MODELS}
     name=str(opts['MODEL']).lower().removesuffix('.pt')
@@ -45,6 +46,8 @@ def local_options(path=DEFAULT_OPTIONS,overrides=None):
     for key in ('SEED','DEVICE','BATCH','WORKERS','MAX_EPOCHS','MIN_EPOCHS','PATIENCE','PLOT_POINTS_PER_PAGE'):
         if type(opts[key]) is not int or opts[key]<(0 if key in ('SEED','DEVICE','WORKERS') else 1):raise ValueError('本机整数选项非法：'+key)
     if opts['SEED']>=2**32 or not 1<=opts['MIN_EPOCHS']<=opts['MAX_EPOCHS']<=300:raise ValueError('seed范围或300轮上限/最少轮数不合法')
+    if type(opts['CPU_THREADS']) is not int or not 0<=opts['CPU_THREADS']<=128:
+        raise ValueError('CPU_THREADS须为0～128整数，0保留框架默认')
     if type(opts['AMP']) is not bool or opts['ACTION'] not in ('check','plan','probe','smoke','train','resume'):raise ValueError('ACTION或AMP非法')
     if opts['PAUSE_AFTER_EPOCH'] is not None and (type(opts['PAUSE_AFTER_EPOCH']) is not int or not 1<=opts['PAUSE_AFTER_EPOCH']<=opts['MAX_EPOCHS']):raise ValueError('PAUSE_AFTER_EPOCH须为空或预算内正整数')
     if opts['ACTION']=='resume' and not opts['RESUME_RUN']:raise ValueError('resume须填写原中断任务根目录RESUME_RUN')
@@ -69,9 +72,10 @@ def check_settings(opts):
             '_path':opts['options_file'],'_sha256':opts['options_sha256']}
 
 
-def development_rows(rows):
+def development_rows(rows,batch=2):
     selected=[]
-    for role,n in (('train',16),('model_val',8)):
+    # 全图集要求至少三批训练/验证样例；验证batch是训练batch的两倍。
+    for role,n in (('train',max(16,2*batch)),('model_val',max(8,3*batch))):
         for domain in ('SPD','CARLA'):
             part=[r for r in rows if r['role']==role and r['domain']==domain]
             if len(part)<n:raise ValueError('缺少真实开发联调输入，不构造图片代替')
@@ -100,11 +104,15 @@ def build_local_config(opts,environment,snapshot,job,development=False):
     recipe={'training':cfg['training'],'budget_policy':cfg['budget_policy'],'classes':cfg['classes'],
             'aliases':cfg['class_name_aliases'],'source_index_sha256':environment['input_verification']['source_index_sha256'],
             'actual_snapshot_index_sha256':snapshot['index_sha256'],'development_only':development,'weights_policy':'last_and_best_only'}
+    if opts.get('CPU_THREADS',0):
+        recipe['cpu_threads']=opts['CPU_THREADS']
     # 路径重绑定后的索引含本机相同输入路径，不含新job路径；同配方可跨模型/seed核对。
     cfg['local_profile']={'model_id':opts['MODEL'],'seed':opts['SEED'],'recipe_sha256':digest(recipe),
                           'source_fingerprint_sha256':environment['source']['source_fingerprint_sha256'],
                           'plot_points_per_page':opts['PLOT_POINTS_PER_PAGE'],'pause_after_epoch':opts['PAUSE_AFTER_EPOCH'],
                           'development_only':development,'full_comparison_complete':False}
+    if opts.get('CPU_THREADS',0):
+        cfg['local_profile']['cpu_threads']=opts['CPU_THREADS']
     return cfg
 
 
@@ -207,7 +215,7 @@ def run_local(opts):
         if opts['ACTION']=='check':return checkdir
         development=opts['ACTION'] in ('smoke','probe')
         if opts['ACTION']=='resume':development=bool(read_json(opts['RESUME_RUN']/'本机训练任务.json')['development_only'])
-        if development:rows=development_rows(rows)
+        if development:rows=development_rows(rows,opts['BATCH'])
         folder='04_开发与复核/本机短程联调' if development else ('04_开发与复核/本机任务计划' if opts['ACTION']=='plan' else '02_运行产物')
         job=opts['OUTPUT_ROOT']/folder/('n17_local_'+opts['MODEL'].lower()+'_seed'+str(opts['SEED'])+'_'+uuid.uuid4().hex);job.mkdir(parents=True)
         snapshot=stage_snapshot(opts['INPUT_ROOT'],rows,job/'冻结数据元信息')
