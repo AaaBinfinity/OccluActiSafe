@@ -73,7 +73,7 @@ class LocalTaskTests(unittest.TestCase):
 
     def test_fast_configuration_is_safe_and_independent_of_user_options(self):
         fast=local_options(DEFAULT_OPTIONS.with_name('n17_local_fast.py'))
-        self.assertEqual((fast['ACTION'],fast['CPU_THREADS']),('check',4))
+        self.assertEqual((fast['ACTION'],fast['CPU_THREADS']),('check',14))
         self.assertEqual((fast['MAX_EPOCHS'],fast['MIN_EPOCHS'],fast['PATIENCE']),(300,50,30))
         self.assertEqual(fast['PAUSE_AFTER_EPOCH'],None)
 
@@ -87,6 +87,28 @@ class LocalTaskTests(unittest.TestCase):
         self.assertGreaterEqual(sum(r['role']=='train' for r in selected),3*16)
         self.assertEqual(len({r['key'] for r in selected}),len(selected))
         self.assertEqual(Counter(r['role'] for r in development_rows(rows)),{'train':32,'model_val':16})
+
+    def test_validation_batch_is_frozen_separately_without_changing_training(self):
+        opts=local_options(overrides={'VALIDATION_BATCH':0})
+        env={'font_path':'fixture','source':{'source_fingerprint_sha256':'fixture'},
+             'input_verification':{'source_index_sha256':'fixture'}}
+        a=build_local_config(opts,env,{'index_sha256':'fixture'},Path('unused'))
+        b=build_local_config({**opts,'VALIDATION_BATCH':4},env,{'index_sha256':'fixture'},Path('unused'))
+        self.assertEqual(a['training'],b['training'])
+        self.assertNotEqual(a['local_profile']['recipe_sha256'],b['local_profile']['recipe_sha256'])
+        self.assertEqual(b['local_profile']['validation_batch'],4)
+        for invalid in (-1,129,True,1.5):
+            with self.assertRaises(ValueError):local_options(overrides={'VALIDATION_BATCH':invalid})
+
+    def test_validation_memory_cap_leaves_train_loader_batch_unchanged(self):
+        from occluactisafe.experiments.detector_local_training import rich_trainer_class
+        cls=rich_trainer_class(8,None,{'validation_batch':4})
+        trainer=object.__new__(cls)
+        with patch.object(cls.__bases__[0],'get_dataloader',return_value='loader') as native:
+            self.assertEqual(trainer.get_dataloader('fixture',batch_size=16,rank=-1,mode='val'),'loader')
+            self.assertEqual(native.call_args.kwargs['batch_size'],4)
+            trainer.get_dataloader('fixture',batch_size=8,rank=-1,mode='train')
+            self.assertEqual(native.call_args.kwargs['batch_size'],8)
 
     def test_only_two_weights_are_published_and_existing_unexpected_file_is_not_deleted(self):
         with tempfile.TemporaryDirectory() as temp:

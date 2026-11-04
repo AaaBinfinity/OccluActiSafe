@@ -35,9 +35,9 @@ def local_options(path=DEFAULT_OPTIONS,overrides=None):
     raw={'__name__':'n17_local_options','__file__':str(path)}
     exec(compile(options_bytes,str(path),'exec'),raw)
     keys=('ACTION','MODEL','SEED','INPUT_ROOT','OUTPUT_ROOT','DEVICE','BATCH','WORKERS','AMP',
-          'MAX_EPOCHS','MIN_EPOCHS','PATIENCE','RESUME_RUN','PAUSE_AFTER_EPOCH','PLOT_POINTS_PER_PAGE','CPU_THREADS')
-    opts={k:raw[k] for k in keys if k!='CPU_THREADS'}
-    opts['CPU_THREADS']=raw.get('CPU_THREADS',0);opts.update(overrides or {})
+          'MAX_EPOCHS','MIN_EPOCHS','PATIENCE','RESUME_RUN','PAUSE_AFTER_EPOCH','PLOT_POINTS_PER_PAGE','CPU_THREADS','VALIDATION_BATCH')
+    opts={k:raw[k] for k in keys if k not in ('CPU_THREADS','VALIDATION_BATCH')}
+    opts.update({k:raw.get(k,0) for k in ('CPU_THREADS','VALIDATION_BATCH')});opts.update(overrides or {})
     if set(opts)!=set(keys):raise ValueError('本机选项包含未知参数')
     candidates={m['family'].lower():m for m in ALL_MODELS}
     name=str(opts['MODEL']).lower().removesuffix('.pt')
@@ -48,6 +48,8 @@ def local_options(path=DEFAULT_OPTIONS,overrides=None):
     if opts['SEED']>=2**32 or not 1<=opts['MIN_EPOCHS']<=opts['MAX_EPOCHS']<=300:raise ValueError('seed范围或300轮上限/最少轮数不合法')
     if type(opts['CPU_THREADS']) is not int or not 0<=opts['CPU_THREADS']<=128:
         raise ValueError('CPU_THREADS须为0～128整数，0保留框架默认')
+    if type(opts['VALIDATION_BATCH']) is not int or not 0<=opts['VALIDATION_BATCH']<=128:
+        raise ValueError('VALIDATION_BATCH须为0～128整数，0保留框架默认')
     if type(opts['AMP']) is not bool or opts['ACTION'] not in ('check','plan','probe','smoke','train','resume'):raise ValueError('ACTION或AMP非法')
     if opts['PAUSE_AFTER_EPOCH'] is not None and (type(opts['PAUSE_AFTER_EPOCH']) is not int or not 1<=opts['PAUSE_AFTER_EPOCH']<=opts['MAX_EPOCHS']):raise ValueError('PAUSE_AFTER_EPOCH须为空或预算内正整数')
     if opts['ACTION']=='resume' and not opts['RESUME_RUN']:raise ValueError('resume须填写原中断任务根目录RESUME_RUN')
@@ -106,6 +108,8 @@ def build_local_config(opts,environment,snapshot,job,development=False):
             'actual_snapshot_index_sha256':snapshot['index_sha256'],'development_only':development,'weights_policy':'last_and_best_only'}
     if opts.get('CPU_THREADS',0):
         recipe['cpu_threads']=opts['CPU_THREADS']
+    if opts.get('VALIDATION_BATCH',0):
+        recipe['validation_batch']=opts['VALIDATION_BATCH']
     # 路径重绑定后的索引含本机相同输入路径，不含新job路径；同配方可跨模型/seed核对。
     cfg['local_profile']={'model_id':opts['MODEL'],'seed':opts['SEED'],'recipe_sha256':digest(recipe),
                           'source_fingerprint_sha256':environment['source']['source_fingerprint_sha256'],
@@ -113,6 +117,8 @@ def build_local_config(opts,environment,snapshot,job,development=False):
                           'development_only':development,'full_comparison_complete':False}
     if opts.get('CPU_THREADS',0):
         cfg['local_profile']['cpu_threads']=opts['CPU_THREADS']
+    if opts.get('VALIDATION_BATCH',0):
+        cfg['local_profile']['validation_batch']=opts['VALIDATION_BATCH']
     return cfg
 
 

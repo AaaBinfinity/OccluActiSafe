@@ -8,10 +8,11 @@ ACTION = 'check'  # check/plan/probe/train/resume；正式训练显式改train
 MAX_EPOCHS = 300
 MIN_EPOCHS = 50
 PATIENCE = 30
-# 首轮候选；以本机测速报告最终冻结值为准。大尺寸容量未实测。
+# 本机已测batch8单进程读图；大尺寸容量未实测。
 BATCH = {'n': 8, 's': 4, 'm': 2, 'l': 1, 'x': 1}[MODEL[-1].lower()]
-WORKERS = 1  # 锁定框架验证loader使用2倍；16GB RAM不直接套用8进程
-CPU_THREADS = 4
+WORKERS = 0  # 多进程已触发本机RAM保护，保留失败原值
+CPU_THREADS = 14
+VALIDATION_BATCH = 4  # 原生逐epoch/best验证上限；统一准入评测仍FP32/batch1
 AMP = True
 DEVICE = 0
 INPUT_ROOT = r'H:\OccluActiSafeDataset\服务器输入\N17\n17_input_385ce282b4444f1bb6fea051b3c0423b'

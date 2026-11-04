@@ -1,6 +1,7 @@
 """N17本机原生YOLO训练：全面留证、两权重与epoch边界恢复。"""
 import copy
 import csv
+import gc
 import io
 import json
 import math
@@ -117,6 +118,8 @@ def rich_trainer_class(expected_batch,policy,options):
 
         def get_validator(self):
             validator=super().get_validator()
+            if options.get('validation_batch'):
+                validator.args.batch=min(validator.args.batch,options['validation_batch'])
             class RecordedValidator(type(validator)):
                 def eval_json(self,stats):
                     if not getattr(self,'is_coco',False) and not getattr(self,'is_lvis',False):
@@ -137,7 +140,13 @@ def rich_trainer_class(expected_batch,policy,options):
             validator.__class__=RecordedValidator
             return validator
 
+        def get_dataloader(self,dataset_path,batch_size=16,rank=0,mode='train'):
+            if mode=='val' and options.get('validation_batch'):
+                batch_size=min(batch_size,options['validation_batch'])
+            return super().get_dataloader(dataset_path,batch_size=batch_size,rank=rank,mode=mode)
+
         def validate(self):
+            if options.get('validation_batch'):gc.collect()
             self.validator._n17_phase='epoch';self.validator._n17_epoch=self.epoch+1
             return super().validate()
 
@@ -147,6 +156,7 @@ def rich_trainer_class(expected_batch,policy,options):
             boxes=np.concatenate([r['bboxes'] for r in labels],axis=0)
             cls=np.concatenate([r['cls'] for r in labels],axis=0)
             label_diagnostics(self.save_dir,boxes,cls,self.data['names'])
+            if options.get('validation_batch'):gc.collect()
 
         def plot_training_samples(self,batch,ni):
             append_json(self.save_dir/'训练批次图片来源.jsonl',{'native_file':f'train_batch{ni}.jpg','epoch':self.epoch+1,
@@ -240,6 +250,7 @@ def rich_trainer_class(expected_batch,policy,options):
 
         def final_eval(self):
             # last保留优化器/AMP/随机状态；两个文件均可直接YOLO加载。
+            if options.get('validation_batch'):gc.collect()
             self._n17_final_eval=True
             try:
                 if self.best.exists():
