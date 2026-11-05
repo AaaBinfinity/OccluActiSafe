@@ -512,6 +512,16 @@
       "legacy_directory": "last_n17_default_20261105",
       "evidence_file": "默认配置交付索引.json",
       "evidence_sha256": "e13c70f5302b16a8bf5885fea248063b6fa53991580ade1a4af01dfd8717b471"
+    },
+    {
+      "node": "N17",
+      "purpose": "单worker单批预取默认配置、三项真实GPU资源短测及完整证据（非正式长训）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_prefetch_20261105",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_prefetch_20261105",
+      "evidence_file": "预取配置交付索引.json",
+      "evidence_sha256": "87e0f58416f8985244641ac2f2a1031def140c4fa9611208aac10f30373646e0",
+      "legacy_directory": "last_n17_prefetch_20261105",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_prefetch_20261105"
     }
   ],
   "retired_entries": [
