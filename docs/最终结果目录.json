@@ -532,6 +532,16 @@
       "legacy_directory": "last_n17_options_20261105",
       "evidence_file": "配置交付索引.json",
       "evidence_sha256": "01be7eec3533b46dda90b259fcb70b841bfd7fc8cac7abc9695f6dd879a6b36c"
+    },
+    {
+      "node": "N17",
+      "purpose": "零面积预测框图集修复、YOLOv8n/17旧50轮结果补齐及完整审计（未重训）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_gallery_fix_20261105",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_gallery_fix_20261105",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_gallery_fix_20261105",
+      "legacy_directory": "last_n17_gallery_fix_20261105",
+      "evidence_file": "图集修复交付索引.json",
+      "evidence_sha256": "dae06bf9d8f3de755272a749a072fa897631daad631f40a6c7ebadfd41d5dcaf"
     }
   ],
   "retired_entries": [
