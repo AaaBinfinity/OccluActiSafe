@@ -27,7 +27,7 @@ class TerminalTests(unittest.TestCase):
                          ('YOLOv8n',29,.0003,8,'train'))
         self.assertIn('最多300轮',text)
         self.assertIn('0.0003',text)
-        self.assertIn('早停耐心：30',text)
+        self.assertIn('早停耐心：10',text)
 
     def test_numbered_model_and_action_accept_safe_defaults(self):
         result,_=self.choose(['2','','','','','y'])

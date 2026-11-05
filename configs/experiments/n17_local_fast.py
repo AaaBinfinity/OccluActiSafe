@@ -7,12 +7,12 @@ ACTION = 'check'  # 菜单默认检查；在终端选择train并确认后才开�
 LR0 = 0.001  # 终端可输入0.0003等数值，实际写入训练配置
 
 MAX_EPOCHS = 300
-MIN_EPOCHS = 50
-PATIENCE = 30
-# 2026-11-05：YOLOv8n实测单worker/预取1提高GPU利用率与吞吐；其他族/尺寸先probe。
-BATCH_BY_SCALE = {'n': 16, 's': 4, 'm': 2, 'l': 1, 'x': 1}
+MIN_EPOCHS = 15
+PATIENCE = 10
+# 2026-11-05：用户指定n级batch32/worker2，组合容量与吞吐尚未实测。
+BATCH_BY_SCALE = {'n': 32, 's': 4, 'm': 2, 'l': 1, 'x': 1}
 BATCH = BATCH_BY_SCALE[MODEL[-1].lower()]
-WORKERS = 1  # 只开一个训练进程；旧多worker失败记录保持
+WORKERS = 2  # 用户指定两个训练数据准备进程
 PREFETCH_FACTOR = 1  # 每worker仅预取一批，限制系统RAM
 VALIDATION_WORKERS = 0  # 验证不跟随原生workers*2，逐轮及best验证均生效
 CPU_THREADS = 4
