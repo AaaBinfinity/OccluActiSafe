@@ -9,10 +9,12 @@ LR0 = 0.001  # 终端可输入0.0003等数值，实际写入训练配置
 MAX_EPOCHS = 300
 MIN_EPOCHS = 50
 PATIENCE = 30
-# 2026-11-05：YOLO26n真实短测batch16/CPU4优于原8/14；其他族/尺寸先probe。
+# 2026-11-05：YOLOv8n实测单worker/预取1提高GPU利用率与吞吐；其他族/尺寸先probe。
 BATCH_BY_SCALE = {'n': 16, 's': 4, 'm': 2, 'l': 1, 'x': 1}
 BATCH = BATCH_BY_SCALE[MODEL[-1].lower()]
-WORKERS = 0  # 多进程已触发本机RAM保护，保留失败原值
+WORKERS = 1  # 只开一个训练进程；旧多worker失败记录保持
+PREFETCH_FACTOR = 1  # 每worker仅预取一批，限制系统RAM
+VALIDATION_WORKERS = 0  # 验证不跟随原生workers*2，逐轮及best验证均生效
 CPU_THREADS = 4
 VALIDATION_BATCH = 4  # 原生逐epoch/best验证上限；统一准入评测仍FP32/batch1
 AMP = True
