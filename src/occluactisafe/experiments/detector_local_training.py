@@ -112,6 +112,8 @@ def rich_trainer_class(expected_batch,policy,options):
             write_json(self.save_dir/'训练资源配置.json',{
                 'cpu_threads_requested':requested,'cpu_threads_actual':torch.get_num_threads(),
                 'train_loader':loader_info(self.train_loader),'validation_loader':loader_info(self.test_loader),
+                'validation_workers_requested':options.get('validation_workers'),
+                'prefetch_factor_requested':options.get('prefetch_factor'),
                 'cache':self.args.cache,'amp':bool(self.amp),'all_optimizer_updates_logged':True,
                 'host_available_mib_at_setup':psutil.virtual_memory().available/2**20})
             return result
@@ -120,6 +122,8 @@ def rich_trainer_class(expected_batch,policy,options):
             validator=super().get_validator()
             if options.get('validation_batch'):
                 validator.args.batch=min(validator.args.batch,options['validation_batch'])
+            if options.get('validation_workers') is not None:
+                validator.args.workers=options['validation_workers']
             class RecordedValidator(type(validator)):
                 def eval_json(self,stats):
                     if not getattr(self,'is_coco',False) and not getattr(self,'is_lvis',False):
@@ -143,7 +147,21 @@ def rich_trainer_class(expected_batch,policy,options):
         def get_dataloader(self,dataset_path,batch_size=16,rank=0,mode='train'):
             if mode=='val' and options.get('validation_batch'):
                 batch_size=min(batch_size,options['validation_batch'])
-            return super().get_dataloader(dataset_path,batch_size=batch_size,rank=rank,mode=mode)
+            if mode=='val' and options.get('validation_workers') is not None:
+                # 保持锁定检测器原生验证构建，只显式覆盖worker；不修改共享args或训练loader。
+                from ultralytics.data.build import build_dataloader
+                from ultralytics.utils.torch_utils import torch_distributed_zero_first
+                with torch_distributed_zero_first(rank):
+                    dataset=self.build_dataset(dataset_path,mode,batch_size)
+                return build_dataloader(dataset,batch=batch_size,workers=options['validation_workers'],
+                                        shuffle=False,rank=rank,drop_last=False,device=self.device)
+            loader=super().get_dataloader(dataset_path,batch_size=batch_size,rank=rank,mode=mode)
+            if mode=='train' and options.get('prefetch_factor') is not None:
+                # 8.4.197使用懒启动InfiniteDataLoader；必须在首次迭代/进程创建前设置队列。
+                if loader.iterator is not None:
+                    raise RuntimeError('训练loader已启动，拒绝声称预取参数已生效')
+                loader.prefetch_factor=options['prefetch_factor'] if loader.num_workers>0 else None
+            return loader
 
         def validate(self):
             if options.get('validation_batch'):gc.collect()

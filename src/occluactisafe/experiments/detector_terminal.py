@@ -24,6 +24,8 @@ def display_options(opts,*,dry_run=False,output=print):
     output(f"  SGD初始学习率lr0：{opts['LR0']:g}    batch/nbs：{opts['BATCH']}")
     output(f"  workers：{opts['WORKERS']}    CPU线程：{opts['CPU_THREADS'] or '框架默认'}    AMP：{opts['AMP']}")
     output(f"  原生验证batch上限：{opts['VALIDATION_BATCH'] or '框架默认'}    GPU：{opts['DEVICE']}")
+    if opts.get('VALIDATION_WORKERS') is not None or opts.get('PREFETCH_FACTOR') is not None:
+        output(f"  训练预取：{opts.get('PREFETCH_FACTOR') if opts['WORKERS'] else '不启用'}    验证worker：{opts.get('VALIDATION_WORKERS') if opts.get('VALIDATION_WORKERS') is not None else '框架默认'}")
     output(f"  上限：{opts['MAX_EPOCHS']}轮    最少：{opts['MIN_EPOCHS']}轮    早停耐心：{opts['PATIENCE']}轮")
     if opts['ACTION']=='probe':output('  probe实际使用真实开发子集1轮，不是完整数据训练或收敛证明。')
     if opts['ACTION'] in ('check','plan'):output('  本次操作不启动模型训练。')
