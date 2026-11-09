@@ -25,9 +25,9 @@
 
 无参数菜单默认check，须明确选择train才训练。队列的check/plan只核对冻结索引、输入清单和所选官方初始权重SHA，并保存队列身份；不执行CUDA或全量40,381资产预检。每项真实训练开始前仍调用已有完整独立预检，不能以队列计划替代训练环境验收。路径相对项目根解析，启动目录不影响行为。
 
-默认配置在[队列选项](../configs/experiments/n17_seed_queue.py)，资源参数继承[日常新任务配置](../configs/experiments/n17_local_fast.py)：最多300轮、最少15轮、早停耐心10轮、n档batch=nbs32、训练worker2/每worker预取1、验证worker0/batch≤4、CPU4、AMP/960、lr0=.001。batch32/worker2尚无本次完整容量/吞吐复核；本脚本不提高GPU负载或自动缩batch。先前资源短测不冒充本组合结果。
+默认配置在[队列选项](../configs/experiments/n17_seed_queue.py)，资源参数继承[日常新任务配置](../configs/experiments/n17_local_fast.py)：最多300轮、最少15轮、早停耐心10轮、n档batch=nbs32、训练worker4/每worker预取2、验证worker2/batch≤4、CPU4、AMP/960、lr0=.001。2026-11-09按本机32GB内存调整供数，当前配置与Windows机制通过，GPU吞吐仍待短测确认，不自动缩batch；详见[32GB资源适配](N17本机训练吞吐优化.md)。
 
-旧YOLOv8n/seed17为50/30、worker1；不能自动拼入本次15/10、worker2矩阵。默认三项均按本次冻结配方**从官方预训练权重新建**，不覆盖旧训练。模型菜单允许选择既有15种型号中的一个；切换尺寸仍按32/4/2/1/1建议batch起点，其他尺寸容量未实测。
+旧YOLOv8n/seed17为50/30、worker1；不能自动拼入当前15/10、worker4矩阵。默认三项均按本次冻结配方**从官方预训练权重新建**，不覆盖旧训练。模型菜单允许选择既有15种型号中的一个；切换尺寸仍按32/4/2/1/1建议batch起点，其他尺寸容量未实测。
 
 ## 自动运行和查看
 

@@ -552,6 +552,16 @@
       "legacy_directory": "last_n17_seed_queue_20261105",
       "evidence_file": "三seed队列交付索引.json",
       "evidence_sha256": "2af4fe4f396358f356767310cfc6464860db911670e1f6897e9d58a7f1e01f0b"
+    },
+    {
+      "node": "N17",
+      "purpose": "32GB供数配置与机制/入口核验（未训练，GPU吞吐待实测）",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_memory32_20261109",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_memory32_20261109",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_memory32_20261109",
+      "legacy_directory": "last_n17_memory32_20261109",
+      "evidence_file": "32GB配置交付索引.json",
+      "evidence_sha256": "b7d2f0c6d99b410496a9d2ffb7c1610e37fa6ff239b13d781a779be9c21e3fde"
     }
   ],
   "retired_entries": [
