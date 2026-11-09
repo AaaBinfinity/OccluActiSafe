@@ -39,7 +39,8 @@ class SeedQueueTests(unittest.TestCase):
         value = self.options()
         self.assertEqual((value['local']['MODEL'], value['seeds']), ('YOLOv8n', (17, 29, 43)))
         self.assertEqual([value['local'][k] for k in ('ACTION', 'MAX_EPOCHS', 'MIN_EPOCHS', 'PATIENCE', 'BATCH', 'WORKERS', 'LR0')],
-                         ['check', 300, 15, 10, 32, 2, .001])
+                         ['check', 300, 15, 10, 32, 4, .001])
+        self.assertEqual((value['local']['PREFETCH_FACTOR'],value['local']['VALIDATION_WORKERS']),(2,2))
 
     def test_only_ordered_unique_prescribed_seed_subsets_are_allowed(self):
         self.assertEqual(self.options(SEEDS=[29, 43])['seeds'], (29, 43))

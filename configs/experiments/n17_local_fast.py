@@ -9,12 +9,12 @@ LR0 = 0.001  # 终端可输入0.0003等数值，实际写入训练配置
 MAX_EPOCHS = 300
 MIN_EPOCHS = 15
 PATIENCE = 10
-# 2026-11-05：用户指定n级batch32/worker2，组合容量与吞吐尚未实测。
+# 32GB系统内存：扩大供数队列；显卡仍为16GB，各尺寸batch保持原值。
 BATCH_BY_SCALE = {'n': 32, 's': 4, 'm': 2, 'l': 1, 'x': 1}
 BATCH = BATCH_BY_SCALE[MODEL[-1].lower()]
-WORKERS = 2  # 用户指定两个训练数据准备进程
-PREFETCH_FACTOR = 1  # 每worker仅预取一批，限制系统RAM
-VALIDATION_WORKERS = 0  # 验证不跟随原生workers*2，逐轮及best验证均生效
+WORKERS = 4  # 训练图片解码/增强并行；性能结果见N17本机训练吞吐优化文档
+PREFETCH_FACTOR = 2  # 每worker预取2批，共最多8批，减少GPU等待数据
+VALIDATION_WORKERS = 2  # 逐轮及best验证并行读图，不跟随原生workers*2
 CPU_THREADS = 4
 VALIDATION_BATCH = 4  # 原生逐epoch/best验证上限；统一准入评测仍FP32/batch1
 AMP = True

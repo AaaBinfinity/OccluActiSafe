@@ -75,6 +75,8 @@ class LocalTaskTests(unittest.TestCase):
         fast=local_options(DEFAULT_OPTIONS.with_name('n17_local_fast.py'))
         self.assertEqual((fast['ACTION'],fast['CPU_THREADS']),('check',4))
         self.assertEqual((fast['MAX_EPOCHS'],fast['MIN_EPOCHS'],fast['PATIENCE']),(300,15,10))
+        self.assertEqual((fast['WORKERS'],fast['PREFETCH_FACTOR'],fast['VALIDATION_WORKERS']),(4,2,2))
+        self.assertEqual((fast['BATCH'],fast['VALIDATION_BATCH'],fast['LR0'],fast['AMP']),(32,4,.001,True))
         self.assertEqual(fast['PAUSE_AFTER_EPOCH'],None)
 
     def test_larger_batch_probe_keeps_three_real_validation_batch_examples(self):
