@@ -562,6 +562,16 @@
       "legacy_directory": "last_n17_memory32_20261109",
       "evidence_file": "32GB配置交付索引.json",
       "evidence_sha256": "b7d2f0c6d99b410496a9d2ffb7c1610e37fa6ff239b13d781a779be9c21e3fde"
+    },
+    {
+      "node": "N17",
+      "purpose": "32GB内存训练供数三工况GPU短测与配置选择",
+      "directory": "节点资料/N17_检测器比较/01_最终结果/last_n17_memory32_benchmark_20261126",
+      "original_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_memory32_benchmark_20261126",
+      "physical_artifact_path": "节点资料/N17_检测器比较/03_验收证据/n17_memory32_benchmark_20261126",
+      "legacy_directory": "last_n17_memory32_benchmark_20261126",
+      "evidence_file": "32GB短测证据索引.json",
+      "evidence_sha256": "676735716960d659547913152ca8b1c006587bdc8c7e0dbb4198f1d14ae85ddc"
     }
   ],
   "retired_entries": [
